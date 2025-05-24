@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bordle</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
+
+  <!-- Header -->
+  <header class="mb-8">
+    <img src="{{ url_for('static', filename='bordle_logo.png') }}" alt="BORDLE Logo" class="h-20 mx-auto">
+  </header>
+
+  <!-- Country Map Area -->
+  <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-semibold text-center mb-4">Guess all the borders of today's country</h2>
+
+    <!-- Map Container -->
+    <div id="map" class="w-full h-64 bg-gray-200 rounded mb-4"></div>
+
+    <!-- Country Info -->
+    <div class="text-center mb-4">
+      <h3 class="text-lg font-medium">{{ country_name }}</h3>
+      <p class="text-sm text-gray-600">{{ border_count }} border{{ 's' if border_count != 1 else '' }}</p>
+    </div>
+
+    <!-- Guess Form -->
+    <form action="/submit" method="post" class="flex flex-col gap-4">
+      <input type="text" name="guess_text" placeholder="Type a country or sea..." class="p-2 border rounded">
+      <select name="guess_dropdown" class="p-2 border rounded">
+        {% for option in border_options %}
+          <option value="{{ option }}">{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="bg-green-600 text-white py-2 rounded hover:bg-green-700">Submit Guess</button>
+    </form>
+
+    <div class="text-sm text-gray-700 mt-4 text-center">
+      {{ attempts_left }} guesses remaining
+    </div>
+  </div>
+
+  <!-- Vega Embed Script -->
+  <script>
+    const spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": "container",
+      "height": 250,
+      "projection": {"type": "equalEarth"},
+      "layer": [
+        {
+          "data": {
+            "url": "{{ url_for('static', filename='world-110m.json') }}",
+            "format": {"type": "topojson", "feature": "countries"}
+          },
+          "mark": {"type": "geoshape", "fill": "#ddd", "stroke": "white"}
+        },
+        {
+          "data": {
+            "values": {{ country_geojson | tojson }}
+          },
+          "mark": {"type": "geoshape", "fill": "black", "stroke": "white"}
+        }
+      ]
+    };
+
+    vegaEmbed('#map', spec, {actions: false});
+  </script>
+
+</body>
+</html>

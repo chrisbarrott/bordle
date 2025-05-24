@@ -1,0 +1,67 @@
+import json
+
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
+
+with open("static/map_data/border_map.json") as f:
+    border_map = json.load(f)
+
+all_guessable_options = sorted({name for borders in border_map.values() for name in borders})
+
+
+@app.route("/")
+def index():
+    with open("data/border_map.json", encoding="utf-8") as f:
+        border_map = json.load(f)
+
+    with open("data/countries_shapes.json", encoding="utf-8") as f:
+        country_shapes = json.load(f)
+
+    country_name = "India"  # hardcoded for now, randomize later
+
+    # Get geometry from country_shapes
+    shape = next((c for c in country_shapes["features"] if c["properties"]["name"] == country_name), None)
+    # shape = next((c for c in country_shapes if c["properties"]["name"] == country_name), None)
+    if not shape:
+        return "Country shape not found", 404
+
+    country_geojson = {
+        "type": "Feature",
+        "geometry": shape["geometry"],
+        "properties": {"name": country_name}
+    }
+
+    # Get borders from border_map
+    borders = border_map.get(country_name, [])
+    border_count = len(borders)
+
+    return render_template(
+        "index.html",
+        border_options=sorted(border_map.keys()),
+        attempts_left=5,
+        country_geojson=json.dumps(country_geojson),
+        country_name=country_name,
+        border_count=border_count
+    )
+
+
+@app.route("/submit", methods=["POST"])
+def submit():
+    guess_text = request.form.get("guess_text")
+    guess_dropdown = request.form.get("guess_dropdown")
+    
+    # TODO: Handle guess logic
+    return "You guessed: " + (guess_text or guess_dropdown)
+
+
+@app.route("/border-data/<country>")
+def border_data(country):
+    geometry = border_map.get(country)
+    if geometry:
+        return jsonify(geometry)
+    return jsonify({})
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

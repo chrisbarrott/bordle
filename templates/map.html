@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bordle Map</title>
+    <style>
+        #map {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select a Country</h1>
+    <form method="POST">
+        <select name="country" onchange="this.form.submit()">
+            <option value="">--Choose a country--</option>
+            {% for country in countries %}
+                <option value="{{ country }}" {% if country == selected_country %}selected{% endif %}>{{ country }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <svg id="map"></svg>
+
+    <script>
+        const selectedCountry = "{{ selected_country }}";
+        if (selectedCountry) {
+            fetch(`/border-data/${selectedCountry}`)
+                .then(response => response.json())
+                .then(data => {
+                    const svg = document.getElementById("map");
+                    svg.innerHTML = "";
+
+                    if (data && data.coordinates) {
+                        const coords = data.coordinates[0][0]; // assuming Polygon, adjust if MultiPolygon
+                        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+                        coords.forEach(coord => {
+                            const [x, y] = coord;
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        });
+
+                        const scale = 800 / (maxX - minX);
+                        const pathData = coords.map(([x, y]) =>
+                            `${(x - minX) * scale},${(maxY - y) * scale}`
+                        ).join(" ");
+
+                        const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                        polygon.setAttribute("points", pathData);
+                        polygon.setAttribute("fill", "green");
+                        polygon.setAttribute("stroke", "black");
+                        polygon.setAttribute("stroke-width", "1");
+
+                        svg.appendChild(polygon);
+                    }
+                });
+        }
+    </script>
+</body>
+</html>
