@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Bordle</title>
@@ -8,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 </head>
+
 <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
 
   <!-- Header -->
@@ -22,18 +24,29 @@
     <!-- Map Container -->
     <div id="map" class="w-full h-64 bg-gray-200 rounded mb-4"></div>
 
+    <!-- Country Name and Border Count -->
+    <h3 class="text-center text-lg font-medium mt-2">
+      {{ country_name }} has {{ border_count }} bordering countries.
+    </h3>
+
     <!-- Country Info -->
     <div class="text-center mb-4">
       <h3 class="text-lg font-medium">{{ country_name }}</h3>
       <p class="text-sm text-gray-600">{{ border_count }} border{{ 's' if border_count != 1 else '' }}</p>
     </div>
 
+    <!-- Incorrect Guesses -->
+    {% if wrong_guesses %}
+    <div class="mt-4 text-red-600 text-center">
+      <strong>Incorrect guesses:</strong> {{ wrong_guesses | join(", ") }}
+    </div>
+    {% endif %}
+
     <!-- Guess Form -->
     <form action="/submit" method="post" class="flex flex-col gap-4">
-      <input type="text" name="guess_text" placeholder="Type a country or sea..." class="p-2 border rounded">
-      <select name="guess_dropdown" class="p-2 border rounded">
+      <select id="guess_dropdown" name="guess" class="p-2 border rounded">
         {% for option in border_options %}
-          <option value="{{ option }}">{{ option }}</option>
+        <option value="{{ option }}">{{ option }}</option>
         {% endfor %}
       </select>
       <button type="submit" class="bg-green-600 text-white py-2 rounded hover:bg-green-700">Submit Guess</button>
@@ -50,26 +63,73 @@
       "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
       "width": "container",
       "height": 250,
-      "projection": {"type": "equalEarth"},
+      "projection": { "type": "equalEarth" },
       "layer": [
         {
           "data": {
             "url": "{{ url_for('static', filename='world-110m.json') }}",
-            "format": {"type": "topojson", "feature": "countries"}
+            "format": { "type": "topojson", "feature": "countries" }
           },
-          "mark": {"type": "geoshape", "fill": "#ddd", "stroke": "white"}
+          "mark": { "type": "geoshape", "fill": "#ddd", "stroke": "white" }
         },
         {
           "data": {
             "values": {{ country_geojson | tojson }}
           },
-          "mark": {"type": "geoshape", "fill": "black", "stroke": "white"}
+    "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
         }
       ]
     };
 
-    vegaEmbed('#map', spec, {actions: false});
+    vegaEmbed('#map', spec, { actions: false });
   </script>
 
+  <!-- Vega/Vega-Lite -->
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+  <script type="text/javascript">
+    const spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "width": 400,
+      "height": 300,
+      "projection": { "type": "mercator" },
+      "layer": [
+        {
+          "data": {
+            "values": {{ country_geojson | tojson }}
+        },
+    "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
+      },
+    {% for shape in correct_shapes %}
+    {
+      "data": {
+        "values": { { shape | tojson } }
+      },
+      "mark": { "type": "geoshape", "fill": "green", "stroke": "white" }
+    },
+    {% endfor %}
+    ]
+  };
+    vegaEmbed('#map', spec);
+  </script>
+  <!-- Tom Select CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+
+  <!-- Tom Select JS -->
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <script>
+    new TomSelect("#guess_dropdown", {
+      create: false,
+      sortField: {
+        field: "text",
+        direction: "asc"
+      },
+      placeholder: "Type to filter countries..."
+    });
+  </script>
 </body>
+
 </html>
