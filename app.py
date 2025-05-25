@@ -22,44 +22,53 @@ def index():
     with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
         geojson_data = json.load(f)
 
+    # Initialise session state if not set
     if "country_name" not in session:
         session["country_name"] = random.choice(list(border_map.keys()))
         session["remaining_guesses"] = 5
         session["correct_guesses"] = []
         session["wrong_guesses"] = []
-        session["available_options"] = list(set(sum(border_map.values(), [])))
+        session["available_options"] = sorted(list(set(sum(border_map.values(), []))))
+
 
     country_name = session["country_name"]
     border_names = border_map.get(country_name, [])
 
+    # Remove previously guessed countries from available options
     session["available_options"] = [
-        o
-        for o in session["available_options"]
+        o for o in session["available_options"]
         if o not in session["correct_guesses"] + session["wrong_guesses"]
     ]
 
+    # Get GeoJSON of the main country
     country_geojson = next(
-        (
-            f
-            for f in geojson_data["features"]
-            if f["properties"]["name"] == country_name
-        ),
-        None,
+        (f for f in geojson_data["features"]
+         if f["properties"].get("name") == country_name),
+        None
     )
 
-    # Collect shapes for already guessed correct countries
+    # GeoJSON for correct guesses (borders)
     correct_shapes = [
-        f
-        for f in geojson_data["features"]
-        if f["properties"]["name"] in session["correct_guesses"]
+        f for f in geojson_data["features"]
+        if f["properties"].get("name") in session["correct_guesses"]
     ]
+
+    # GeoJSON for incorrect guesses
+    wrong_shapes = [
+        f for f in geojson_data["features"]
+        if f["properties"].get("name") in session["wrong_guesses"]
+    ]
+
+    print("Correct guesses:", session["correct_guesses"])
+    print("Correct shapes:", [f["properties"]["name"] for f in correct_shapes])
 
     return render_template(
         "index.html",
         country_name=country_name,
         border_count=len(border_names),
         country_geojson=country_geojson,
-        correct_shapes=correct_shapes,
+        correct_shapes=[correct_shapes],
+        wrong_shapes=wrong_shapes,
         border_options=session["available_options"],
         attempts_left=session["remaining_guesses"],
         wrong_guesses=session["wrong_guesses"],
@@ -91,7 +100,7 @@ def submit():
             session["wrong_guesses"].append(guess)
             session["remaining_guesses"] -= 1
 
-    return redirect(url_for("index")) 
+    return redirect(url_for("index"))
 
 
 @app.route("/border-data/<country>")
@@ -100,6 +109,16 @@ def border_data(country):
     if geometry:
         return jsonify(geometry)
     return jsonify({})
+
+
+@app.route('/reset')
+def reset_session():
+    session.clear()
+    return redirect(url_for('index'))
+
+
+def normalize(name):
+    return name.lower().strip()
 
 
 if __name__ == "__main__":

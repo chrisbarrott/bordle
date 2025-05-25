@@ -5,20 +5,20 @@
   <meta charset="UTF-8">
   <title>Bordle</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+
 </head>
 
 <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
 
-  <!-- Header -->
+  <!-- Banner -->
   <header class="mb-8">
     <img src="{{ url_for('static', filename='bordle_logo.png') }}" alt="BORDLE Logo" class="h-20 mx-auto">
   </header>
 
   <!-- Country Map Area -->
   <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
+    <!-- Header -->
     <h2 class="text-xl font-semibold text-center mb-4">Guess all the borders of today's country</h2>
 
     <!-- Map Container -->
@@ -49,6 +49,7 @@
         <option value="{{ option }}">{{ option }}</option>
         {% endfor %}
       </select>
+
       <button type="submit" class="bg-green-600 text-white py-2 rounded hover:bg-green-700">Submit Guess</button>
     </form>
 
@@ -57,68 +58,12 @@
     </div>
   </div>
 
-  <!-- Vega Embed Script -->
-  <script>
-    const spec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "width": "container",
-      "height": 250,
-      "projection": { "type": "equalEarth" },
-      "layer": [
-        {
-          "data": {
-            "url": "{{ url_for('static', filename='world-110m.json') }}",
-            "format": { "type": "topojson", "feature": "countries" }
-          },
-          "mark": { "type": "geoshape", "fill": "#ddd", "stroke": "white" }
-        },
-        {
-          "data": {
-            "values": {{ country_geojson | tojson }}
-          },
-    "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
-        }
-      ]
-    };
-
-    vegaEmbed('#map', spec, { actions: false });
-  </script>
-
-  <!-- Vega/Vega-Lite -->
+  <!-- Scripts -->
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-
-  <script type="text/javascript">
-    const spec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "width": 400,
-      "height": 300,
-      "projection": { "type": "mercator" },
-      "layer": [
-        {
-          "data": {
-            "values": {{ country_geojson | tojson }}
-        },
-    "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
-      },
-    {% for shape in correct_shapes %}
-    {
-      "data": {
-        "values": { { shape | tojson } }
-      },
-      "mark": { "type": "geoshape", "fill": "green", "stroke": "white" }
-    },
-    {% endfor %}
-    ]
-  };
-    vegaEmbed('#map', spec);
-  </script>
-  <!-- Tom Select CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-
-  <!-- Tom Select JS -->
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
   <script>
     new TomSelect("#guess_dropdown", {
@@ -129,6 +74,16 @@
       },
       placeholder: "Type to filter countries..."
     });
+  </script>
+  
+  <!-- Custom Map Rendering Logic -->
+  <script src="{{ url_for('static', filename='map_render.js') }}"></script>
+
+  <!-- Data Injection -->
+  <script>
+    const countryShape = {{ country_geojson | tojson }};
+    const correctShapes = {{ correct_shapes | tojson }};
+    const wrongShapes = {{ wrong_shapes | tojson }};
   </script>
 </body>
 
