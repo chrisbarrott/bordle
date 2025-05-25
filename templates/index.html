@@ -42,16 +42,22 @@
     </div>
     {% endif %}
 
+    <!-- Game Over Message -->
+    {% if attempts_left == 0 %}
+      {% include 'game_over_message.html' %}
+    {% endif %}
+
     <!-- Guess Form -->
-    <form action="/submit" method="post" class="flex flex-col gap-4">
+    {% if attempts_left > 0 %}
+    <form action="/submit" method="post" class="flex flex-col gap-4 mt-4">
       <select id="guess_dropdown" name="guess" class="p-2 border rounded">
         {% for option in border_options %}
         <option value="{{ option }}">{{ option }}</option>
         {% endfor %}
       </select>
-
       <button type="submit" class="bg-green-600 text-white py-2 rounded hover:bg-green-700">Submit Guess</button>
     </form>
+    {% endif %}
 
     <div class="text-sm text-gray-700 mt-4 text-center">
       {{ attempts_left }} guesses remaining
