@@ -1,38 +1,57 @@
 <!-- game_over_modal.html -->
-<div id="gameOverModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
-    <h2 class="text-2xl font-bold text-red-600 text-center mb-4">Out of guesses!</h2>
-    <p class="text-center text-lg mb-2">The bordering countries of <strong>{{ country_name }}</strong> were:</p>
-    <div class="text-center text-gray-700 mb-4">
-      {{ all_correct | join(", ") }}
+<div id="gameOverMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
+        <h2 class="text-2xl font-bold text-red-600 text-center mb-4">Out of guesses!</h2>
+        <p class="text-center text-lg mb-2">The bordering countries of <strong>{{ country_name }}</strong> were:</p>
+        <div class="text-center text-gray-700 mb-4">
+            {{ all_correct | join(", ") }}
+        </div>
+        <div id="finalMap" class="w-full h-80 mb-4"></div>
+        <p class="text-center text-gray-600">Try again tomorrow!</p>
     </div>
-    <div id="finalMap" class="w-full h-80 mb-4"></div>
-    <p class="text-center text-gray-600">Try again tomorrow!</p>
-  </div>
 </div>
 
-<script>
-  const finalSpec = {
+<!-- Custom Map Rendering Logic -->
+<script src="{{ url_for('static', filename='map_render.js') }}"></script>
+
+<!-- Scripts -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+<script type="text/javascript">
+  const spec = {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "width": "container",
+    "width": 400,
     "height": 300,
-    "projection": { "type": "equalEarth" },
+    "projection": { "type": "mercator" },
     "layer": [
       {
         "data": {
           "values": {{ country_geojson | tojson }}
         },
-        "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
+        "mark": {
+          "type": "geoshape",
+          "fill": "black",
+          "stroke": "white"
+        }
       },
-      {% for shape in final_shapes %}
+      {% for shape in correct_shapes %}
       {
         "data": {
           "values": {{ shape | tojson }}
         },
-        "mark": { "type": "geoshape", "fill": "green", "stroke": "white" }
+        "mark": {
+          "type": "geoshape",
+          "fill": "green",
+          "stroke": "white"
+        }
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
   };
-  vegaEmbed('#finalMap', finalSpec, { actions: false });
+
+  vegaEmbed('#map', spec, { actions: false }).catch(console.error);
 </script>

@@ -43,7 +43,7 @@ def border_data(country):
 
 @app.route("/reset")
 def reset_session():
-    reset_game(session)
+    session.clear(0)
     return redirect(url_for("index"))
 
 

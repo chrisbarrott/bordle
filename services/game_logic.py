@@ -97,23 +97,41 @@ def allowed_attempts_scaling(n_borders):
 
 
 def get_game_state(session):
+    # Return the session data
     country_name = session.get("country_name")
     correct_guesses = session.get("correct_guesses", [])
     wrong_guesses = session.get("wrong_guesses", [])
     remaining_guesses = session.get("remaining_guesses", 0)
-    available_options = get_border_options(session)
 
+    # Get various country data based on the current session
+    available_options = get_border_options(session)
     country_geojson = get_country_shape(country_name)
     correct_shapes = get_shapes(correct_guesses)
     wrong_shapes = get_shapes(wrong_guesses)
     border_names = border_map.get(country_name, [])
 
+    # Handle if the game is over
     game_over = remaining_guesses <= 0
     final_shapes = []
     all_correct = border_names
 
+    # Return message for when game is over
     if game_over:
+        all_correct_answers = border_map.get(country_name, [])
+        correct_shapes = [
+            f
+            for f in geojson_data["features"]
+            if f["properties"]["name"] in all_correct_answers
+        ]
+
+        # Return the shapes for game over message
         final_shapes = get_shapes(border_names)
+    else:
+        correct_shapes = [
+            f
+            for f in geojson_data["features"]
+            if f["properties"]["name"] in session["correct_guesses"]
+        ]
 
     return {
         "country_name": country_name,
