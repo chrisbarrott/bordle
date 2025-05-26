@@ -1,7 +1,6 @@
 import json
 import math
 import random
-from flask import session
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -12,7 +11,7 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
     geojson_data = json.load(f)
 
 
-def reset_game():
+def reset_game(session):
     session.clear()
 
 
@@ -21,9 +20,7 @@ def initialize_game(session):
     session["remaining_guesses"] = 5
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
-    session["available_options"] = sorted(
-        {name for borders in border_map.values() for name in borders}
-    )
+    session["available_options"] = sorted(list(set(sum(border_map.values(), []))))
 
 
 def normalize(name):
@@ -46,21 +43,26 @@ def get_shapes(names):
 
 
 def process_guess(guess, session):
-    guess = guess.strip()
+    # Always sort before rendering
+    dropdown_options = sorted(session["available_options"])
 
-    if guess in session.get("available_options", []):
+    # Remove guess from available options and sort
+    if guess in dropdown_options:
         session["available_options"].remove(guess)
+        session["available_options"] = sorted(session["available_options"])
 
-    country_name = session.get("country_name")
-    correct_borders = border_map.get(country_name, [])
-
-    if guess in correct_borders:
+    # Check if guess is correct or not
+    country_name = session["country_name"]
+    if guess in border_map.get(country_name, []):
         if guess not in session["correct_guesses"]:
             session["correct_guesses"].append(guess)
     else:
         if guess not in session["wrong_guesses"]:
             session["wrong_guesses"].append(guess)
             session["remaining_guesses"] -= 1
+
+    print("Correct guesses:", session["correct_guesses"])
+    print("Wrong guesses:", session["wrong_guesses"])
 
 
 def get_border_options(session):
@@ -97,41 +99,23 @@ def allowed_attempts_scaling(n_borders):
 
 
 def get_game_state(session):
-    # Return the session data
     country_name = session.get("country_name")
     correct_guesses = session.get("correct_guesses", [])
     wrong_guesses = session.get("wrong_guesses", [])
     remaining_guesses = session.get("remaining_guesses", 0)
 
-    # Get various country data based on the current session
     available_options = get_border_options(session)
     country_geojson = get_country_shape(country_name)
-    correct_shapes = get_shapes(correct_guesses)
-    wrong_shapes = get_shapes(wrong_guesses)
     border_names = border_map.get(country_name, [])
 
-    # Handle if the game is over
-    game_over = remaining_guesses <= 0
-    final_shapes = []
-    all_correct = border_names
+    # Map shapes based on current guesses
+    correct_shapes = get_shapes(correct_guesses)
+    wrong_shapes = get_shapes(wrong_guesses)
 
-    # Return message for when game is over
-    if game_over:
-        all_correct_answers = border_map.get(country_name, [])
-        correct_shapes = [
-            f
-            for f in geojson_data["features"]
-            if f["properties"]["name"] in all_correct_answers
-        ]
+    game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
 
-        # Return the shapes for game over message
-        final_shapes = get_shapes(border_names)
-    else:
-        correct_shapes = [
-            f
-            for f in geojson_data["features"]
-            if f["properties"]["name"] in session["correct_guesses"]
-        ]
+    # If game is over, show all correct answers in the final map
+    final_shapes = get_shapes(border_names) if game_over else []
 
     return {
         "country_name": country_name,
@@ -141,8 +125,10 @@ def get_game_state(session):
         "wrong_shapes": wrong_shapes,
         "border_options": available_options,
         "attempts_left": remaining_guesses,
+        "correct_guesses": correct_guesses,
         "wrong_guesses": wrong_guesses,
         "game_over": game_over,
         "final_shapes": final_shapes,
-        "all_correct": all_correct,
+        "all_correct": border_names,
+        "correct_count": len(correct_guesses),
     }

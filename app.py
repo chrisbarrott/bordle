@@ -27,10 +27,12 @@ def index():
 
 @app.route("/submit", methods=["POST"])
 def submit():
+    # Handle the guess
     guess = request.form.get("guess", "").strip()
     if "available_options" not in session:
         return redirect(url_for("index"))
 
+    # Use game logic to process the guess
     process_guess(guess, session)
     return redirect(url_for("index"))
 
@@ -43,7 +45,7 @@ def border_data(country):
 
 @app.route("/reset")
 def reset_session():
-    session.clear(0)
+    reset_game(session)
     return redirect(url_for("index"))
 
 

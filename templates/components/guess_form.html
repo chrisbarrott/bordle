@@ -1,0 +1,29 @@
+<form action="/submit" method="post" class="flex flex-col gap-4 mt-4">
+  <select id="guess_dropdown" name="guess" class="p-2 border rounded">
+    {% for option in border_options %}
+    <option value="{{ option }}">{{ option }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="bg-green-600 text-white py-2 rounded hover:bg-green-700">Submit Guess</button>
+</form>
+
+<!-- Tom Select CSS -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+
+<!-- Tom Select JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<!-- Safe Tom Select Initialization -->
+<script>
+  const dropdown = document.getElementById("guess_dropdown");
+  if (dropdown) {
+    new TomSelect(dropdown, {
+      create: false,
+      sortField: {
+        field: "text",
+        direction: "asc"
+      },
+      placeholder: "Type to filter countries..."
+    });
+  }
+</script>
