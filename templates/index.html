@@ -6,12 +6,17 @@
 </header>
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
-  <h2 class="text-xl font-semibold text-center mb-4">Guess all the borders of today's country</h2>
+  <h2 class="text-xl font-semibold text-center mb-4">
+    {% if hard_mode %}
+      Guess all the borders of *****
+    {% else %}
+      Guess all the borders of {{ country_name }}
+    {% endif %}
+  </h2>
 
   {% include 'components/map.html' %}
 
   <div class="text-center mb-4">
-    <h3 class="text-lg font-medium">{{ country_name }}</h3>
     <p class="text-sm text-gray-600">{{ border_count }} border{{ 's' if border_count != 1 else '' }}</p>
   </div>
 

@@ -103,6 +103,7 @@ def get_game_state(session):
     correct_guesses = session.get("correct_guesses", [])
     wrong_guesses = session.get("wrong_guesses", [])
     remaining_guesses = session.get("remaining_guesses", 0)
+    hard_mode = session.get("hard_mode", False)
 
     available_options = get_border_options(session)
     country_geojson = get_country_shape(country_name)
@@ -131,4 +132,5 @@ def get_game_state(session):
         "final_shapes": final_shapes,
         "all_correct": border_names,
         "correct_count": len(correct_guesses),
+        "hard_mode": hard_mode,
     }
