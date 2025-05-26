@@ -2,8 +2,16 @@
 
 {% block content %}
 <header class="mb-8">
-  <img src="{{ url_for('static', filename='bordle_logo.png') }}" alt="BORDLE Logo" class="h-20 mx-auto">
+  <img src="{{ url_for('static', filename='images/bordle_logo.png') }}" alt="BORDLE Logo" class="h-20 mx-auto">
 </header>
+
+<div style="position: absolute; top: 10px; right: 20px;">
+  <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
+       style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
+</div>
+
+{% include 'components/game_stats_modal.html' %}
+
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
   <h2 class="text-xl font-semibold text-center mb-4">
@@ -19,6 +27,12 @@
   <div class="text-center mb-4">
     <p class="text-sm text-gray-600">{{ border_count }} border{{ 's' if border_count != 1 else '' }}</p>
   </div>
+
+  {% if correct_guesses %}
+  <div class="mt-4 text-green-600 text-center">
+    <strong>Correct guesses:</strong> {{ correct_guesses | join(", ") }}
+  </div>
+  {% endif %}
 
   {% if wrong_guesses %}
   <div class="mt-4 text-red-600 text-center">
@@ -45,10 +59,62 @@
 {% endblock %}
 
 {% block scripts %}
+
 <script>
+  const hardMode = {{ 'true' if hard_mode else 'false' }};
   const countryShape = {{ country_geojson | tojson }};
   const correctShapes = {{ correct_shapes | tojson }};
   const wrongShapes = {{ wrong_shapes | tojson }};
 </script>
 <script src="{{ url_for('static', filename='map_render.js') }}"></script>
+<script>
+  function toggleStats() {
+    const modal = document.getElementById("gameStatsModal");
+    modal.classList.toggle("hidden");
+  }
+</script>
+<script>
+  const defaultState = {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    hardMode: false,
+    currentGame: {
+      country: null,
+      guesses: [],
+      wrong: [],
+      remainingGuesses: 5,
+    }
+  };
+
+  function saveGameState(state) {
+    localStorage.setItem("bordleState", JSON.stringify(state));
+  }
+
+  function loadGameState() {
+    const saved = localStorage.getItem("bordleState");
+    return saved ? JSON.parse(saved) : defaultState;
+  }
+
+  function resetGameState() {
+    const state = loadGameState();
+    state.currentGame = defaultState.currentGame;
+    saveGameState(state);
+  }
+
+  function updateStats(won) {
+    const state = loadGameState();
+    state.gamesPlayed++;
+    if (won) state.gamesWon++;
+    saveGameState(state);
+  }
+
+  function toggleHardMode(value) {
+    const state = loadGameState();
+    state.hardMode = value;
+    saveGameState(state);
+  }
+
+  const currentState = loadGameState();
+</script>
+
 {% endblock %}

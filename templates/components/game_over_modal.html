@@ -25,6 +25,30 @@
       });
     });
 
+    if (!hardMode) {
+  correctShapes.forEach(shape => {
+    const label = L.tooltip({
+      permanent: true,
+      direction: 'center',
+      className: 'country-label'
+    })
+      .setContent(shape.properties.name)
+      .setLatLng(L.geoJSON(shape).getBounds().getCenter());
+    map.addLayer(label);
+  });
+
+  wrongShapes.forEach(shape => {
+    const label = L.tooltip({
+      permanent: true,
+      direction: 'center',
+      className: 'country-label wrong-label'
+    })
+      .setContent(shape.properties.name)
+      .setLatLng(L.geoJSON(shape).getBounds().getCenter());
+    map.addLayer(label);
+  });
+}
+
     const spec = {
       "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
       "width": "container",

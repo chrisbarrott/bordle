@@ -15,6 +15,8 @@ from services.game_logic import (
 )
 import json
 
+from services.game_stats import get_stats
+
 app = Flask(__name__)
 app.secret_key = "supersecret"  # Set securely in production
 
@@ -33,9 +35,13 @@ def landing():
         reset_game(session)  # Optional: ensure clean start if not present
 
     # Determine if we are running in hard mode
-    hard_mode = session.get("hard_mode", False)
-    return render_template("landing.html", hard_mode=hard_mode)
+    # hard_mode = session.get("hard_mode", False)
 
+    # Add the stats props
+    stats = get_stats(session)
+    game_state = get_game_state(session)
+
+    return render_template("landing.html", **game_state, stats=stats)
 
 # Handle mode toggle and start game
 @app.route("/set_mode_and_play", methods=["POST"])
@@ -62,8 +68,14 @@ def game():
     # First time or GET
     if "country_name" not in session:
         initialize_game(session)
+
+    # Set the game session
     game_state = get_game_state(session)
-    return render_template("index.html", **game_state)
+
+    # Add the stats props
+    stats = get_stats(session)
+
+    return render_template("index.html", **game_state, stats=stats)
 
 
 @app.route("/submit", methods=["POST"])

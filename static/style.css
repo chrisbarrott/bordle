@@ -1,0 +1,31 @@
+.country-label {
+  background: none;
+  border: none;
+  color: green;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px white;
+  pointer-events: none;
+}
+
+.wrong-label {
+  color: red;
+}
+
+.modal {
+  position: fixed;
+  top: 10%;
+  right: 10%;
+  background: white;
+  border: 2px solid black;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 0 10px gray;
+}
+
+.modal-content .close {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  cursor: pointer;
+  font-size: 20px;
+}

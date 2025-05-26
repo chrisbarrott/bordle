@@ -20,7 +20,10 @@ def initialize_game(session):
     session["remaining_guesses"] = 5
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
-    session["available_options"] = sorted(list(set(sum(border_map.values(), []))))
+
+    # set all the dropdown options
+    all_options = {name for borders in border_map.values() for name in borders}
+    session["available_options"] = sorted(all_options)
 
 
 def normalize(name):

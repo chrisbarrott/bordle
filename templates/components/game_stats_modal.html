@@ -1,0 +1,21 @@
+<div id="gameStatsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg relative w-96">
+    <button onclick="toggleStats()" class="absolute top-2 right-3 text-gray-500 text-xl">&times;</button>
+    <h2 class="text-lg font-bold mb-4 text-center">Game Stats</h2>
+
+    <ul class="text-gray-800 space-y-2">
+      <li><strong>Games Played:</strong> {{ stats.games_played }}</li>
+      <li><strong>Games Won:</strong> {{ stats.games_won }}</li>
+      <li><strong>Win %:</strong> {{ stats.win_percentage }}%</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const stats = loadGameState();
+  document.getElementById('gamesPlayed').innerText = stats.gamesPlayed;
+  document.getElementById('gamesWon').innerText = stats.gamesWon;
+  document.getElementById('winPercentage').innerText = stats.gamesPlayed
+    ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
+    : 0;
+</script>

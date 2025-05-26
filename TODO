@@ -1,0 +1,10 @@
+Add correct answers from the session on /game as a list like the failed ones
+Change the Hard mode to a toggle switch
+Add daily stats  # ✅ Added feature but numbers not working - will sort with cookies
+Investigate interactive map
+Set daily country functionality
+Check data integrity
+Add sea dataset
+Add names to countries when the final maps populate
+Add world view map on failed view
+Ensure drop down is full list of countries
