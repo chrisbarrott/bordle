@@ -25,7 +25,9 @@
   {% include 'components/map.html' %}
 
   <div class="text-center mb-4">
-    <p class="text-sm text-gray-600">{{ border_count }} border{{ 's' if border_count != 1 else '' }}</p>
+    <p class="text-center text-gray-700">
+      Borders Remaining: <strong>{{ borders_remaining }}</strong> of <strong>{{ border_count }}</strong>
+    </p>
   </div>
 
   {% if correct_guesses %}

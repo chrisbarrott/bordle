@@ -3,8 +3,8 @@ import math
 import random
 
 from services.game_get_data import (
-    get_border_options, 
-    get_country_shape, 
+    get_border_options,
+    get_country_shape,
     get_shapes
 )
 
@@ -25,15 +25,16 @@ def initialize_game(session):
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
 
-    # set all the dropdown options
-    # all_options = {name for borders in border_map.values() for name in borders}
-    # session["available_options"] = sorted(all_options)
-
+    # get all dropdowns from border_map keys
     all_options = set(border_map.keys())
     for borders in border_map.values():
         all_options.update(borders)
     session["available_options"] = sorted(all_options)
-    print("Countries: ", all_options)
+
+    correct_borders = border_map[session["country_name"]]
+    session["border_count"] = len(correct_borders)  # Total borders
+    session["borders_remaining"] = len(correct_borders)  # Will decrement as user guesses
+    print(session["border_count"])
 
 
 # Game reset (hidden)
@@ -56,9 +57,11 @@ def process_guess(guess, session):
 
     # Check if guess is correct or not
     country_name = session["country_name"]
+
     if guess in border_map.get(country_name, []):
         if guess not in session["correct_guesses"]:
             session["correct_guesses"].append(guess)
+            session["borders_remaining"] -= 1  # Decrease borders remaining
     else:
         if guess not in session["wrong_guesses"]:
             session["wrong_guesses"].append(guess)
@@ -93,15 +96,18 @@ def allowed_attempts_scaling(n_borders):
 
 
 def get_game_state(session):
+    # get the country name
     country_name = session.get("country_name")
-    correct_guesses = session.get("correct_guesses", [])
-    wrong_guesses = session.get("wrong_guesses", [])
-    remaining_guesses = session.get("remaining_guesses", 0)
-    hard_mode = session.get("hard_mode", False)
 
     available_options = get_border_options(session)
-    country_geojson = get_country_shape(country_name)
     border_names = border_map.get(country_name, [])
+    borders_remaining = session.get("borders_remaining", 0)
+    border_count = session.get("border_count", 0)
+    correct_guesses = session.get("correct_guesses", [])
+    country_geojson = get_country_shape(country_name)
+    hard_mode = session.get("hard_mode", False)
+    remaining_guesses = session.get("remaining_guesses", 0)
+    wrong_guesses = session.get("wrong_guesses", [])
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -113,18 +119,19 @@ def get_game_state(session):
     final_shapes = get_shapes(border_names) if game_over else []
 
     return {
-        "country_name": country_name,
-        "border_count": len(border_names),
-        "country_geojson": country_geojson,
-        "correct_shapes": correct_shapes,
-        "wrong_shapes": wrong_shapes,
-        "border_options": available_options,
-        "attempts_left": remaining_guesses,
-        "correct_guesses": correct_guesses,
-        "wrong_guesses": wrong_guesses,
-        "game_over": game_over,
-        "final_shapes": final_shapes,
         "all_correct": border_names,
+        "attempts_left": remaining_guesses,
+        "border_count": border_count,
+        "border_options": available_options,
+        "borders_remaining": borders_remaining,
         "correct_count": len(correct_guesses),
+        "correct_guesses": correct_guesses,
+        "correct_shapes": correct_shapes,
+        "country_geojson": country_geojson,
+        "country_name": country_name,
+        "final_shapes": final_shapes,
+        "game_over": game_over,
         "hard_mode": hard_mode,
+        "wrong_guesses": wrong_guesses,
+        "wrong_shapes": wrong_shapes,
     }

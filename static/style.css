@@ -1,10 +1,11 @@
 .country-label {
-  background: none;
-  border: none;
-  color: green;
+  font-size: 12px;
   font-weight: bold;
-  text-shadow: 1px 1px 2px white;
-  pointer-events: none;
+  color: black;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
 }
 
 .wrong-label {

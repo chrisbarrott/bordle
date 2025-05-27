@@ -10,53 +10,101 @@
   </div>
 </div>
 
-<script>
+<script type="text/javascript">
   window.onload = function () {
-    const layers = [{
-      "data": { "values": {{ country_geojson | tojson }} },
-      "mark": { "type": "geoshape", "fill": "black", "stroke": "white" }
-    }];
+    const country = {{ country_geojson | tojson }};
+    const corrects = {{ correct_shapes | tojson }};
+    const wrongs = {{ wrong_shapes | tojson }};
 
-    const finalShapes = {{ final_shapes | tojson }};
-    finalShapes.forEach(shape => {
-      layers.push({
-        "data": { "values": shape },
-        "mark": { "type": "geoshape", "fill": "green", "stroke": "white" }
-      });
+    const layers = [];
+
+    // Main country
+    layers.push({
+      data: { values: country },
+      mark: { type: "geoshape", fill: "black", stroke: "white" }
     });
 
-    if (!hardMode) {
-  correctShapes.forEach(shape => {
-    const label = L.tooltip({
-      permanent: true,
-      direction: 'center',
-      className: 'country-label'
-    })
-      .setContent(shape.properties.name)
-      .setLatLng(L.geoJSON(shape).getBounds().getCenter());
-    map.addLayer(label);
-  });
+    // Main country label
+    layers.push({
+      data: { values: country },
+      transform: [{ calculate: "datum.properties.name", as: "label" }],
+      mark: {
+        type: "text",
+        fontSize: 12,
+        dy: -5,
+        fontWeight: "bold"
+      },
+      encoding: {
+        longitude: { field: "properties.centroid_lon", type: "quantitative" },
+        latitude: { field: "properties.centroid_lat", type: "quantitative" },
+        text: { field: "label", type: "nominal" },
+        color: { value: "black" }
+      }
+    });
 
-  wrongShapes.forEach(shape => {
-    const label = L.tooltip({
-      permanent: true,
-      direction: 'center',
-      className: 'country-label wrong-label'
-    })
-      .setContent(shape.properties.name)
-      .setLatLng(L.geoJSON(shape).getBounds().getCenter());
-    map.addLayer(label);
-  });
-}
+    // Each correct border country + label
+    for (let shape of corrects) {
+      layers.push({
+        data: { values: shape },
+        mark: { type: "geoshape", fill: "green", stroke: "white" }
+      });
 
-    const spec = {
-      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-      "width": "container",
-      "height": 300,
-      "projection": { "type": "mercator" },
-      "layer": layers
+      layers.push({
+        data: { values: shape },
+        transform: [{ calculate: "datum.properties.name", as: "label" }],
+        mark: {
+          type: "text",
+          fontSize: 12,
+          background: "white", 
+          dy: -5,
+          fontWeight: "bold",
+          padding: 2
+        },
+        encoding: {
+          longitude: { field: "properties.centroid_lon", type: "quantitative" },
+          latitude: { field: "properties.centroid_lat", type: "quantitative" },
+          text: { field: "label", type: "nominal" },
+          color: { value: "black" }
+        }
+      });
+    }
+
+    
+    // Each correct border country + label
+    for (let shape of wrongs) {
+      layers.push({
+        data: { values: shape },
+        mark: { type: "geoshape", fill: "red", stroke: "white" }
+      });
+
+      layers.push({
+        data: { values: shape },
+        transform: [{ calculate: "datum.properties.name", as: "label" }],
+        mark: {
+          type: "text",
+          fontSize: 12,
+          background: "white", 
+          dy: -5,
+          fontWeight: "bold",
+          padding: 2
+        },
+        encoding: {
+          longitude: { field: "properties.centroid_lon", type: "quantitative" },
+          latitude: { field: "properties.centroid_lat", type: "quantitative" },
+          text: { field: "label", type: "nominal" },
+          color: { value: "black" }
+        }
+      });
+    }
+
+    const gameOverSpec = {
+      $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+      width: "container",
+      height: 300,
+      projection: { type: "mercator" },
+      layer: layers
     };
 
-    vegaEmbed('#finalMap', spec, { actions: false }).catch(console.error);
+    vegaEmbed('#victoryMap', gameOverSpec, { actions: false }).catch(console.error);
   };
 </script>
