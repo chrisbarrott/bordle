@@ -82,6 +82,11 @@ def game():
 def submit():
     # Handle the guess
     guess = request.form.get("guess", "").strip()
+
+    # handle empty submit
+    if guess == "":
+        return redirect(url_for("game"))
+
     if "available_options" not in session:
         return redirect(url_for("index.html"))
 
