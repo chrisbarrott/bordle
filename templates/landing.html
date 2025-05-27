@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Bordle</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
 
@@ -15,12 +16,15 @@
        alt="BORDLE Logo" class="w-64 mb-8">
 
   <!-- Hard Mode Toggle -->
+   
   <form action="{{ url_for('set_mode_and_play') }}" method="post" class="mb-6">
-    <label class="inline-flex items-center text-lg">
-      <input type="checkbox" name="hard_mode" class="form-checkbox h-5 w-5 text-green-600"
-             {% if hard_mode %}checked{% endif %}>
-      <span class="ml-3">Hard Mode (hide country name)</span>
+    <div class="toggle-container">
+    <label class="toggle-switch">
+        <input type="checkbox" id="hard_mode" name="hard_mode" {% if hard_mode %}checked{% endif %}>
+        <span class="slider"></span>
     </label>
+    <span class="toggle-label">Hard Mode</span>
+    </div>
     <div class="mt-6 text-center">
       <button type="submit"
               class="bg-green-600 text-white px-6 py-3 rounded-lg text-xl hover:bg-green-700">

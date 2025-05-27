@@ -26,3 +26,17 @@
   {% block scripts %}{% endblock %}
 </body>
 </html>
+
+<style>
+  input:checked + .block {
+    background-color: #4ade80; /* green for ON */
+  }
+
+  input:checked + .block + .dot {
+    transform: translateX(100%);
+  }
+
+  .dot {
+    transition: transform 0.3s ease-in-out;
+  }
+</style>

@@ -1,5 +1,5 @@
 Add correct answers from the session on /game as a list like the failed ones
-Change the Hard mode to a toggle switch
+Change the Hard mode to a toggle switch  # ✅ Added feature
 Add daily stats  # ✅ Added feature but numbers not working - will sort with cookies
 Investigate interactive map
 Set daily country functionality
