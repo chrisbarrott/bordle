@@ -2,6 +2,12 @@ import json
 import math
 import random
 
+from services.game_get_data import (
+    get_border_options, 
+    get_country_shape, 
+    get_shapes
+)
+
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
@@ -9,12 +15,10 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 # Load GeoJSON shapes once
 with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
     geojson_data = json.load(f)
+# print("Shapes: ", geojson_data.keys())
 
 
-def reset_game(session):
-    session.clear()
-
-
+# Game init
 def initialize_game(session):
     session["country_name"] = random.choice(list(border_map.keys()))
     session["remaining_guesses"] = 5
@@ -22,27 +26,23 @@ def initialize_game(session):
     session["wrong_guesses"] = []
 
     # set all the dropdown options
-    all_options = {name for borders in border_map.values() for name in borders}
+    # all_options = {name for borders in border_map.values() for name in borders}
+    # session["available_options"] = sorted(all_options)
+
+    all_options = set(border_map.keys())
+    for borders in border_map.values():
+        all_options.update(borders)
     session["available_options"] = sorted(all_options)
+    print("Countries: ", all_options)
+
+
+# Game reset (hidden)
+def reset_game(session):
+    session.clear()
 
 
 def normalize(name):
     return name.lower().strip()
-
-
-def load_geojson():
-    return geojson_data
-
-
-def get_country_shape(name):
-    return next(
-        (f for f in geojson_data["features"] if f["properties"].get("name") == name),
-        None,
-    )
-
-
-def get_shapes(names):
-    return [f for f in geojson_data["features"] if f["properties"].get("name") in names]
 
 
 def process_guess(guess, session):
@@ -66,15 +66,6 @@ def process_guess(guess, session):
 
     print("Correct guesses:", session["correct_guesses"])
     print("Wrong guesses:", session["wrong_guesses"])
-
-
-def get_border_options(session):
-    guessed = set(session.get("correct_guesses", []) + session.get("wrong_guesses", []))
-    return [opt for opt in session.get("available_options", []) if opt not in guessed]
-
-
-def get_correct_answers(session):
-    return border_map.get(session.get("country_name"), [])
 
 
 def allowed_attempts_perc(n_borders):

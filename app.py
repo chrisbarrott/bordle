@@ -20,9 +20,9 @@ from services.game_stats import get_stats
 app = Flask(__name__)
 app.secret_key = "supersecret"  # Set securely in production
 
-with open("static/map_data/border_map.json") as f:
+with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
-
+# print(border_map.keys())
 
 # Landing page
 @app.route("/", methods=["GET"])
