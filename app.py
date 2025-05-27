@@ -11,6 +11,8 @@ from services.game_logic import (
     initialize_game,
     get_game_state,
     process_guess,
+    process_country_guess,
+    process_sea_guess,
     reset_game,
 )
 import json
@@ -78,15 +80,31 @@ def game():
     return render_template("index.html", **game_state, stats=stats)
 
 
+# @app.route("/submit", methods=["POST"])
+# def submit():
+#     # Handle the guess
+#     guess = request.form.get("guess", "").strip()
+#     if "available_options" not in session:
+#         return redirect(url_for("index.html"))
+
+#     # Use game logic to process the guess
+#     process_guess(guess, session)
+#     return redirect(url_for("game"))
+
+
 @app.route("/submit", methods=["POST"])
 def submit():
-    # Handle the guess
-    guess = request.form.get("guess", "").strip()
-    if "available_options" not in session:
-        return redirect(url_for("index.html"))
+    country_guess = request.form.get("country_guess")
+    sea_guess = request.form.get("sea_guess")
 
-    # Use game logic to process the guess
-    process_guess(guess, session)
+    # if "available_options" not in session:
+    #     return redirect(url_for("index.html"))
+
+    if country_guess:
+        process_country_guess(country_guess, session)
+    if sea_guess:
+        process_sea_guess(sea_guess, session)
+
     return redirect(url_for("game"))
 
 
