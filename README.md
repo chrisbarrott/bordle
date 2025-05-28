@@ -34,14 +34,14 @@
 
 1. **Clone the repository**
 
-```bash
+bash
 git clone https://github.com/chrisbarrott/bordle.git
 cd bordle
 Install dependencies
 
 We recommend using a virtual environment:
 
-bash
+```bash
 Copy
 Edit
 python -m venv venv
@@ -62,6 +62,8 @@ Border data is computed from spatial overlaps using GeoPandas.
 
 Only UN-recognized countries are included (195 total).
 
+---
+
 📁 Project Structure
 php
 Copy
@@ -80,8 +82,10 @@ bordle/
 ├── data/
 │   └── countries_shapes.json   # GeoJSON country shapes
 ├── game_logic.py               # Core game state and processing
-└── generate_border_map.py      # Script to generate `border_map.json`
-🧠 How It Works
+└── generate_border_map.py      # Script to generate `border_map.json`'
+
+---
+ How It Works
 A country is randomly selected each day.
 
 Players must guess bordering countries using a dropdown.
@@ -92,6 +96,7 @@ Map updates show correct (green) and incorrect (red) guesses.
 
 A Leaflet map is shown at game end with interactivity and labels.
 
+---
 💡 Customization
 You can:
 
@@ -103,9 +108,7 @@ Introduce sea/river border challenges (experimental).
 
 Track streaks and leaderboards.
 
-📝 License
-MIT License
-
+---
 🙌 Acknowledgements
 Natural Earth for world map data.
 
@@ -114,3 +117,5 @@ GeoPandas and Shapely for spatial analysis.
 Leaflet.js for interactive mapping.
 
 Inspired by Wordle.
+
+
