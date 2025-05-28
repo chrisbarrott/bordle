@@ -49,17 +49,17 @@
   {% if correct_count == border_count %}
     {% include 'components/game_won_modal.html' %}
   {% endif %}
+  
+  {% if attempts_left == 0 %}
+    {% include 'components/game_over_modal.html' %}
+  {% endif %}
 
   <div class="text-sm text-gray-700 mt-4 text-center">
     {{ attempts_left }} guesses remaining
   </div>
 </div>
 
-{% if attempts_left == 0 %}
-  {% include 'components/game_over_modal.html' %}
-{% endif %}
 {% endblock %}
-
 {% block scripts %}
 
 <script>

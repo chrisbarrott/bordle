@@ -1,110 +1,52 @@
-<div id="gameOverMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+<!-- components/game_failed_modal.html -->
+<div id="gameFailedMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
-    <h2 class="text-2xl font-bold text-red-600 text-center mb-4">Out of guesses!</h2>
-    <p class="text-center text-lg mb-2">The bordering countries of <strong>{{ country_name }}</strong> were:</p>
+    <h2 class="text-2xl font-bold text-red-600 text-center mb-4">Game Over!</h2>
+    <p class="text-center text-lg mb-2">The correct bordering countries of <strong>{{ country_name }}</strong> were:</p>
     <div class="text-center text-gray-700 mb-4">
       <strong>{{ all_correct | join(", ") }}</strong>
     </div>
-    <div id="finalMap" class="w-full h-80 mb-4 bg-gray-200"></div>
-    <p class="text-center text-gray-600">Try again tomorrow!</p>
+    <div id="failureMap" class="w-full h-80 mb-4 bg-gray-200 rounded"></div>
+    <p class="text-center text-gray-600">Try again tomorrow for a new challenge!</p>
   </div>
 </div>
 
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script type="text/javascript">
   window.onload = function () {
-    const country = {{ country_geojson | tojson }};
-    const corrects = {{ correct_shapes | tojson }};
-    const wrongs = {{ wrong_shapes | tojson }};
+    const map = L.map('failureMap');
 
-    const layers = [];
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 6,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-    // Main country
-    layers.push({
-      data: { values: country },
-      mark: { type: "geoshape", fill: "black", stroke: "white" }
+    // GeoJSON data from Flask
+    const mainCountry = {{ country_geojson | tojson }};
+    const correctShapes = {{ correct_shapes | tojson }};
+    const wrongShapes = {{ wrong_shapes | tojson }};
+
+    // Style definitions
+    const mainStyle = { color: "black", weight: 2, fillOpacity: 0.7 };
+    const correctStyle = { color: "green", weight: 1, fillOpacity: 0.5 };
+    const wrongStyle = { color: "red", weight: 1, fillOpacity: 0.5 };
+
+    // Add main country and fit map to it
+    const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
+    map.fitBounds(mainLayer.getBounds());
+
+    // Add correct guesses
+    correctShapes.forEach(shape => {
+      L.geoJSON(shape, { style: correctStyle }).addTo(map);
     });
 
-    // Main country label
-    layers.push({
-      data: { values: country },
-      transform: [{ calculate: "datum.properties.name", as: "label" }],
-      mark: {
-        type: "text",
-        fontSize: 12,
-        dy: -5,
-        fontWeight: "bold"
-      },
-      encoding: {
-        longitude: { field: "properties.centroid_lon", type: "quantitative" },
-        latitude: { field: "properties.centroid_lat", type: "quantitative" },
-        text: { field: "label", type: "nominal" },
-        color: { value: "black" }
-      }
+    // Add wrong guesses
+    wrongShapes.forEach(shape => {
+      L.geoJSON(shape, { style: wrongStyle }).addTo(map);
     });
-
-    // Each correct border country + label
-    for (let shape of corrects) {
-      layers.push({
-        data: { values: shape },
-        mark: { type: "geoshape", fill: "green", stroke: "white" }
-      });
-
-      layers.push({
-        data: { values: shape },
-        transform: [{ calculate: "datum.properties.name", as: "label" }],
-        mark: {
-          type: "text",
-          fontSize: 12,
-          background: "white", 
-          dy: -5,
-          fontWeight: "bold",
-          padding: 2
-        },
-        encoding: {
-          longitude: { field: "properties.centroid_lon", type: "quantitative" },
-          latitude: { field: "properties.centroid_lat", type: "quantitative" },
-          text: { field: "label", type: "nominal" },
-          color: { value: "black" }
-        }
-      });
-    }
-
-    
-    // Each correct border country + label
-    for (let shape of wrongs) {
-      layers.push({
-        data: { values: shape },
-        mark: { type: "geoshape", fill: "red", stroke: "white" }
-      });
-
-      layers.push({
-        data: { values: shape },
-        transform: [{ calculate: "datum.properties.name", as: "label" }],
-        mark: {
-          type: "text",
-          fontSize: 12,
-          background: "white", 
-          dy: -5,
-          fontWeight: "bold",
-          padding: 2
-        },
-        encoding: {
-          longitude: { field: "properties.centroid_lon", type: "quantitative" },
-          latitude: { field: "properties.centroid_lat", type: "quantitative" },
-          text: { field: "label", type: "nominal" },
-          color: { value: "black" }
-        }
-      });
-    }
-
-    const gameOverSpec = {
-      $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-      width: "container",
-      height: 300,
-      projection: { type: "mercator" },
-      layer: layers
-    };
-
-    vegaEmbed('#victoryMap', gameOverSpec, { actions: false }).catch(console.error);
   };
 </script>

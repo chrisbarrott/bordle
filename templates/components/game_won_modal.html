@@ -11,101 +11,43 @@
   </div>
 </div>
 
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
+
 <script type="text/javascript">
   window.onload = function () {
-    const country = {{ country_geojson | tojson }};
-    const corrects = {{ correct_shapes | tojson }};
-    const wrongs = {{ wrong_shapes | tojson }};
+    const map = L.map('victoryMap');
 
-    const layers = [];
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 6,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-    // Main country
-    layers.push({
-      data: { values: country },
-      mark: { type: "geoshape", fill: "black", stroke: "white" }
+    // Load data
+    const mainCountry = {{ country_geojson | tojson }};
+    const correctShapes = {{ correct_shapes | tojson }};
+    const wrongShapes = {{ wrong_shapes | tojson }};
+
+    // Style functions
+    const mainStyle = { color: "black", weight: 2, fillOpacity: 0.7 };
+    const correctStyle = { color: "green", weight: 1, fillOpacity: 0.5 };
+    const wrongStyle = { color: "red", weight: 1, fillOpacity: 0.5 };
+
+    // Add and zoom to main country
+    const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
+    map.fitBounds(mainLayer.getBounds());
+
+    // Add correct and wrong shapes
+    correctShapes.forEach(shape => {
+      L.geoJSON(shape, { style: correctStyle }).addTo(map);
     });
 
-    // Main country label
-    layers.push({
-      data: { values: country },
-      transform: [{ calculate: "datum.properties.name", as: "label" }],
-      mark: {
-        type: "text",
-        fontSize: 12,
-        dy: -5,
-        fontWeight: "bold"
-      },
-      encoding: {
-        longitude: { field: "properties.centroid_lon", type: "quantitative" },
-        latitude: { field: "properties.centroid_lat", type: "quantitative" },
-        text: { field: "label", type: "nominal" },
-        color: { value: "black" }
-      }
+    wrongShapes.forEach(shape => {
+      L.geoJSON(shape, { style: wrongStyle }).addTo(map);
     });
-
-    // Each correct border country + label
-    for (let shape of corrects) {
-      layers.push({
-        data: { values: shape },
-        mark: { type: "geoshape", fill: "green", stroke: "white" }
-      });
-
-      layers.push({
-        data: { values: shape },
-        transform: [{ calculate: "datum.properties.name", as: "label" }],
-        mark: {
-          type: "text",
-          fontSize: 12,
-          background: "white", 
-          dy: -5,
-          fontWeight: "bold",
-          padding: 2
-        },
-        encoding: {
-          longitude: { field: "properties.centroid_lon", type: "quantitative" },
-          latitude: { field: "properties.centroid_lat", type: "quantitative" },
-          text: { field: "label", type: "nominal" },
-          color: { value: "black" }
-        }
-      });
-    }
-
-    
-    // Each correct border country + label
-    for (let shape of wrongs) {
-      layers.push({
-        data: { values: shape },
-        mark: { type: "geoshape", fill: "red", stroke: "white" }
-      });
-
-      layers.push({
-        data: { values: shape },
-        transform: [{ calculate: "datum.properties.name", as: "label" }],
-        mark: {
-          type: "text",
-          fontSize: 12,
-          background: "white", 
-          dy: -5,
-          fontWeight: "bold",
-          padding: 2
-        },
-        encoding: {
-          longitude: { field: "properties.centroid_lon", type: "quantitative" },
-          latitude: { field: "properties.centroid_lat", type: "quantitative" },
-          text: { field: "label", type: "nominal" },
-          color: { value: "black" }
-        }
-      });
-    }
-
-    const gameWonSpec = {
-      $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-      width: "container",
-      height: 300,
-      projection: { type: "mercator" },
-      layer: layers
-    };
-
-    vegaEmbed('#victoryMap', gameWonSpec, { actions: false }).catch(console.error);
   };
 </script>
