@@ -112,4 +112,8 @@ def static_files(filename):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Dev
+    # app.run(debug=True)
+
+    # Prod
+    app.run(host='0.0.0.0', port=10000)
