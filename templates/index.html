@@ -15,11 +15,15 @@
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
   <h2 class="text-xl font-semibold text-center mb-4">
-    {% if hard_mode %}
-      Guess all the borders of *****
-    {% else %}
+  {% if hard_mode %}
+    {% if guessed_main_country %}
       Guess all the borders of {{ country_name }}
+    {% else %}
+      Guess all the borders of *****
     {% endif %}
+  {% else %}
+    Guess all the borders of {{ country_name }}
+  {% endif %}
   </h2>
 
   {% include 'components/map.html' %}
@@ -29,6 +33,12 @@
       Borders Remaining: <strong>{{ borders_remaining }}</strong> of <strong>{{ border_count }}</strong>
     </p>
   </div>
+
+  {% if guessed_main_country %}
+  <div class="mt-4 text-green-600 text-center">
+    <strong>Correct country guess</strong>: {{ country_name }}
+  </div>
+  {% endif %}
 
   {% if correct_guesses %}
   <div class="mt-4 text-green-600 text-center">

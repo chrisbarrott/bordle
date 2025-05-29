@@ -200,7 +200,6 @@
     "Afghanistan",
     "Bhutan",
     "India",
-    "Kashmir",
     "Kazakhstan",
     "Kyrgyzstan",
     "Laos",
@@ -405,7 +404,6 @@
     "Bangladesh",
     "Bhutan",
     "China",
-    "Kashmir",
     "Myanmar",
     "Nepal",
     "Pakistan"
@@ -461,11 +459,6 @@
     "Israel",
     "Saudi Arabia",
     "Syria"
-  ],
-  "Kashmir": [
-    "China",
-    "India",
-    "Pakistan"
   ],
   "Kazakhstan": [
     "China",
@@ -678,8 +671,7 @@
     "Afghanistan",
     "China",
     "India",
-    "Iran",
-    "Kashmir"
+    "Iran"
   ],
   "Panama": [
     "Colombia",

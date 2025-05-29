@@ -31,10 +31,17 @@ def initialize_game(session):
         all_options.update(borders)
     session["available_options"] = sorted(all_options)
 
+    # Set hard_mode
+    hard_mode = session["hard_mode"]
+
+    # Remove the main country from options if not in hard mode
+    if not hard_mode:
+        if session["country_name"] in session["available_options"]:
+            session["available_options"].remove(session["country_name"])
+
     correct_borders = border_map[session["country_name"]]
     session["border_count"] = len(correct_borders)  # Total borders
     session["borders_remaining"] = len(correct_borders)  # Will decrement as user guesses
-    print(session["border_count"])
 
 
 # Game reset (hidden)
@@ -58,6 +65,17 @@ def process_guess(guess, session):
     # Check if guess is correct or not
     country_name = session["country_name"]
 
+    # Hard mode: if guessing the correct country
+    if session.get("hard_mode", True):
+        correct_country = normalize(session.get("country_name", ""))
+        if guess.lower() == correct_country.lower():
+            session["guessed_main_country"] = True
+
+            # Remove from available options
+            if session["country_name"] in session.get("available_options", []):
+                session["available_options"].remove(session["country_name"])
+            return
+
     if guess in border_map.get(country_name, []):
         if guess not in session["correct_guesses"]:
             session["correct_guesses"].append(guess)
@@ -66,9 +84,6 @@ def process_guess(guess, session):
         if guess not in session["wrong_guesses"]:
             session["wrong_guesses"].append(guess)
             session["remaining_guesses"] -= 1
-
-    print("Correct guesses:", session["correct_guesses"])
-    print("Wrong guesses:", session["wrong_guesses"])
 
 
 def allowed_attempts_perc(n_borders):
@@ -108,6 +123,7 @@ def get_game_state(session):
     hard_mode = session.get("hard_mode", False)
     remaining_guesses = session.get("remaining_guesses", 0)
     wrong_guesses = session.get("wrong_guesses", [])
+    guessed_main_country = session.get("guessed_main_country")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -131,6 +147,7 @@ def get_game_state(session):
         "country_name": country_name,
         "final_shapes": final_shapes,
         "game_over": game_over,
+        "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
         "wrong_guesses": wrong_guesses,
         "wrong_shapes": wrong_shapes,

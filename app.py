@@ -43,15 +43,16 @@ def landing():
 
     return render_template("landing.html", **game_state, stats=stats)
 
+
 # Handle mode toggle and start game
 @app.route("/set_mode_and_play", methods=["POST"])
 def set_mode_and_play():
+    # hard_mode checkbox is only present if checked
+    session["hard_mode"] = bool(request.form.get("hard_mode"))
+
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
         initialize_game(session)
-
-    # hard_mode checkbox is only present if checked
-    session["hard_mode"] = bool(request.form.get("hard_mode"))
 
     return redirect(url_for("game"))
 
