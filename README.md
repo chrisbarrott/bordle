@@ -74,7 +74,7 @@ bordle/
 │   ├── images/                 # Logo and static images
 │   ├── map_data/
 │   │   └── border_map.json     # Country border relationships
-│   └── styles/
+│   └── css/
 │       └── style.css           # Custom CSS (uses Tailwind base)
 ├── templates/
 │   ├── index.html              # Main game UI

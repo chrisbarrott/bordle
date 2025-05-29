@@ -4,6 +4,7 @@ from flask import (
     render_template,
     request,
     redirect,
+    send_from_directory,
     url_for,
     session
 )
@@ -23,6 +24,9 @@ app.secret_key = "supersecret"  # Set securely in production
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
 # print(border_map.keys())
+
+with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
+    iso_map = json.load(f)
 
 # Landing page
 @app.route("/", methods=["GET"])
@@ -76,7 +80,7 @@ def game():
     # Add the stats props
     stats = get_stats(session)
 
-    return render_template("index.html", **game_state, stats=stats)
+    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map)
 
 
 @app.route("/submit", methods=["POST"])
@@ -100,6 +104,11 @@ def submit():
 def reset_session():
     reset_game(session)
     return redirect(url_for("landing"))
+
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
 
 
 if __name__ == "__main__":

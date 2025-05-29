@@ -78,7 +78,7 @@
   const correctShapes = {{ correct_shapes | tojson }};
   const wrongShapes = {{ wrong_shapes | tojson }};
 </script>
-<script src="{{ url_for('static', filename='map_render.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
 <script>
   function toggleStats() {
     const modal = document.getElementById("gameStatsModal");
@@ -128,5 +128,6 @@
 
   const currentState = loadGameState();
 </script>
+
 
 {% endblock %}

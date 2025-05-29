@@ -8,6 +8,14 @@
     </div>
     <div id="victoryMap" class="w-full h-80 mb-4 bg-gray-200"></div>
     <p class="text-center text-gray-600">Come back tomorrow for a new challenge!</p>
+    <div class="mt-4 text-center">
+      <button onclick="shareResults()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        Share Results
+      </button>
+      <div id="shareOutputContainer" class="mt-4 hidden max-w-md mx-auto border border-gray-300 rounded-lg p-4 bg-white shadow">
+        <pre id="shareOutput" class="text-gray-800 text-sm whitespace-pre-wrap font-mono text-left"></pre>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -50,4 +58,57 @@
       L.geoJSON(shape, { style: wrongStyle }).addTo(map);
     });
   };
+</script>
+
+
+<script>
+  function countryToFlagEmoji(country) {
+    const isoUrl = "{{ url_for('static', filename='map_data/iso_country_codes.json') }}";
+    const isoMap = {{ iso_map | tojson }};
+    console.log("Country:", country);
+    const code = isoMap[country.trim()];
+    console.log("ISO MAP:", isoMap);
+    console.log("code:", code);
+
+    if (!code) return ""; // fallback: no flag
+
+    return code
+      .toUpperCase()
+      .split("")
+      .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+      .join("");
+  }
+
+  function shareResults() {
+    const country = "{{ country_name }}";
+    const correct = {{ correct_count }};
+    const total = {{ border_count }};
+    const hardMode = {{ 'true' if hard_mode else 'false' }};
+    const date = new Date().toLocaleDateString('en-GB');
+
+    const squares = [];
+    for (let i = 0; i < correct; i++) squares.push('🟩');
+    for (let i = 0; i < total - correct; i++) squares.push('🟥');
+
+    const flag = countryToFlagEmoji(country);
+    console.log("Flag:", flag);
+
+    const result = `Bordle 🌍 - ${date}
+    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
+    ${squares.join('')} (${correct}/${total})
+    https://bordle.world`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(result)
+      .then(() => {
+        // Show the formatted output
+        document.getElementById('shareOutput').textContent = result;
+        document.getElementById('shareOutputContainer').classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error("Failed to copy results:", err);
+        document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
+        document.getElementById('shareOutputContainer').classList.remove('hidden');
+      });
+  }
 </script>
