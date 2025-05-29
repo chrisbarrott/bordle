@@ -1,4 +1,3 @@
-*.geojson
 services/__pycache__/game_logic.cpython-311.pyc
 services/__pycache__/game_logic.cpython-311.pyc
 .gitignore
