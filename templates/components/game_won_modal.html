@@ -1,21 +1,48 @@
 <!-- components/game_won_modal.html -->
 <div id="gameWonMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
+
+    <!-- Stats Button in Top Right -->
+    <button onclick="showStats()" class="absolute top-4 right-4 bg-gray-300 text-gray-800 px-3 py-1 text-sm rounded hover:bg-gray-400">
+      📊 Stats
+    </button>
+
     <h2 class="text-2xl font-bold text-green-600 text-center mb-4">Well done!</h2>
-    <p class="text-center text-lg mb-2">You correctly guessed all of <strong>{{ country_name }}</strong>'s bordering countries:</p>
+    <p class="text-center text-lg mb-2">
+      You correctly guessed all of <strong>{{ country_name }}</strong>'s bordering countries:
+    </p>
+
     <div class="text-center text-gray-700 mb-4">
       <strong>{{ all_correct | join(", ") }}</strong>
     </div>
+
     <div id="victoryMap" class="w-full h-80 mb-4 bg-gray-200"></div>
+
     <p class="text-center text-gray-600">Come back tomorrow for a new challenge!</p>
+
+    <!-- Share Results Button -->
     <div class="mt-4 text-center">
       <button onclick="shareResults()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
         Share Results
       </button>
+
+      <!-- Share Results Output -->
       <div id="shareOutputContainer" class="mt-4 hidden max-w-md mx-auto border border-gray-300 rounded-lg p-4 bg-white shadow">
         <pre id="shareOutput" class="text-gray-800 text-sm whitespace-pre-wrap font-mono text-left"></pre>
       </div>
     </div>
+
+    <!-- 📊 Embedded Stats Panel -->
+    <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
+      <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
+      <ul class="text-sm text-gray-800 list-disc list-inside">
+        <li><strong>Total Games Played:</strong> <span id="statGamesPlayed">0</span></li>
+        <li><strong>Wins:</strong> <span id="statWins">0</span></li>
+        <li><strong>Current Streak:</strong> <span id="statStreak">0</span></li>
+        <li><strong>Average Borders Guessed:</strong> <span id="statAvgBorders">0</span></li>
+      </ul>
+    </div>
+
   </div>
 </div>
 
@@ -24,6 +51,20 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
+
+<script>
+  function showStats() {
+    const container = document.getElementById('statsContainer');
+    container.classList.toggle('hidden');
+
+    // Example: Replace with session or backend stats
+    document.getElementById('statGamesPlayed').innerText = localStorage.getItem('gamesPlayed') || '12';
+    document.getElementById('statWins').innerText = localStorage.getItem('gamesWon') || '8';
+    document.getElementById('statStreak').innerText = localStorage.getItem('currentStreak') || '3';
+    document.getElementById('statAvgBorders').innerText = localStorage.getItem('avgBorders') || '5.7';
+  }
+</script>
+
 
 <script type="text/javascript">
   window.onload = function () {
@@ -60,15 +101,11 @@
   };
 </script>
 
-
 <script>
   function countryToFlagEmoji(country) {
     const isoUrl = "{{ url_for('static', filename='map_data/iso_country_codes.json') }}";
     const isoMap = {{ iso_map | tojson }};
-    console.log("Country:", country);
     const code = isoMap[country.trim()];
-    console.log("ISO MAP:", isoMap);
-    console.log("code:", code);
 
     if (!code) return ""; // fallback: no flag
 
@@ -91,8 +128,6 @@
     for (let i = 0; i < total - correct; i++) squares.push('🟥');
 
     const flag = countryToFlagEmoji(country);
-    console.log("Flag:", flag);
-
     const result = `Bordle 🌍 - ${date}
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
     ${squares.join('')} (${correct}/${total})
