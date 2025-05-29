@@ -21,7 +21,6 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 # Game init
 def initialize_game(session):
     session["country_name"] = random.choice(list(border_map.keys()))
-    session["remaining_guesses"] = 5
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
 
@@ -42,6 +41,7 @@ def initialize_game(session):
     correct_borders = border_map[session["country_name"]]
     session["border_count"] = len(correct_borders)  # Total borders
     session["borders_remaining"] = len(correct_borders)  # Will decrement as user guesses
+    session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
 
 
 # Game reset (hidden)
