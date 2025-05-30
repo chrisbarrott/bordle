@@ -17,13 +17,12 @@ def get_stats(session):
 
 
 def get_game_state(session):
-    ...
     border_names = border_map.get(session["country_name"], [])
     has_won = set(session["correct_guesses"]) == set(border_names)
 
     if session["remaining_guesses"] <= 0 or has_won:
         update_stats(session, has_won)
-    
+
     return {
         "stats": {
             "games_played": session.get("games_played", 0),
