@@ -86,6 +86,8 @@
 {% endblock %}
 {% block scripts %}
 
+<script src="{{ url_for('static', filename='js/game-stats.js') }}"></script>
+
 <script>
   const hardMode = {{ 'true' if hard_mode else 'false' }};
   const countryShape = {{ country_geojson | tojson }};
@@ -99,12 +101,14 @@
     modal.classList.toggle("hidden");
   }
 </script>
+
 <script>
   function toggleHowToPlay() {
     const modal = document.getElementById("howToPlayModal");
     modal.classList.toggle("hidden");
   }
 </script>
+
 <script>
   const defaultState = {
     gamesPlayed: 0,

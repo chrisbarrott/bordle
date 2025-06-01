@@ -2,6 +2,7 @@
 import sqlite3
 from flask import (
     Flask,
+    jsonify,
     render_template,
     request,
     redirect,
@@ -9,7 +10,7 @@ from flask import (
     url_for,
     session
 )
-from services.game_database_connections import get_db_connection, init_db
+from services.game_database_connections import get_db_connection, init_db, record_game_result
 from services.game_logic import (
     initialize_game,
     get_game_state,
@@ -44,8 +45,9 @@ def landing():
     # Add the stats props
     stats = get_player_stats(session)
     game_state = get_game_state(session)
+    bordle_stats = analytics()
 
-    return render_template("landing.html", **game_state, stats=stats)
+    return render_template("landing.html", **game_state, stats=stats, bordle_stats=bordle_stats)
 
 
 # Handle mode toggle and start game
@@ -79,8 +81,9 @@ def game():
 
     # Add the stats props
     stats = get_player_stats(session)
+    bordle_stats = analytics()
 
-    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map)
+    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map, bordle_stats=bordle_stats)
 
 
 @app.route("/submit", methods=["POST"])
@@ -138,6 +141,20 @@ def analytics():
         'total_games': total_games,
         'success_rate': success_rate
     }
+
+
+@app.route('/api/game-result', methods=['POST'])
+def api_record_game_result():
+    data = request.json
+    success = data.get('success', False)
+    record_game_result(success)
+    return jsonify({"status": "success"})
+
+
+@app.route("/api/stats")
+def api_stats():
+    stats = analytics()
+    return jsonify(stats)
 
 
 if __name__ == "__main__":
