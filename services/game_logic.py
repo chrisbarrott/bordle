@@ -45,7 +45,7 @@ def initialize_game(session):
     session["all_countries"] = sorted(all_countries)
 
     # Set hard_mode
-    hard_mode = session["hard_mode"]
+    hard_mode = session.get("hard_mode", False) 
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
@@ -64,11 +64,6 @@ def initialize_game(session):
 # Game reset (hidden)
 def reset_game(session):
     session.clear()
-
-
-def get_all_countries(border_map):
-    all_countries = set(border_map.keys())
-    return all_countries
 
 
 def normalize(name):

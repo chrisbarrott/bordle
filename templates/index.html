@@ -2,6 +2,19 @@
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="Bordle – The Country Border Game!" />
+  <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
+  <meta property="og:image" content="https://www.bordle.world/static/images/bordle-icon.png" />
+  <meta property="og:url" content="https://www.bordle.world" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card (optional, improves previews on X/Twitter) -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Bordle – The Country Border Game!" />
+  <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
+  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle-icon.png" />
 </head>
 
 {% block content %}
