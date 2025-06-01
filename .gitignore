@@ -7,3 +7,4 @@ db/games.db
 db/games.db
 scripts/find_all_daily_games.py
 scripts/find_all_games_stats.py
+services/__pycache__/game_database_connections.cpython-311.pyc
