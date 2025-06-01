@@ -45,7 +45,7 @@ def initialize_game(session):
     session["all_countries"] = sorted(all_countries)
 
     # Set hard_mode
-    hard_mode = session.get("hard_mode", False) 
+    hard_mode = session.get("hard_mode", False)
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
@@ -59,6 +59,7 @@ def initialize_game(session):
     # Set the game attempts logic
     # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
     session["remaining_guesses"] = 5
+    session["game_result_recorded"] = False
 
 
 # Game reset (hidden)
@@ -150,11 +151,17 @@ def get_game_state(session):
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
 
     # log if gameover
-    if game_over is True:
-        if remaining_guesses <= 0:
-            record_game_result(False)
-        if set(correct_guesses) == set(border_names):
-            record_game_result(True)
+    if game_over:
+        if not session.get("game_result_recorded", False):
+            if remaining_guesses <= 0:
+                record_game_result(False)
+                print(f"Game result recorded: {'Loss'}")
+            if set(correct_guesses) == set(border_names):
+                record_game_result(True)
+                print(f"Game result recorded: {'Win'}")
+            session["game_result_recorded"] = True  # prevent multiple increments
+
+
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
