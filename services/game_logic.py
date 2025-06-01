@@ -1,5 +1,6 @@
 import json
 import math
+import logging
 
 from services.game_database_connections import (
     get_today_country,
@@ -11,6 +12,8 @@ from services.game_get_data import (
     get_country_shape,
     get_shapes
 )
+
+logging.basicConfig(level=logging.INFO)
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -155,13 +158,11 @@ def get_game_state(session):
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False)
-                print(f"Game result recorded: {'Loss'}")
+                logging.info(f"Game result recorded: {'Loss'}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True)
-                print(f"Game result recorded: {'Win'}")
+                logging.info(f"Game result recorded: {'Win'}")
             session["game_result_recorded"] = True  # prevent multiple increments
-
-
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
