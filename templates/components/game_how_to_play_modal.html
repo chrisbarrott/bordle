@@ -1,13 +1,13 @@
 <!-- How to Play Modal -->
-<div id="howToPlayModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-  <div class="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative">
-    <button onclick="closeHowToPlay()" class="absolute top-2 right-2 text-gray-600 hover:text-black text-xl">&times;</button>
+<div id="howToPlayModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg relative w-96">
+    <button onclick="toggleHowToPlay()" class="absolute top-2 right-3 text-gray-500 text-xl">&times;</button>
     <h2 class="text-2xl font-bold mb-4">How to Play</h2>
     <ul class="list-disc pl-6 space-y-2 text-gray-800 text-sm leading-relaxed">
       <li>Each day, a new mystery country is selected.</li>
       <li>Your goal is to guess all of its **land borders** (neighboring countries).</li>
       <li>Enter a country name from the dropdown. If it's a valid border, it will turn green on the map.</li>
-      <li>You only get one guess per country—choose wisely!</li>
+      <li>You get 5 chances, guess wisely!</li>
       <li>In <strong>Hard Mode</strong>, the main country's name is hidden until you guess it.</li>
       <li>When all borders are guessed or you've used all attempts, the game ends.</li>
     </ul>
