@@ -1,4 +1,5 @@
 # app.py
+import sqlite3
 from flask import (
     Flask,
     render_template,
@@ -8,6 +9,7 @@ from flask import (
     url_for,
     session
 )
+from services.game_database_connections import init_db
 from services.game_logic import (
     initialize_game,
     get_game_state,
@@ -27,6 +29,7 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 
 with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
     iso_map = json.load(f)
+
 
 # Landing page
 @app.route("/", methods=["GET"])
@@ -111,5 +114,29 @@ def static_files(filename):
     return send_from_directory('static', filename)
 
 
+@app.route("/analytics")
+def analytics():
+    conn = sqlite3.connect('games.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM games WHERE game_date = DATE('now')")
+    games_today = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM games")
+    total_games = cursor.fetchone()[0]
+
+    cursor.execute("SELECT ROUND(AVG(success) * 100, 2) FROM games WHERE game_date = DATE('now')")
+    success_rate = cursor.fetchone()[0] or 0.0
+
+    conn.close()
+
+    return render_template("analytics.html", games_today=games_today, total_games=total_games, success_rate=success_rate)
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Dev
+    # app.run(debug=True)
+
+    # Prod
+    init_db()
+    app.run(host='0.0.0.0', port=10000)

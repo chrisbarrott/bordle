@@ -1,12 +1,13 @@
 import json
 import math
-import random
 
+from services.game_database_connections import get_today_country, init_db
 from services.game_get_data import (
     get_border_options,
     get_country_shape,
     get_shapes
 )
+from services.game_database_connections import record_game_result
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -20,7 +21,16 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 
 # Game init
 def initialize_game(session):
-    session["country_name"] = random.choice(list(border_map.keys()))
+    # Build database if required
+    init_db()
+
+    # Pull todays game from SQL
+    session["country_name"] = get_today_country()
+
+    # Saved for testing
+    # session["country_name"] = random.choice(list(border_map.keys()))
+
+    # Set the guesses
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
 
@@ -130,6 +140,13 @@ def get_game_state(session):
     wrong_shapes = get_shapes(wrong_guesses)
 
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
+
+    # log if gameover
+    if game_over is True:
+        if remaining_guesses <= 0:
+            record_game_result(False)
+        if set(correct_guesses) == set(border_names):
+            record_game_result(True)
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
