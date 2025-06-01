@@ -1,13 +1,16 @@
 import json
 import math
 
-from services.game_database_connections import get_today_country, init_db
+from services.game_database_connections import (
+    get_today_country,
+    init_db,
+    record_game_result
+)
 from services.game_get_data import (
     get_border_options,
     get_country_shape,
     get_shapes
 )
-from services.game_database_connections import record_game_result
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -35,10 +38,11 @@ def initialize_game(session):
     session["wrong_guesses"] = []
 
     # get all dropdowns from border_map keys
-    all_options = set(border_map.keys())
+    all_countries = set(border_map.keys())
     for borders in border_map.values():
-        all_options.update(borders)
-    session["available_options"] = sorted(all_options)
+        all_countries.update(borders)
+    session["available_options"] = sorted(all_countries)
+    session["all_countries"] = sorted(all_countries)
 
     # Set hard_mode
     hard_mode = session["hard_mode"]
@@ -51,12 +55,20 @@ def initialize_game(session):
     correct_borders = border_map[session["country_name"]]
     session["border_count"] = len(correct_borders)  # Total borders
     session["borders_remaining"] = len(correct_borders)  # Will decrement as user guesses
-    session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
+
+    # Set the game attempts logic
+    # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
+    session["remaining_guesses"] = 5
 
 
 # Game reset (hidden)
 def reset_game(session):
     session.clear()
+
+
+def get_all_countries(border_map):
+    all_countries = set(border_map.keys())
+    return all_countries
 
 
 def normalize(name):
@@ -124,6 +136,7 @@ def get_game_state(session):
     # get the country name
     country_name = session.get("country_name")
 
+    all_countries = session.get("all_countries")
     available_options = get_border_options(session)
     border_names = border_map.get(country_name, [])
     borders_remaining = session.get("borders_remaining", 0)
@@ -153,6 +166,7 @@ def get_game_state(session):
 
     return {
         "all_correct": border_names,
+        "all_countries": all_countries,
         "attempts_left": remaining_guesses,
         "border_count": border_count,
         "border_options": available_options,

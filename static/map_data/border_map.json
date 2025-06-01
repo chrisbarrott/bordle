@@ -109,7 +109,7 @@
   "Bosnia and Herzegovina": [
     "Croatia",
     "Montenegro",
-    "Republic of Serbia"
+    "Serbia"
   ],
   "Botswana": [
     "Namibia",
@@ -122,7 +122,6 @@
     "Bolivia",
     "Brazilian Island",
     "Colombia",
-    "France",
     "Guyana",
     "Paraguay",
     "Peru",
@@ -141,7 +140,7 @@
   "Bulgaria": [
     "Greece",
     "North Macedonia",
-    "Republic of Serbia",
+    "Serbia",
     "Romania",
     "Turkey"
   ],
@@ -156,7 +155,7 @@
   "Burundi": [
     "Democratic Republic of the Congo",
     "Rwanda",
-    "United Republic of Tanzania"
+    "Tanzania"
   ],
   "Cambodia": [
     "Laos",
@@ -227,17 +226,8 @@
     "Bosnia and Herzegovina",
     "Hungary",
     "Montenegro",
-    "Republic of Serbia",
+    "Serbia",
     "Slovenia"
-  ],
-  "Cyprus": [
-    "Cyprus No Mans Area",
-    "United Kingdom"
-  ],
-  "Cyprus No Mans Area": [
-    "Cyprus",
-    "Northern Cyprus",
-    "United Kingdom"
   ],
   "Czechia": [
     "Austria",
@@ -253,7 +243,7 @@
     "Rwanda",
     "South Sudan",
     "Uganda",
-    "United Republic of Tanzania",
+    "Tanzania",
     "Zambia"
   ],
   "Denmark": [
@@ -314,14 +304,11 @@
   "France": [
     "Andorra",
     "Belgium",
-    "Brazil",
     "Germany",
     "Italy",
     "Luxembourg",
     "Monaco",
-    "Netherlands",
     "Spain",
-    "Suriname",
     "Switzerland"
   ],
   "Gabon": [
@@ -394,7 +381,7 @@
   "Hungary": [
     "Austria",
     "Croatia",
-    "Republic of Serbia",
+    "Serbia",
     "Romania",
     "Slovakia",
     "Slovenia",
@@ -472,13 +459,13 @@
     "Somalia",
     "South Sudan",
     "Uganda",
-    "United Republic of Tanzania"
+    "Tanzania"
   ],
   "Kosovo": [
     "Albania",
     "Montenegro",
     "North Macedonia",
-    "Republic of Serbia"
+    "Serbia"
   ],
   "Kuwait": [
     "Iraq",
@@ -540,7 +527,7 @@
   ],
   "Malawi": [
     "Mozambique",
-    "United Republic of Tanzania",
+    "Tanzania",
     "Zambia"
   ],
   "Malaysia": [
@@ -584,7 +571,7 @@
     "Bosnia and Herzegovina",
     "Croatia",
     "Kosovo",
-    "Republic of Serbia"
+    "Serbia"
   ],
   "Morocco": [
     "Algeria",
@@ -594,7 +581,7 @@
   "Mozambique": [
     "Malawi",
     "South Africa",
-    "United Republic of Tanzania",
+    "Tanzania",
     "Zambia",
     "Zimbabwe",
     "eSwatini"
@@ -619,7 +606,6 @@
   ],
   "Netherlands": [
     "Belgium",
-    "France",
     "Germany"
   ],
   "Nicaragua": [
@@ -651,11 +637,7 @@
     "Bulgaria",
     "Greece",
     "Kosovo",
-    "Republic of Serbia"
-  ],
-  "Northern Cyprus": [
-    "Cyprus No Mans Area",
-    "United Kingdom"
+    "Serbia"
   ],
   "Norway": [
     "Finland",
@@ -707,7 +689,7 @@
   "Qatar": [
     "Saudi Arabia"
   ],
-  "Republic of Serbia": [
+  "Serbia": [
     "Bosnia and Herzegovina",
     "Bulgaria",
     "Croatia",
@@ -728,7 +710,7 @@
     "Bulgaria",
     "Hungary",
     "Moldova",
-    "Republic of Serbia",
+    "Serbia",
     "Ukraine"
   ],
   "Russia": [
@@ -751,7 +733,7 @@
     "Burundi",
     "Democratic Republic of the Congo",
     "Uganda",
-    "United Republic of Tanzania"
+    "Tanzania"
   ],
   "San Marino": [
     "Italy"
@@ -841,7 +823,6 @@
   ],
   "Suriname": [
     "Brazil",
-    "France",
     "Guyana"
   ],
   "Sweden": [
@@ -904,7 +885,7 @@
     "Kenya",
     "Rwanda",
     "South Sudan",
-    "United Republic of Tanzania"
+    "Tanzania"
   ],
   "Ukraine": [
     "Belarus",
@@ -920,13 +901,10 @@
     "Saudi Arabia"
   ],
   "United Kingdom": [
-    "Cyprus",
-    "Cyprus No Mans Area",
     "Ireland",
-    "Northern Cyprus",
     "Spain"
   ],
-  "United Republic of Tanzania": [
+  "Tanzania": [
     "Burundi",
     "Democratic Republic of the Congo",
     "Kenya",
@@ -981,7 +959,7 @@
     "Malawi",
     "Mozambique",
     "Namibia",
-    "United Republic of Tanzania",
+    "Tanzania",
     "Zimbabwe"
   ],
   "Zimbabwe": [
