@@ -5,14 +5,16 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
 
 
-def get_stats(session):
+def get_player_stats(session):
     games_played = session.get("games_played", 0)
     games_won = session.get("games_won", 0)
     win_percentage = round((games_won / games_played) * 100) if games_played > 0 else 0
     return {
-        "games_played": games_played,
-        "games_won": games_won,
-        "win_percentage": win_percentage
+        "stats": {
+            "games_played": games_played,
+            "games_won": games_won,
+            "win_percentage": win_percentage
+        }
     }
 
 

@@ -9,10 +9,15 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
   {% block head %}{% endblock %}
 
-  <div style="position: absolute; top: 10px; right: 20px;">
-    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
-        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
+  <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
+    <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
+        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+
+  <!-- Stats Icon Button -->
+  <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
+      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
   </div>
+
 </head>
 
 <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
@@ -41,3 +46,13 @@
     transition: transform 0.3s ease-in-out;
   }
 </style>
+
+<script>
+  function openHowToPlay() {
+    document.getElementById('howToPlayModal').classList.remove('hidden');
+  }
+
+  function closeHowToPlay() {
+    document.getElementById('howToPlayModal').classList.add('hidden');
+  }
+</script>

@@ -1,16 +1,20 @@
-from datetime import datetime
+import json
 import os
 import random
 import sqlite3
-
 import pytz
 
+from datetime import datetime
+
+# Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
 os.makedirs(DB_FOLDER, exist_ok=True)
-
 DB_PATH = os.path.join(DB_FOLDER, 'games.db')
-ALL_COUNTRIES = ["France", "Germany", "Italy", ...]  # your country list
+
+# Load GeoJSON shapes once
+with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
+    border_map = json.load(f)
 
 
 def get_db_connection():
@@ -82,7 +86,8 @@ def get_today_country():
     if row:
         country = row[0]
     else:
-        country = random.choice(ALL_COUNTRIES)
+        all_countries = set(border_map.keys())
+        country = random.choice(all_countries)
         cursor.execute("INSERT INTO daily_game (game_date, country) VALUES (?, ?)", (today, country))
         conn.commit()
 

@@ -18,7 +18,7 @@ from services.game_logic import (
 )
 import json
 
-from services.game_stats import get_stats
+from services.game_stats import get_player_stats
 
 app = Flask(__name__)
 app.secret_key = "supersecret"  # Set securely in production
@@ -41,11 +41,8 @@ def landing():
         # No session/game in progress
         reset_game(session)  # Optional: ensure clean start if not present
 
-    # Determine if we are running in hard mode
-    # hard_mode = session.get("hard_mode", False)
-
     # Add the stats props
-    stats = get_stats(session)
+    stats = get_player_stats(session)
     game_state = get_game_state(session)
 
     return render_template("landing.html", **game_state, stats=stats)
@@ -81,7 +78,7 @@ def game():
     game_state = get_game_state(session)
 
     # Add the stats props
-    stats = get_stats(session)
+    stats = get_player_stats(session)
 
     return render_template("index.html", **game_state, stats=stats, iso_map=iso_map)
 
