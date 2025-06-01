@@ -15,16 +15,6 @@ def load_geojson():
     return geojson_data
 
 
-# def get_country_shape(name):
-#     return next(
-#         (f for f in geojson_data["features"] if f["properties"].get("name") == name),
-#         None,
-#     )
-
-# def get_shapes(names):
-#     return [f for f in geojson_data["features"] if f["properties"].get("name") in names]
-
-
 def add_centroids(geojson_features):
     for feature in geojson_features:
         geom = shape(feature["geometry"])
@@ -51,3 +41,8 @@ def get_border_options(session):
 
 def get_correct_answers(session):
     return border_map.get(session.get("country_name"), [])
+
+
+def get_all_countries(border_map):
+    all_countries = set(border_map.keys())
+    return all_countries

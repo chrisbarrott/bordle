@@ -4,3 +4,6 @@ services/__pycache__/game_logic.cpython-311.pyc
 scripts/create_table_player_stats.py
 scripts/get_stats_queries.sql
 db/games.db
+db/games.db
+scripts/find_all_daily_games.py
+scripts/find_all_games_stats.py

@@ -18,6 +18,10 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 
 
 def get_db_connection():
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
+    os.makedirs(DB_FOLDER, exist_ok=True)
+    DB_PATH = os.path.join(DB_FOLDER, 'games.db')
     return sqlite3.connect(DB_PATH)
 
 

@@ -9,7 +9,7 @@ from flask import (
     url_for,
     session
 )
-from services.game_database_connections import init_db
+from services.game_database_connections import get_db_connection, init_db
 from services.game_logic import (
     initialize_game,
     get_game_state,
@@ -113,27 +113,37 @@ def static_files(filename):
 
 @app.route("/analytics")
 def analytics():
-    conn = sqlite3.connect('games.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM games WHERE game_date = DATE('now')")
-    games_today = cursor.fetchone()[0]
+    # Get today's stats
+    cursor.execute("SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')")
+    row = cursor.fetchone()
+    successes_today, failures_today = row if row else (0, 0)
 
-    cursor.execute("SELECT COUNT(*) FROM games")
-    total_games = cursor.fetchone()[0]
+    games_today = successes_today + failures_today
+    success_rate = round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
 
-    cursor.execute("SELECT ROUND(AVG(success) * 100, 2) FROM games WHERE game_date = DATE('now')")
-    success_rate = cursor.fetchone()[0] or 0.0
+    # Get total successes and failures across all time
+    cursor.execute("SELECT SUM(successes), SUM(failures) FROM game_stats")
+    row = cursor.fetchone()
+    total_successes, total_failures = row if row else (0, 0)
+
+    total_games = (total_successes or 0) + (total_failures or 0)
 
     conn.close()
 
-    return render_template("analytics.html", games_today=games_today, total_games=total_games, success_rate=success_rate)
+    return {
+        'games_today': games_today,
+        'total_games': total_games,
+        'success_rate': success_rate
+    }
 
 
 if __name__ == "__main__":
     # Dev
-    # app.run(debug=True)
+    app.run(debug=True)
 
     # Prod
-    init_db()
-    app.run(host='0.0.0.0', port=10000)
+    # init_db()
+    # app.run(host='0.0.0.0', port=10000)
