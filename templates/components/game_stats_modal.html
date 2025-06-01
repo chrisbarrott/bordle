@@ -9,9 +9,9 @@
     </ul>
     <h2 class="text-lg font-bold mb-4 text-center">All Game Analytics</h2>
     <ul class="text-gray-800 space-y-2">
-      <li><strong>Games played today:</strong> {{ games_today }}</li>
-      <li><strong>Total games ever:</strong> {{ total_games }}</li>
-      <li><strong>Success rate today:</strong> {{ success_rate }}%</li>
+      <li><strong>Games played today:</strong> {{ stats.games_today }}</li>
+      <li><strong>Total games ever:</strong> {{ stats.total_games }}</li>
+      <li><strong>Success rate today:</strong> {{ stats.success_rate }}%</li>
     </ul>
   </div>
 </div>
@@ -21,6 +21,9 @@
   document.getElementById('gamesPlayed').innerText = stats.gamesPlayed;
   document.getElementById('gamesWon').innerText = stats.gamesWon;
   document.getElementById('winPercentage').innerText = stats.gamesPlayed
+  document.getElementById('games_today').innerText = stats.gamesPlayed;
+  document.getElementById('total_games').innerText = stats.gamesPlayed;
+  document.getElementById('success_rate').innerText = stats.gamesPlayed
     ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
     : 0;
 </script>
