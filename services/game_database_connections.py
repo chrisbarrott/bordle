@@ -91,7 +91,7 @@ def get_today_country():
         country = row[0]
     else:
         all_countries = set(border_map.keys())
-        country = random.choice(all_countries)
+        country = random.choice(list(all_countries))
         cursor.execute("INSERT INTO daily_game (game_date, country) VALUES (?, ?)", (today, country))
         conn.commit()
 
