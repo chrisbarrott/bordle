@@ -49,10 +49,10 @@ def landing():
 
     # Add the stats props
     stats = get_player_stats(session)
-    game_state = get_game_state(session)
+    # game_state = get_game_state(session)
     bordle_stats = analytics()
 
-    return render_template("landing.html", **game_state, stats=stats, bordle_stats=bordle_stats)
+    return render_template("landing.html", stats=stats, bordle_stats=bordle_stats)
 
 
 # Handle mode toggle and start game
@@ -169,8 +169,8 @@ def api_stats():
 
 if __name__ == "__main__":
     # Dev
-    # app.run(debug=True)
+    app.run(debug=True)
 
     # Prod
-    init_db()
-    app.run(host='0.0.0.0', port=10000)
+    # init_db()
+    # app.run(host='0.0.0.0', port=10000)

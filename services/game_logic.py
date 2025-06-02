@@ -158,6 +158,17 @@ def get_game_state(session):
 
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
 
+    # Record result only once per session
+    if game_over and not session.get("game_result_recorded", False):
+        if set(correct_guesses) == set(border_names):
+            record_game_result(True)
+            logging.info("Game result recorded: Win")
+        elif remaining_guesses <= 0:
+            record_game_result(False)
+            logging.info("Game result recorded: Loss")
+        session["game_result_recorded"] = True  # mark as recorded
+
+
     # log if gameover
     if game_over and not result_recorded:
         if not session.get("game_result_recorded", False):
