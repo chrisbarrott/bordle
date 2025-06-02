@@ -1,5 +1,6 @@
 # app.py
 from datetime import date
+import os
 import sqlite3
 from flask import (
     Flask,
@@ -25,9 +26,12 @@ from services.game_logic import (
 import json
 
 from services.game_stats import get_player_stats
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 app.secret_key = "supersecret"  # Set securely in production
+
+load_dotenv()
 
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
@@ -49,10 +53,10 @@ def landing():
 
     # Add the stats props
     stats = get_player_stats(session)
-    game_state = get_game_state(session)
+    # game_state = get_game_state(session)
     bordle_stats = analytics()
 
-    return render_template("landing.html", **game_state, stats=stats, bordle_stats=bordle_stats)
+    return render_template("landing.html", stats=stats, bordle_stats=bordle_stats)
 
 
 # Handle mode toggle and start game
@@ -168,9 +172,13 @@ def api_stats():
 
 
 if __name__ == "__main__":
-    # Dev
-    # app.run(debug=True)
+    if os.getenv("FLASK_ENV") == "development":
+        app.run(debug=True)
 
-    # Prod
-    init_db()
-    app.run(host='0.0.0.0', port=10000)
+# if __name__ == "__main__":
+#     # Dev
+#     # app.run(debug=True)
+
+#     # Prod
+#     init_db()
+#     app.run(host='0.0.0.0', port=10000)

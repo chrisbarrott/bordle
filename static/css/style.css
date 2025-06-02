@@ -50,21 +50,29 @@ svg, canvas {
 
 .modal {
   position: fixed;
-  top: 10%;
-  right: 10%;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5); /* dark overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.modal-content {
   background: white;
   border: 2px solid black;
   padding: 20px;
-  z-index: 1000;
+  max-height: 80vh;       /* enable vertical constraint */
+  overflow-y: auto;       /* enable scrolling */
+  width: 90%;
+  max-width: 500px;
+  position: relative;
   box-shadow: 0 0 10px gray;
-}
-
-.modal-content .close {
-  position: absolute;
-  top: 5px;
-  right: 10px;
-  cursor: pointer;
-  font-size: 20px;
+  border-radius: 10px;
 }
 
 .toggle-container {
