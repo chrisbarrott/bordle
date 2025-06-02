@@ -18,6 +18,10 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 
 
 def get_db_connection():
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
+    os.makedirs(DB_FOLDER, exist_ok=True)
+    DB_PATH = os.path.join(DB_FOLDER, 'games.db')
     return sqlite3.connect(DB_PATH)
 
 
@@ -87,7 +91,7 @@ def get_today_country():
         country = row[0]
     else:
         all_countries = set(border_map.keys())
-        country = random.choice(all_countries)
+        country = random.choice(list(all_countries))
         cursor.execute("INSERT INTO daily_game (game_date, country) VALUES (?, ?)", (today, country))
         conn.commit()
 

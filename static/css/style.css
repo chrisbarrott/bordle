@@ -116,3 +116,14 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(22px);
 }
+
+.ts-dropdown {
+  max-height: 300px !important; /* You can adjust this */
+  overflow-y: auto !important;
+  z-index: 9999 !important;
+}
+
+.ts-dropdown {
+  position: absolute !important;
+  z-index: 9999 !important;
+}

@@ -2,6 +2,7 @@
 import sqlite3
 from flask import (
     Flask,
+    jsonify,
     render_template,
     request,
     redirect,
@@ -9,7 +10,7 @@ from flask import (
     url_for,
     session
 )
-from services.game_database_connections import init_db
+from services.game_database_connections import get_db_connection, init_db, record_game_result
 from services.game_logic import (
     initialize_game,
     get_game_state,
@@ -44,8 +45,9 @@ def landing():
     # Add the stats props
     stats = get_player_stats(session)
     game_state = get_game_state(session)
+    bordle_stats = analytics()
 
-    return render_template("landing.html", **game_state, stats=stats)
+    return render_template("landing.html", **game_state, stats=stats, bordle_stats=bordle_stats)
 
 
 # Handle mode toggle and start game
@@ -79,8 +81,9 @@ def game():
 
     # Add the stats props
     stats = get_player_stats(session)
+    bordle_stats = analytics()
 
-    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map)
+    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map, bordle_stats=bordle_stats)
 
 
 @app.route("/submit", methods=["POST"])
@@ -113,21 +116,45 @@ def static_files(filename):
 
 @app.route("/analytics")
 def analytics():
-    conn = sqlite3.connect('games.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM games WHERE game_date = DATE('now')")
-    games_today = cursor.fetchone()[0]
+    # Get today's stats
+    cursor.execute("SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')")
+    row = cursor.fetchone()
+    successes_today, failures_today = row if row else (0, 0)
 
-    cursor.execute("SELECT COUNT(*) FROM games")
-    total_games = cursor.fetchone()[0]
+    games_today = successes_today + failures_today
+    success_rate = round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
 
-    cursor.execute("SELECT ROUND(AVG(success) * 100, 2) FROM games WHERE game_date = DATE('now')")
-    success_rate = cursor.fetchone()[0] or 0.0
+    # Get total successes and failures across all time
+    cursor.execute("SELECT SUM(successes), SUM(failures) FROM game_stats")
+    row = cursor.fetchone()
+    total_successes, total_failures = row if row else (0, 0)
+
+    total_games = (total_successes or 0) + (total_failures or 0)
 
     conn.close()
 
-    return render_template("analytics.html", games_today=games_today, total_games=total_games, success_rate=success_rate)
+    return {
+        'games_today': games_today,
+        'total_games': total_games,
+        'success_rate': success_rate
+    }
+
+
+@app.route('/api/game-result', methods=['POST'])
+def api_record_game_result():
+    data = request.json
+    success = data.get('success', False)
+    record_game_result(success)
+    return jsonify({"status": "success"})
+
+
+@app.route("/api/stats")
+def api_stats():
+    stats = analytics()
+    return jsonify(stats)
 
 
 if __name__ == "__main__":
