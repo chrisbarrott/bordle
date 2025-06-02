@@ -1,3 +1,4 @@
+from datetime import date
 import json
 import math
 import logging
@@ -29,6 +30,9 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 def initialize_game(session):
     # Build database if required
     init_db()
+
+    # Set today so we can run a new init each day
+    session["game_date"] = str(date.today()) 
 
     # Pull todays game from SQL
     session["country_name"] = get_today_country()

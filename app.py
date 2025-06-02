@@ -1,4 +1,5 @@
 # app.py
+from datetime import date
 import sqlite3
 from flask import (
     Flask,
@@ -10,7 +11,11 @@ from flask import (
     url_for,
     session
 )
-from services.game_database_connections import get_db_connection, init_db, record_game_result
+from services.game_database_connections import (
+    get_db_connection, 
+    init_db, 
+    record_game_result
+)
 from services.game_logic import (
     initialize_game,
     get_game_state,
@@ -66,15 +71,20 @@ def set_mode_and_play():
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():
+    # init the game if a new day
+    today = str(date.today())
+    if "game_date" not in session or session["game_date"] != today:
+        initialize_game(session)
+
+    # First time or GET
+    if "country_name" not in session:
+        initialize_game(session)
+
     # If form posted a guess
     if request.method == "POST":
         guess = request.form.get("guess", "").strip()
         process_guess(guess, session)
         return redirect(url_for("game"))
-
-    # First time or GET
-    if "country_name" not in session:
-        initialize_game(session)
 
     # Set the game session
     game_state = get_game_state(session)
