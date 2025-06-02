@@ -1,0 +1,1 @@
+Sitemap: https://bordle.world/static/sitemap.xml

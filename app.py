@@ -13,7 +13,7 @@ from flask import (
     session
 )
 from services.game_database_connections import (
-    get_db_connection, 
+    get_db_connection,
     init_db, 
     record_game_result
 )
@@ -121,6 +121,16 @@ def submit():
 def reset_session():
     reset_game(session)
     return redirect(url_for("landing"))
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    return send_from_directory("static", "sitemap.xml")
+
+
+@app.route("/robots.txt")
+def robots():
+    return send_from_directory("static", "robots.txt")
 
 
 @app.route('/static/<path:filename>')
