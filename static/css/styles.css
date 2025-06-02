@@ -147,7 +147,7 @@ input:checked + .slider:before {
 }
 
 #map {
-  height: 400px;
+  height: 250px;
   width: 100%;
   border: 1px solid #ccc;
   position: relative;
