@@ -35,7 +35,6 @@
   "Argentina": [
     "Bolivia",
     "Brazil",
-    "Brazilian Island",
     "Chile",
     "Paraguay",
     "Southern Patagonian Ice Field",
@@ -120,7 +119,6 @@
   "Brazil": [
     "Argentina",
     "Bolivia",
-    "Brazilian Island",
     "Colombia",
     "Guyana",
     "Paraguay",
@@ -128,11 +126,6 @@
     "Suriname",
     "Uruguay",
     "Venezuela"
-  ],
-  "Brazilian Island": [
-    "Argentina",
-    "Brazil",
-    "Uruguay"
   ],
   "Brunei": [
     "Malaysia"
@@ -918,8 +911,7 @@
   ],
   "Uruguay": [
     "Argentina",
-    "Brazil",
-    "Brazilian Island"
+    "Brazil"
   ],
   "Uzbekistan": [
     "Afghanistan",
