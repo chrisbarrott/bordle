@@ -150,6 +150,7 @@ def get_game_state(session):
     remaining_guesses = session.get("remaining_guesses", 0)
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
+    result_recorded = session.get("game_result_recorded", False)
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -158,7 +159,7 @@ def get_game_state(session):
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
 
     # log if gameover
-    if game_over:
+    if game_over and not result_recorded:
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False)
