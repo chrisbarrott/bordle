@@ -81,6 +81,10 @@ svg, canvas {
   flex-grow: 1;
 }
 
+.modal.hidden {
+  display: none;
+}
+
 .toggle-container {
   display: flex;
   align-items: center;
@@ -140,4 +144,21 @@ input:checked + .slider:before {
 .ts-dropdown {
   position: absolute !important;
   z-index: 9999 !important;
+}
+
+#map {
+  height: 400px;
+  width: 100%;
+  border: 1px solid #ccc;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 100%;
 }
