@@ -97,3 +97,12 @@ def get_today_country():
 
     conn.close()
     return country
+
+
+def get_game_number():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(DISTINCT game_date) FROM daily_game")
+    result = cur.fetchone()
+    conn.close()
+    return result[0] if result else 0

@@ -129,15 +129,29 @@
     const total = {{ border_count }};
     const hardMode = {{ 'true' if hard_mode else 'false' }};
     const date = new Date().toLocaleDateString('en-GB');
+    const gameNumber = {{ game_number }}
 
-    const squares = [];
-    for (let i = 0; i < correct; i++) squares.push('🟩');
-    for (let i = 0; i < total - correct; i++) squares.push('🟥');
+    const guessHistory = {{ guess_history | default([]) | tojson }};
+    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
+    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
+    const flatGuessHistory = guessHistory.flat();
+
+    let resultEmojis = [];
+
+    for (let guess of flatGuessHistory) {
+      if (correctGuesses.includes(guess)) {
+        resultEmojis.push("🟩");
+      } else if (wrongGuesses.includes(guess)) {
+        resultEmojis.push("🟥");
+      } else {
+        resultEmojis.push("⬜");
+      }
+    }
 
     const flag = countryToFlagEmoji(country);
-    const result = `Bordle 🌍 - ${date}
+    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
-    ${squares.join('')} (${correct}/${total})
+    ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
 
     // Copy to clipboard
