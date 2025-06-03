@@ -2,11 +2,6 @@
 <div id="gameFailedMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
     
-    <!-- Stats Button in Top Right -->
-    <button onclick="showStats()" class="absolute top-4 right-4 bg-gray-300 text-gray-800 px-3 py-1 text-sm rounded hover:bg-gray-400">
-      📊 Stats
-    </button>
-    
     <h2 class="text-2xl font-bold text-red-600 text-center mb-4">Game Over!</h2>
     <p class="text-center text-lg mb-2">
       The correct bordering countries of <strong>{{ country_name }}</strong> were:
@@ -21,15 +16,23 @@
     <p class="text-center text-gray-600">Try again tomorrow for a new challenge!</p>
 
     <!-- Share Results Button -->
-    <div class="mt-4 text-center">
-      <button onclick="shareResults()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        Share Results
+    <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">
+      <button
+        id="whatsappShare"
+        onclick="shareResults()"
+        type="button"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+      >
+        <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-5 w-5 mr-2">
+        Share Result
       </button>
 
-      <!-- Share Results Output -->
-      <div id="shareOutputContainer" class="mt-4 hidden max-w-md mx-auto border border-gray-300 rounded-lg p-4 bg-white shadow">
-        <pre id="shareOutput" class="text-gray-800 text-sm whitespace-pre-wrap font-mono text-left"></pre>
-      </div>
+      <button
+        onclick="showStats()"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        📊 Show Stats
+      </button>
     </div>
 
     <!-- 📊 Embedded Stats Panel -->
@@ -57,6 +60,18 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="failureMap" class="w-full h-96 mb-4 rounded border"></div>
+
+<script>
+  function openModal() {
+    document.getElementById("yourModalId").style.display = "flex";
+    document.body.classList.add("modal-open");
+  }
+
+  function closeModal() {
+    document.getElementById("yourModalId").style.display = "none";
+    document.body.classList.remove("modal-open");
+  }
+</script>
 
 <script>
   function showStats() {
@@ -154,18 +169,22 @@
     ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
 
+    const encodedMessage = encodeURIComponent(result);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+
     // Copy to clipboard
-    navigator.clipboard.writeText(result)
-      .then(() => {
-        // Show the formatted output
-        document.getElementById('shareOutput').textContent = result;
-        document.getElementById('shareOutputContainer').classList.remove('hidden');
-      })
-      .catch(err => {
-        console.error("Failed to copy results:", err);
-        document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
-        document.getElementById('shareOutputContainer').classList.remove('hidden');
-      });
+    // navigator.clipboard.writeText(result)
+    //   .then(() => {
+    //     // Show the formatted output
+    //     document.getElementById('shareOutput').textContent = result;
+    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
+    //   })
+    //   .catch(err => {
+    //     console.error("Failed to copy results:", err);
+    //     document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
+    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
+    //   });
   }
 </script>
 

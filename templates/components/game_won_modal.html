@@ -24,6 +24,11 @@
 
         <!-- Share Results Button -->
         <div class="mt-4 text-center">
+          <a id="whatsappShare" target="_blank" rel="noopener noreferrer">
+            <img src="/static/icons/whatsapp-icon.png" alt="Share on WhatsApp" style="height: 24px; vertical-align: middle;">
+            Share on WhatsApp
+          </a>
+
           <button onclick="shareResults()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             Share Results
           </button>
@@ -61,6 +66,18 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
+
+<script>
+  function openModal() {
+    document.getElementById("yourModalId").style.display = "flex";
+    document.body.classList.add("modal-open");
+  }
+
+  function closeModal() {
+    document.getElementById("yourModalId").style.display = "none";
+    document.body.classList.remove("modal-open");
+  }
+</script>
 
 <script>
   function showStats() {
