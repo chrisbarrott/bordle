@@ -75,7 +75,7 @@ bordle/
 │   ├── map_data/
 │   │   └── border_map.json     # Country border relationships
 │   └── css/
-│       └── style.css           # Custom CSS (uses Tailwind base)
+│       └── styles.css           # Custom CSS (uses Tailwind base)
 ├── templates/
 │   ├── index.html              # Main game UI
 │   └── components/             # Reusable UI modals (win/fail/stats)

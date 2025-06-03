@@ -3,10 +3,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Open Graph Meta Tags -->
+  <!-- To resolve the share emojis -->
+  <meta charset="UTF-8">
+
+  <title>Bordle – Daily Border Guessing Game</title>
+  <meta name="description" content="Play Bordle: a daily game where you guess the countries that border a mystery nation. Come back every day for a new challenge!">
+
+  <!-- Open Graph / WhatsApp Meta Tags -->
   <meta property="og:title" content="Bordle – The Country Border Game!" />
   <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
-  <meta property="og:image" content="https://www.bordle.world/static/images/bordle-icon.png" />
+  <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
   <meta property="og:url" content="https://www.bordle.world" />
   <meta property="og:type" content="website" />
 
@@ -14,7 +20,16 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Bordle – The Country Border Game!" />
   <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
-  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle-icon.png" />
+  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+
+  <!--  Google friendly icon -->
+  <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+
+  <!--  Mobile friendly view -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ✅ Leaflet CSS (goes in <head> ideally) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 
 {% block content %}
@@ -25,7 +40,6 @@
 {% include 'components/game_stats_modal.html' %}
 
 {% include "components/game_how_to_play_modal.html" %}
-
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
   <h2 class="text-xl font-semibold text-center mb-4">
@@ -40,7 +54,10 @@
   {% endif %}
   </h2>
 
-  {% include 'components/map.html' %}
+  <!-- Render the map OUTSIDE of the narrow card -->
+  <div class="w-full mb-6 px-4">
+    {% include 'components/map.html' %}
+  </div>
 
   <div class="text-center mb-4">
     <p class="text-center text-gray-700">
@@ -88,13 +105,18 @@
 
 <script src="{{ url_for('static', filename='js/game-stats.js') }}"></script>
 
+<!-- ✅ Leaflet JS (must be before map_render.js) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
+
 <script>
   const hardMode = {{ 'true' if hard_mode else 'false' }};
   const countryShape = {{ country_geojson | tojson }};
   const correctShapes = {{ correct_shapes | tojson }};
   const wrongShapes = {{ wrong_shapes | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
+
 <script>
   function toggleStats() {
     const modal = document.getElementById("gameStatsModal");
@@ -152,6 +174,5 @@
 
   const currentState = loadGameState();
 </script>
-
 
 {% endblock %}

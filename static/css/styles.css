@@ -52,27 +52,39 @@ svg, canvas {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5); /* dark overlay */
-  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* <-- Allow vertical scrolling */
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: none; /* or flex depending on your setup */
   justify-content: center;
   align-items: center;
   padding: 1rem;
-  z-index: 1000;
 }
 
 .modal-content {
-  background: white;
-  border: 2px solid black;
-  padding: 20px;
-  max-height: 80vh;       /* enable vertical constraint */
-  overflow-y: auto;       /* enable scrolling */
-  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 100%;
   max-width: 500px;
-  position: relative;
-  box-shadow: 0 0 10px gray;
-  border-radius: 10px;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 1rem;
+  flex-grow: 1;
+}
+
+.modal.hidden {
+  display: none;
 }
 
 .toggle-container {
@@ -134,4 +146,32 @@ input:checked + .slider:before {
 .ts-dropdown {
   position: absolute !important;
   z-index: 9999 !important;
+}
+
+#map {
+  height: 250px;
+  width: 100%;
+  border: 1px solid #ccc;
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.whatsapp-share-button {
+  display: inline-flex;
+  align-items: center;
+  background-color: #25D366;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
 }

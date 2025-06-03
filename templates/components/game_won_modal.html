@@ -2,11 +2,6 @@
 <div id="gameWonMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
 
-    <!-- Stats Button in Top Right -->
-    <button onclick="showStats()" class="absolute top-4 right-4 bg-gray-300 text-gray-800 px-3 py-1 text-sm rounded hover:bg-gray-400">
-      📊 Stats
-    </button>
-
     <h2 class="text-2xl font-bold text-green-600 text-center mb-4">Well done!</h2>
     <p class="text-center text-lg mb-2">
       You correctly guessed all of <strong>{{ country_name }}</strong>'s bordering countries:
@@ -21,15 +16,23 @@
     <p class="text-center text-gray-600">Come back tomorrow for a new challenge!</p>
 
     <!-- Share Results Button -->
-    <div class="mt-4 text-center">
-      <button onclick="shareResults()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-        Share Results
+    <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">
+      <button
+        id="whatsappShare"
+        onclick="shareResults()"
+        type="button"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+      >
+        <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-5 w-5 mr-2">
+        Share Result
       </button>
 
-      <!-- Share Results Output -->
-      <div id="shareOutputContainer" class="mt-4 hidden max-w-md mx-auto border border-gray-300 rounded-lg p-4 bg-white shadow">
-        <pre id="shareOutput" class="text-gray-800 text-sm whitespace-pre-wrap font-mono text-left"></pre>
-      </div>
+      <button
+        onclick="showStats()"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        📊 Show Stats
+      </button>
     </div>
 
     <!-- 📊 Embedded Stats Panel -->
@@ -41,13 +44,6 @@
         <li><strong>Current Streak:</strong> <span id="bordle_current_streak">0</span></li>
         <li><strong>Your Success Rate:</strong> <span id="bordle_current_streak">0</span></li>
       </ul>
-      <br>
-      <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Bordle Stats</h3>
-      <ul class="text-sm text-gray-800 list-disc list-inside">
-        <li><strong>Games played today:</strong> {{ bordle_stats.games_today }}</li>
-        <li><strong>Total games ever:</strong> {{ bordle_stats.total_games }}</li>
-        <li><strong>Success rate today:</strong> {{ bordle_stats.success_rate }}%</li>
-      </ul>
     </div>
   </div>
 </div>
@@ -57,6 +53,18 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
+
+<script>
+  function openModal() {
+    document.getElementById("yourModalId").style.display = "flex";
+    document.body.classList.add("modal-open");
+  }
+
+  function closeModal() {
+    document.getElementById("yourModalId").style.display = "none";
+    document.body.classList.remove("modal-open");
+  }
+</script>
 
 <script>
   function showStats() {
@@ -128,29 +136,48 @@
     const total = {{ border_count }};
     const hardMode = {{ 'true' if hard_mode else 'false' }};
     const date = new Date().toLocaleDateString('en-GB');
+    const gameNumber = {{ game_number }}
 
-    const squares = [];
-    for (let i = 0; i < correct; i++) squares.push('🟩');
-    for (let i = 0; i < total - correct; i++) squares.push('🟥');
+    const guessHistory = {{ guess_history | default([]) | tojson }};
+    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
+    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
+    const flatGuessHistory = guessHistory.flat();
+
+    let resultEmojis = [];
+
+    for (let guess of flatGuessHistory) {
+      if (correctGuesses.includes(guess)) {
+        resultEmojis.push("🟩");
+      } else if (wrongGuesses.includes(guess)) {
+        resultEmojis.push("🟥");
+      } else {
+        resultEmojis.push("⬜");
+      }
+    }
 
     const flag = countryToFlagEmoji(country);
-    const result = `Bordle 🌍 - ${date}
+    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
-    ${squares.join('')} (${correct}/${total})
+    ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
 
-    // Copy to clipboard
-    navigator.clipboard.writeText(result)
-      .then(() => {
-        // Show the formatted output
-        document.getElementById('shareOutput').textContent = result;
-        document.getElementById('shareOutputContainer').classList.remove('hidden');
-      })
-      .catch(err => {
-        console.error("Failed to copy results:", err);
-        document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
-        document.getElementById('shareOutputContainer').classList.remove('hidden');
-      });
+    const encodedMessage = encodeURIComponent(result);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+
+
+    // // Copy to clipboard
+    // navigator.clipboard.writeText(result)
+    //   .then(() => {
+    //     // Show the formatted output
+    //     document.getElementById('shareOutput').textContent = result;
+    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
+    //   })
+    //   .catch(err => {
+    //     console.error("Failed to copy results:", err);
+    //     document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
+    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
+    //   });
   }
 </script>
 
