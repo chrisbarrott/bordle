@@ -4,14 +4,15 @@ import math
 import logging
 
 from services.game_database_connections import (
+    get_game_number,
     get_today_country,
     init_db,
-    record_game_result
+    record_game_result,
 )
 from services.game_get_data import (
     get_border_options,
     get_country_shape,
-    get_shapes
+    get_shapes,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +33,7 @@ def initialize_game(session):
     init_db()
 
     # Set today so we can run a new init each day
-    session["game_date"] = str(date.today()) 
+    session["game_date"] = str(date.today())
 
     # Pull todays game from SQL
     session["country_name"] = get_today_country()
@@ -61,7 +62,9 @@ def initialize_game(session):
 
     correct_borders = border_map[session["country_name"]]
     session["border_count"] = len(correct_borders)  # Total borders
-    session["borders_remaining"] = len(correct_borders)  # Will decrement as user guesses
+    session["borders_remaining"] = len(
+        correct_borders
+    )  # Will decrement as user guesses
 
     # Set the game attempts logic
     # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
@@ -110,6 +113,15 @@ def process_guess(guess, session):
             session["wrong_guesses"].append(guess)
             session["remaining_guesses"] -= 1
 
+    # Track guesses in order
+    if "guess_history" not in session:
+        session["guess_history"] = []
+        session["game_number"] = get_game_number()
+
+    # Add guess in order for share functionality
+    if guess not in session["guess_history"]:
+        session["guess_history"].append(guess)
+
 
 def allowed_attempts_perc(n_borders):
     # Never allow more than 75% of correct answers
@@ -151,6 +163,8 @@ def get_game_state(session):
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
     result_recorded = session.get("game_result_recorded", False)
+    guess_history = (session.get("guess_history", []),)
+    game_number = session.get("game_number", "?")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -167,7 +181,6 @@ def get_game_state(session):
             record_game_result(False)
             logging.info("Game result recorded: Loss")
         session["game_result_recorded"] = True  # mark as recorded
-
 
     # log if gameover
     if game_over and not result_recorded:
@@ -197,6 +210,8 @@ def get_game_state(session):
         "country_name": country_name,
         "final_shapes": final_shapes,
         "game_over": game_over,
+        "game_number": game_number,
+        "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
         "wrong_guesses": wrong_guesses,
