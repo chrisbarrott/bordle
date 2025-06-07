@@ -38,7 +38,6 @@
 </header>
 
 {% include 'components/game_stats_modal.html' %}
-
 {% include "components/game_how_to_play_modal.html" %}
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
@@ -103,12 +102,13 @@
 {% endblock %}
 {% block scripts %}
 
-<script src="{{ url_for('static', filename='js/game-stats.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game_stats.js') }}"></script>
 
 <!-- ✅ Leaflet JS (must be before map_render.js) -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
+
 
 <script>
   const hardMode = {{ 'true' if hard_mode else 'false' }};
@@ -117,19 +117,24 @@
   const wrongShapes = {{ wrong_shapes | tojson }};
 </script>
 
+<!-- Required for how to play modal -->
+<script>
+  function toggleHowToPlay() {
+      const modal = document.getElementById("howToPlayModal");
+      modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for how to play modal -->
+
+<!-- Required for loading stats modal -->
 <script>
   function toggleStats() {
     const modal = document.getElementById("gameStatsModal");
     modal.classList.toggle("hidden");
   }
 </script>
+<!-- Required for loading stats modal -->
 
-<script>
-  function toggleHowToPlay() {
-    const modal = document.getElementById("howToPlayModal");
-    modal.classList.toggle("hidden");
-  }
-</script>
 
 <script>
   const defaultState = {
@@ -159,12 +164,12 @@
     saveGameState(state);
   }
 
-  function updateStats(won) {
-    const state = loadGameState();
-    state.gamesPlayed++;
-    if (won) state.gamesWon++;
-    saveGameState(state);
-  }
+  // function updateStats(won) {
+  //   const state = loadGameState();
+  //   state.gamesPlayed++;
+  //   if (won) state.gamesWon++;
+  //   saveGameState(state);
+  // }
 
   function toggleHardMode(value) {
     const state = loadGameState();

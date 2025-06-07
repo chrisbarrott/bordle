@@ -1,5 +1,6 @@
 # app.py
 from datetime import date
+import logging
 import os
 import sqlite3
 from flask import (
@@ -14,6 +15,7 @@ from flask import (
 )
 from services.game_database_connections import (
     get_db_connection,
+    get_game_number,
     init_db, 
     record_game_result
 )
@@ -51,12 +53,15 @@ def landing():
         # No session/game in progress
         reset_game(session)  # Optional: ensure clean start if not present
 
+    # Set game number for session handling
+    game_number = get_game_number()
+
     # Add the stats props
     stats = get_player_stats(session)
     # game_state = get_game_state(session)
     bordle_stats = analytics()
 
-    return render_template("landing.html", stats=stats, bordle_stats=bordle_stats)
+    return render_template("landing.html", stats=stats, bordle_stats=bordle_stats, game_number=game_number)
 
 
 # Handle mode toggle and start game

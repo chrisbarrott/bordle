@@ -70,6 +70,10 @@ def initialize_game(session):
     # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
     session["remaining_guesses"] = 5
     session["game_result_recorded"] = False
+    session["game_result"] = "In Progress"
+
+    # Set game number for session handling
+    session["game_number"] = get_game_number()
 
 
 # Game reset (hidden)
@@ -116,7 +120,6 @@ def process_guess(guess, session):
     # Track guesses in order
     if "guess_history" not in session:
         session["guess_history"] = []
-        session["game_number"] = get_game_number()
 
     # Add guess in order for share functionality
     if guess not in session["guess_history"]:
@@ -148,6 +151,10 @@ def allowed_attempts_scaling(n_borders):
 
 
 def get_game_state(session):
+    # set game number
+    game_number = get_game_number()
+    session["game_number"] = game_number
+
     # get the country name
     country_name = session.get("country_name")
 
@@ -164,7 +171,8 @@ def get_game_state(session):
     guessed_main_country = session.get("guessed_main_country")
     result_recorded = session.get("game_result_recorded", False)
     guess_history = (session.get("guess_history", []),)
-    game_number = session.get("game_number", "?")
+    game_over = session.get("game_over", False)
+    game_result = session.get("game_result", "In progress")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -176,10 +184,12 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True)
-            logging.info("Game result recorded: Win")
+            game_result = "Win"
+            logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
             record_game_result(False)
-            logging.info("Game result recorded: Loss")
+            game_result = "Loss"
+            logging.info(f"Game result recorded: {game_result}")
         session["game_result_recorded"] = True  # mark as recorded
 
     # log if gameover
@@ -187,10 +197,12 @@ def get_game_state(session):
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False)
-                logging.info(f"Game result recorded: {'Loss'}")
+                game_result = "Loss"
+                logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True)
-                logging.info(f"Game result recorded: {'Win'}")
+                game_result = "Win"
+                logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments
 
     # If game is over, show all correct answers in the final map
@@ -209,6 +221,7 @@ def get_game_state(session):
         "country_geojson": country_geojson,
         "country_name": country_name,
         "final_shapes": final_shapes,
+        "game_result": game_result,
         "game_over": game_over,
         "game_number": game_number,
         "guess_history": guess_history,
