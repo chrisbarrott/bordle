@@ -8,3 +8,4 @@ scripts/find_all_games_stats.py
 services/__pycache__/game_database_connections.cpython-311.pyc
 db/games.db
 .env
+scripts/gen_secret.py
