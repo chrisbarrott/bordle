@@ -1,5 +1,5 @@
 # app.py
-from datetime import date
+from datetime import date, timedelta
 import os
 from flask import (
     Flask,
@@ -32,10 +32,12 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 
 # Use Redis for session storage
-app.config['SESSION_TYPE'] = 'redis'
-app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379)
-app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 1 day in seconds
+# app.config['SESSION_TYPE'] = 'redis'
+# app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379)
+# app.config['SESSION_PERMANENT'] = True
+
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 1 day
+app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 
 # Secret key for session signing (keep this constant across deploys)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Set securely in production
