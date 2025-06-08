@@ -42,9 +42,6 @@ app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 # Secret key for session signing (keep this constant across deploys)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Set securely in production
 
-# Init the session
-Session(app)
-
 load_dotenv()
 
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
