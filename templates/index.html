@@ -102,13 +102,12 @@
 {% endblock %}
 {% block scripts %}
 
-<script src="{{ url_for('static', filename='js/game_stats.js') }}"></script>
+<script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
 
 <!-- ✅ Leaflet JS (must be before map_render.js) -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
-
 
 <script>
   const hardMode = {{ 'true' if hard_mode else 'false' }};
@@ -134,7 +133,6 @@
   }
 </script>
 <!-- Required for loading stats modal -->
-
 
 <script>
   const defaultState = {

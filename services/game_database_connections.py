@@ -4,7 +4,7 @@ import random
 import sqlite3
 import pytz
 
-from datetime import datetime
+from datetime import date, datetime
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -106,3 +106,42 @@ def get_game_number():
     result = cur.fetchone()
     conn.close()
     return result[0] if result else 0
+
+
+def get_games_today():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COALESCE(successes,0), COALESCE(failures,0)
+        FROM game_stats
+        WHERE game_date = ?
+    """, (date.today().isoformat(),))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        successes_today, failures_today = row
+        games_today = successes_today + failures_today
+        success_rate_today = round((successes_today / games_today) * 100) if games_today > 0 else 0
+    else:
+        games_today = 0
+        success_rate_today = 0
+
+    return games_today, success_rate_today
+
+
+def get_total_games():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT SUM(successes + failures) AS total_games
+        FROM game_stats
+    """)
+
+    row = cursor.fetchone()
+    conn.close()
+
+    total_games = row[0] if row and row[0] is not None else 0
+
+    return total_games

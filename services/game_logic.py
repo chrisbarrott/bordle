@@ -70,7 +70,7 @@ def initialize_game(session):
     # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
     session["remaining_guesses"] = 5
     session["game_result_recorded"] = False
-    session["game_result"] = "In Progress"
+    session["game_result"] = "Started"
 
     # Set game number for session handling
     session["game_number"] = get_game_number()
@@ -204,6 +204,8 @@ def get_game_state(session):
                 game_result = "Win"
                 logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments
+            session["game_result"] = game_result
+            logging.info(f"Game result: {game_result}")
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []

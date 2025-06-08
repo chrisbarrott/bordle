@@ -5,15 +5,15 @@
     <ul class="text-gray-800 space-y-2">
       <li><strong>Games Played:</strong> <span id="gamesPlayed">0</span></li>
       <li><strong>Games Won:</strong> <span id="gamesWon">0</span></li>
-      <li><strong>Win %:</strong> <span id="successRate">0.00</span>%</li>
+      <li><strong>Win %:</strong> <span id="successRate">0.00</span></li>
       <li><strong>Current Streak:</strong> <span id="currentStreak">0</span></li>
     </ul>
     <br>
     <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Bordle Stats (All Players)</h3>
     <ul class="text-gray-800 space-y-2">
-      <li><strong>Games played today:</strong> <span id="games_today">0</span></li>
-      <li><strong>Total games ever:</strong> <span id="total_games">0</span></li>
-      <li><strong>Success rate today:</strong> <span id="success_rate">0.00</span>%</li>
+      <li><strong>Games played today:</strong> <span id="gamesToday">{{ games_today }}</span></li>
+      <li><strong>Total games ever:</strong> <span id="totalGames">{{ total_games }}</span></li>
+      <li><strong>Success rate today:</strong> <span id="todaySuccessRate">{{ today_success_rate }}%</span></li>
     </ul>
   </div>
 </div>
@@ -36,16 +36,12 @@
     } else {
       stats.currentStreak = 0;
     }
-
-    console.log("Setting stats:", stats)
     localStorage.setItem("bordleStats", JSON.stringify(stats));
-    localStorage.setItem(statsKey, "true");
   }
 
   // Load user stats from localStorage and display them
   function showLocalStats() {
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    console.log("Showing stats:", stats)
     if (!stats) return;
 
     const successRate = stats.gamesPlayed > 0
@@ -64,20 +60,22 @@
     showLocalStats();
 
     const gameOver = "{{ game_over }}";  // `true` or `false`
-    console.log("Game over?", gameOver);
-
     if(gameOver == "True"){
       // listener for updating the game stats
       const gameResult = "{{ game_result }}";
       const gameNumber = {{ game_number }};
       const statsKey = `bordleStatsUpdated_${gameNumber}`;
 
-      console.log("Game number:", gameNumber, "Game over:", gameOver, "gameResult", gameResult);
-
       // determine if to update stats
       if(gameResult === "Win" || gameResult === "Loss"){
-        updateLocalStats(gameResult);  // Update result
-        localStorage.setItem(statsKey, "true");
+
+        // check we havent already updated the stats today
+        if (!localStorage.getItem(statsKey)) {
+          updateLocalStats(gameResult);  // mark win/loss in local stats
+          localStorage.setItem(statsKey, "true");  // Mark as updated
+        } else {
+          console.log("Stats already updated for game", gameNumber);
+        }
       }
     }
   });
