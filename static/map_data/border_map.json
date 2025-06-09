@@ -37,7 +37,6 @@
     "Brazil",
     "Chile",
     "Paraguay",
-    "Southern Patagonian Ice Field",
     "Uruguay"
   ],
   "Armenia": [
@@ -93,10 +92,6 @@
   "Bhutan": [
     "China",
     "India"
-  ],
-  "Bir Tawil": [
-    "Egypt",
-    "Sudan"
   ],
   "Bolivia": [
     "Argentina",
@@ -185,8 +180,7 @@
   "Chile": [
     "Argentina",
     "Bolivia",
-    "Peru",
-    "Southern Patagonian Ice Field"
+    "Peru"
   ],
   "China": [
     "Afghanistan",
@@ -258,7 +252,6 @@
     "Peru"
   ],
   "Egypt": [
-    "Bir Tawil",
     "Israel",
     "Libya",
     "Sudan"
@@ -412,12 +405,6 @@
   ],
   "Ireland": [
     "United Kingdom"
-  ],
-  "Israel": [
-    "Egypt",
-    "Jordan",
-    "Lebanon",
-    "Syria"
   ],
   "Italy": [
     "Austria",
@@ -767,12 +754,7 @@
   "Somalia": [
     "Ethiopia",
     "Kenya",
-    "Somaliland"
-  ],
-  "Somaliland": [
-    "Djibouti",
-    "Ethiopia",
-    "Somalia"
+    "Djibouti"
   ],
   "South Africa": [
     "Botswana",
@@ -793,10 +775,6 @@
     "Sudan",
     "Uganda"
   ],
-  "Southern Patagonian Ice Field": [
-    "Argentina",
-    "Chile"
-  ],
   "Spain": [
     "Andorra",
     "France",
@@ -804,7 +782,6 @@
     "Portugal"
   ],
   "Sudan": [
-    "Bir Tawil",
     "Central African Republic",
     "Chad",
     "Egypt",

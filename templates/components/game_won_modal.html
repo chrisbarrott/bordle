@@ -28,7 +28,7 @@
       </button>
 
       <button
-        onclick="showStats()"
+        onclick="showStatsContainter()"
         class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
         📊 Show Stats
@@ -39,46 +39,21 @@
     <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
       <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
       <ul class="text-sm text-gray-800 list-disc list-inside">
-        <li><strong>Your Total Games Played:</strong> <span id="bordle_games_played">0</span></li>
-        <li><strong>Wins:</strong> <span id="bordle_wins">0</span></li>
-        <li><strong>Current Streak:</strong> <span id="bordle_current_streak">0</span></li>
-        <li><strong>Your Success Rate:</strong> <span id="bordle_current_streak">0</span></li>
+        <li><strong>Your Total Games Played:</strong> <span id="game_played">0</span></li>
+        <li><strong>Wins:</strong> <span id="game_won">0</span></li>
+        <li><strong>Current Streak:</strong> <span id="local_current_streak">0</span></li>
+        <li><strong>Your Success Rate:</strong> <span id="local_success_rate">0</span></li>
       </ul>
     </div>
   </div>
 </div>
 
 <!-- Leaflet CSS & JS -->
+<script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
-
-<script>
-  function openModal() {
-    document.getElementById("yourModalId").style.display = "flex";
-    document.body.classList.add("modal-open");
-  }
-
-  function closeModal() {
-    document.getElementById("yourModalId").style.display = "none";
-    document.body.classList.remove("modal-open");
-  }
-</script>
-
-<script>
-  function showStats() {
-    const container = document.getElementById('statsContainer');
-    container.classList.toggle('hidden');
-
-    // Example: Replace with session or backend stats
-    document.getElementById('statGamesPlayed').innerText = localStorage.getItem('gamesPlayed');
-    document.getElementById('statWins').innerText = localStorage.getItem('gamesWon');
-    document.getElementById('statStreak').innerText = localStorage.getItem('currentStreak') ;
-    document.getElementById('statAvgBorders').innerText = localStorage.getItem('avgBorders');
-  }
-</script>
-
 
 <script type="text/javascript">
   window.onload = function () {
@@ -116,6 +91,7 @@
 </script>
 
 <script>
+  // Function to get the flag
   function countryToFlagEmoji(country) {
     const isoUrl = "{{ url_for('static', filename='map_data/iso_country_codes.json') }}";
     const isoMap = {{ iso_map | tojson }};
@@ -131,6 +107,7 @@
   }
 
   function shareResults() {
+    console.log("Starting to share results")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -138,6 +115,7 @@
     const date = new Date().toLocaleDateString('en-GB');
     const gameNumber = {{ game_number }}
 
+    // get the guess data
     const guessHistory = {{ guess_history | default([]) | tojson }};
     const correctGuesses = {{ correct_guesses | default([]) | tojson }};
     const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
@@ -145,6 +123,7 @@
 
     let resultEmojis = [];
 
+    // populate squares
     for (let guess of flatGuessHistory) {
       if (correctGuesses.includes(guess)) {
         resultEmojis.push("🟩");
@@ -155,16 +134,17 @@
       }
     }
 
-    const flag = countryToFlagEmoji(country);
+    // populate content
+    const flag = countryToFlagEmoji(country) 
     const result = `Bordle 🌍 - ${date} - (#${gameNumber})
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
     ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
 
     const encodedMessage = encodeURIComponent(result);
+    console.log(encodedMessage)
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-
 
     // // Copy to clipboard
     // navigator.clipboard.writeText(result)
@@ -178,108 +158,5 @@
     //     document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
     //     document.getElementById('shareOutputContainer').classList.remove('hidden');
     //   });
-  }
-</script>
-
-<script>
-  async function fetchStats() {
-    try {
-      const response = await fetch('/api/stats');
-      if (!response.ok) throw new Error('Network error');
-
-      const stats = await response.json();
-
-      document.getElementById('games-today').textContent = stats.games_today;
-      document.getElementById('total-games').textContent = stats.total_games;
-      document.getElementById('success-rate').textContent = stats.success_rate.toFixed(2);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  }
-
-  // Fetch stats when the page loads
-  window.addEventListener('DOMContentLoaded', fetchStats);
-
-  // Optionally, refresh stats every 60 seconds
-  setInterval(fetchStats, 60000);
-</script>
-
-<script>
-  function updateStats(success) {
-    let gamesPlayed = parseInt(localStorage.getItem('bordle_games_played') || '0');
-    let wins = parseInt(localStorage.getItem('bordle_wins') || '0');
-    let streak = parseInt(localStorage.getItem('bordle_current_streak') || '0');
-    let lastPlayed = localStorage.getItem('bordle_last_played');
-
-    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
-
-    // Reset streak if last played was not yesterday or today
-    if (lastPlayed) {
-      const lastDate = new Date(lastPlayed);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().slice(0, 10);
-      if (lastPlayed !== today && lastPlayed !== yesterdayStr) {
-        streak = 0;
-      }
-    }
-
-    gamesPlayed++;
-    if (success) {
-      wins++;
-      streak++;
-    } else {
-      streak = 0;
-    }
-
-    localStorage.setItem('bordle_games_played', gamesPlayed.toString());
-    localStorage.setItem('bordle_wins', wins.toString());
-    localStorage.setItem('bordle_current_streak', streak.toString());
-    localStorage.setItem('bordle_last_played', today);
-  }
-</script>
-
-<script>
-  // Load user stats from localStorage and display them
-  function displayUserStats() {
-    const gamesPlayed = parseInt(localStorage.getItem('bordle_games_played')) || 0;
-    const wins = parseInt(localStorage.getItem('bordle_wins')) || 0;
-    const streak = parseInt(localStorage.getItem('bordle_current_streak')) || 0;
-    const successRate = gamesPlayed > 0 ? ((wins / gamesPlayed) * 100).toFixed(2) : '0.00';
-
-    document.getElementById('bordle_games_played').textContent = gamesPlayed;
-    document.getElementById('bordle_wins').textContent = wins;
-    document.getElementById('bordle_success_rate').textContent = successRate;
-    document.getElementById('bordle_current_streak').textContent = streak;
-  }
-
-  // Fetch global bordle stats from your backend API and display them
-  async function fetchGlobalStats() {
-    try {
-      const response = await fetch('/api/stats');
-      if (!response.ok) throw new Error('Network error');
-      const stats = await response.json();
-
-      document.getElementById('games_today').textContent = stats.games_today;
-      document.getElementById('total_games').textContent = stats.total_games;
-      document.getElementById('success_rate').textContent = stats.success_rate.toFixed(2);
-    } catch (error) {
-      console.error('Error fetching global stats:', error);
-    }
-  }
-
-  // Initialize stats display when DOM is ready
-  window.addEventListener('DOMContentLoaded', () => {
-    displayUserStats();
-    fetchGlobalStats();
-  });
-
-  // Optionally refresh global stats every minute
-  setInterval(fetchGlobalStats, 60000);
-
-  // Example toggle function to show/hide stats modal
-  function toggleStats() {
-    const modal = document.getElementById('gameStatsModal');
-    modal.classList.toggle('hidden');
   }
 </script>

@@ -1,7 +1,6 @@
 # app.py
-from datetime import date
+from datetime import date, timedelta
 import os
-import sqlite3
 from flask import (
     Flask,
     jsonify,
@@ -14,8 +13,9 @@ from flask import (
 )
 from services.game_database_connections import (
     get_db_connection,
-    init_db, 
-    record_game_result
+    get_game_number,
+    get_games_today,
+    get_total_games
 )
 from services.game_logic import (
     initialize_game,
@@ -24,12 +24,20 @@ from services.game_logic import (
     reset_game,
 )
 import json
-
-from services.game_stats import get_player_stats
 from dotenv import load_dotenv
 
 app = Flask(__name__)
-app.secret_key = "supersecret"  # Set securely in production
+
+# Use Redis for session storage
+# app.config['SESSION_TYPE'] = 'redis'
+# app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379)
+# app.config['SESSION_PERMANENT'] = True
+
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 1 day
+app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
+
+# Secret key for session signing (keep this constant across deploys)
+app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Set securely in production
 
 load_dotenv()
 
@@ -51,12 +59,25 @@ def landing():
         # No session/game in progress
         reset_game(session)  # Optional: ensure clean start if not present
 
+    # Set game number for session handling and stats
+    game_number = get_game_number()
+    games_today, today_success_rate = get_games_today()
+    total_games = get_total_games()
+
     # Add the stats props
-    stats = get_player_stats(session)
+    # stats = get_player_stats(session)
     # game_state = get_game_state(session)
     bordle_stats = analytics()
 
-    return render_template("landing.html", stats=stats, bordle_stats=bordle_stats)
+    return render_template(
+        "landing.html",
+        # stats=stats,
+        bordle_stats=bordle_stats,
+        game_number=game_number,
+        games_today=games_today,
+        total_games=total_games,
+        today_success_rate=today_success_rate
+    )
 
 
 # Handle mode toggle and start game
@@ -93,11 +114,24 @@ def game():
     # Set the game session
     game_state = get_game_state(session)
 
+    # Set game number for session handling and stats
+    games_today, today_success_rate = get_games_today()
+    total_games = get_total_games()
+
     # Add the stats props
-    stats = get_player_stats(session)
+    # stats = get_player_stats(session)
     bordle_stats = analytics()
 
-    return render_template("index.html", **game_state, stats=stats, iso_map=iso_map, bordle_stats=bordle_stats)
+    return render_template(
+        "index.html",
+        **game_state,
+        # stats=stats,
+        iso_map=iso_map,
+        bordle_stats=bordle_stats,
+        games_today=games_today,
+        total_games=total_games,
+        today_success_rate=today_success_rate
+    )
 
 
 @app.route("/submit", methods=["POST"])
@@ -167,12 +201,12 @@ def analytics():
     }
 
 
-@app.route('/api/game-result', methods=['POST'])
-def api_record_game_result():
-    data = request.json
-    success = data.get('success', False)
-    record_game_result(success)
-    return jsonify({"status": "success"})
+# @app.route('/api/game-result', methods=['POST'])
+# def api_record_game_result():
+#     data = request.json
+#     success = data.get('success', False)
+#     record_game_result(success)
+#     return jsonify({"status": "success"})
 
 
 @app.route("/api/stats")
@@ -184,11 +218,3 @@ def api_stats():
 if __name__ == "__main__":
     if os.getenv("FLASK_ENV") == "development":
         app.run(debug=True)
-
-# if __name__ == "__main__":
-#     # Dev
-#     # app.run(debug=True)
-
-#     # Prod
-#     init_db()
-#     app.run(host='0.0.0.0', port=10000)
