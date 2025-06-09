@@ -11,14 +11,11 @@ from flask import (
     url_for,
     session
 )
-import redis
-from flask_session import Session
 from services.game_database_connections import (
     get_db_connection,
     get_game_number,
     get_games_today,
-    get_total_games,
-    record_game_result
+    get_total_games
 )
 from services.game_logic import (
     initialize_game,
