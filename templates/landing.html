@@ -16,11 +16,9 @@
   <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
       style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
   </div>
-
 </head>
 
 {% include 'components/game_stats_modal.html' %}
-
 {% include "components/game_how_to_play_modal.html" %}
 
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
@@ -53,16 +51,20 @@
 </body>
 </html>
 
+<!-- Required for how to play modal -->
+<script>
+  function toggleHowToPlay() {
+      const modal = document.getElementById("howToPlayModal");
+      modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for how to play modal -->
 
+<!-- Required for loading stats modal -->
 <script>
   function toggleStats() {
     const modal = document.getElementById("gameStatsModal");
     modal.classList.toggle("hidden");
   }
 </script>
-<script>
-  function toggleHowToPlay() {
-    const modal = document.getElementById("howToPlayModal");
-    modal.classList.toggle("hidden");
-  }
-</script>
+<!-- Required for loading stats modal -->
