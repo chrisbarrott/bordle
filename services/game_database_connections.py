@@ -105,6 +105,7 @@ def get_game_number():
     cur.execute("SELECT COUNT(DISTINCT game_date) FROM daily_game")
     result = cur.fetchone()
     conn.close()
+    print("Game Number:", result[0] if result else 0)
     return result[0] if result else 0
 
 
