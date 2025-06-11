@@ -17,9 +17,10 @@
 
     <!-- Share Results Button -->
     <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">
+      <!-- WhatsApp Share -->
       <button
         id="whatsappShare"
-        onclick="shareResults()"
+        onclick="shareToWhatsapp()"
         type="button"
         class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
       >
@@ -27,6 +28,16 @@
         Share Result
       </button>
 
+      <!-- Copy to Clipboard -->
+      <button
+        onclick="copyToClipboard()"
+        type="button"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+      >
+        📋 Copy to Clipboard
+      </button>
+
+      <!-- Show Stats -->
       <button
         onclick="showStatsContainter()"
         class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -110,8 +121,8 @@
       .join("");
   }
 
-  function shareResults() {
-    console.log("Starting to share results")
+  function generateResults() {
+    console.log("Starting to generateResults")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -133,8 +144,6 @@
         resultEmojis.push("🟩");
       } else if (wrongGuesses.includes(guess)) {
         resultEmojis.push("🟥");
-      } else {
-        resultEmojis.push("⬜");
       }
     }
 
@@ -144,23 +153,27 @@
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
     ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
+    return result;
+  }
 
+  // function to copy to clipboard
+  function copyToClipboard() {
+    const resultsText = generateResults(); // Assume this returns the game results string
+    navigator.clipboard.writeText(resultsText).then(() => {
+      alert('Results copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      alert('Failed to copy results. Please try again.');
+    });
+  }
+
+  // function to copy to clipboard
+  function shareToWhatsapp() {
+    const result = generateResults(); // Assume this returns the game results string
     const encodedMessage = encodeURIComponent(result);
-    console.log(encodedMessage)
+    console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-
-    // // Copy to clipboard
-    // navigator.clipboard.writeText(result)
-    //   .then(() => {
-    //     // Show the formatted output
-    //     document.getElementById('shareOutput').textContent = result;
-    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
-    //   })
-    //   .catch(err => {
-    //     console.error("Failed to copy results:", err);
-    //     document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
-    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
-    //   });
-  }
+    console.log('Shareing to whatsapp: ', encodedMessage);
+  };
 </script>
