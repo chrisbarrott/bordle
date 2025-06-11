@@ -16,10 +16,30 @@
     <p class="text-center text-gray-600">Come back tomorrow for a new challenge!</p>
 
     <!-- Share Results Button -->
-    <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">
+    <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">  
+      <!-- Show Stats -->
+      <button
+        onclick="showStatsContainter()"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        📊 Show Stats
+      </button>
+
+      <!-- 📊 Embedded Stats Panel -->
+      <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
+        <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
+        <ul class="text-sm text-gray-800 list-disc list-inside">
+          <li><strong>Your Total Games Played:</strong> <span id="game_played">0</span></li>
+          <li><strong>Wins:</strong> <span id="game_won">0</span></li>
+          <li><strong>Current Streak:</strong> <span id="local_current_streak">0</span></li>
+          <li><strong>Your Success Rate:</strong> <span id="local_success_rate">0</span></li>
+        </ul>
+      </div>
+
+      <!-- WhatsApp Share -->
       <button
         id="whatsappShare"
-        onclick="shareResults()"
+        onclick="shareToWhatsapp()"
         type="button"
         class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
       >
@@ -27,24 +47,17 @@
         Share Result
       </button>
 
+      <!-- Copy to Clipboard -->
       <button
-        onclick="showStatsContainter()"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        onclick="copyToClipboard()"
+        type="button"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
       >
-        📊 Show Stats
+        📋 Copy to Clipboard
       </button>
     </div>
 
-    <!-- 📊 Embedded Stats Panel -->
-    <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
-      <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
-      <ul class="text-sm text-gray-800 list-disc list-inside">
-        <li><strong>Your Total Games Played:</strong> <span id="game_played">0</span></li>
-        <li><strong>Wins:</strong> <span id="game_won">0</span></li>
-        <li><strong>Current Streak:</strong> <span id="local_current_streak">0</span></li>
-        <li><strong>Your Success Rate:</strong> <span id="local_success_rate">0</span></li>
-      </ul>
-    </div>
+
   </div>
 </div>
 
@@ -106,8 +119,8 @@
       .join("");
   }
 
-  function shareResults() {
-    console.log("Starting to share results")
+  function generateResults() {
+    console.log("Starting to generateResults")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -129,8 +142,6 @@
         resultEmojis.push("🟩");
       } else if (wrongGuesses.includes(guess)) {
         resultEmojis.push("🟥");
-      } else {
-        resultEmojis.push("⬜");
       }
     }
 
@@ -140,23 +151,57 @@
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
     ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
+    return result;
+  }
 
+  // function to copy to clipboard
+  function copyToClipboard() {
+    const resultsText = generateResults(); // Assume this returns the game results string
+    navigator.clipboard.writeText(resultsText).then(() => {
+      alert('Results copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      alert('Failed to copy results. Please try again.');
+    });
+  }
+
+  // function to copy to clipboard
+  function shareToWhatsapp() {
+    const country = "{{ country_name }}";
+    const correct = {{ correct_count }};
+    const total = {{ border_count }};
+    const hardMode = {{ 'true' if hard_mode else 'false' }};
+    const date = new Date().toLocaleDateString('en-GB');
+    const gameNumber = {{ game_number }}
+
+    // get the guess data
+    const guessHistory = {{ guess_history | default([]) | tojson }};
+    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
+    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
+    const flatGuessHistory = guessHistory.flat();
+
+    let resultEmojis = [];
+
+    // populate squares
+    for (let guess of flatGuessHistory) {
+      if (correctGuesses.includes(guess)) {
+        resultEmojis.push("🟩");
+      } else if (wrongGuesses.includes(guess)) {
+        resultEmojis.push("🟥");
+      }
+    }
+
+    // populate content
+    const flag = countryToFlagEmoji(country) 
+    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
+    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
+    ${resultEmojis.join('')} (${correct}/${total})
+    https://bordle.world`;
+    
     const encodedMessage = encodeURIComponent(result);
-    console.log(encodedMessage)
+    console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-
-    // // Copy to clipboard
-    // navigator.clipboard.writeText(result)
-    //   .then(() => {
-    //     // Show the formatted output
-    //     document.getElementById('shareOutput').textContent = result;
-    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
-    //   })
-    //   .catch(err => {
-    //     console.error("Failed to copy results:", err);
-    //     document.getElementById('shareOutput').textContent = "Error copying to clipboard.";
-    //     document.getElementById('shareOutputContainer').classList.remove('hidden');
-    //   });
-  }
+    console.log('Shareing to whatsapp: ', encodedMessage);
+  };
 </script>

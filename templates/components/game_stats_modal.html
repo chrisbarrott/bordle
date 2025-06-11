@@ -30,7 +30,7 @@
 
     stats.gamesPlayed += 1;
 
-    if (win) {
+    if (win == "Win") {
       stats.gamesWon += 1;
       stats.currentStreak += 1;
     } else {
@@ -60,6 +60,7 @@
     showLocalStats();
 
     const gameOver = "{{ game_over }}";  // `true` or `false`
+    console.log("Game over?", gameOver)
     if(gameOver == "True"){
       // listener for updating the game stats
       const gameResult = "{{ game_result }}";

@@ -19,6 +19,7 @@ daily_game_data = [
     ('2025-06-08', 'Ethiopia'),
     ('2025-06-09', 'United States of America'),
     ('2025-06-10', 'Kazakhstan'),
+    ('2025-06-11', 'Morocco'),
 ]
 
 game_stats_data = [
@@ -31,6 +32,7 @@ game_stats_data = [
     ('2025-06-08', 7, 7),
     ('2025-06-09', 10, 2),
     ('2025-06-10', 5, 1),
+    ('2025-06-11', 13, 14)
 ]
 
 
