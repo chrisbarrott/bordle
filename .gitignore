@@ -5,3 +5,4 @@ scripts/get_stats_queries.sql
 services/__pycache__/game_database_connections.cpython-311.pyc
 .env
 scripts/gen_secret.py
+db/games.csv
