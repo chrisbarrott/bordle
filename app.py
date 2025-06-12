@@ -7,6 +7,7 @@ from flask import (
     render_template,
     request,
     redirect,
+    send_file,
     send_from_directory,
     url_for,
     session
@@ -170,6 +171,16 @@ def robots():
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
+
+
+@app.route("/download_db")
+def download_db():
+    return send_file("db/games.db", as_attachment=True)
+
+
+@app.route("/download_csv")
+def download_csv():
+    return send_file("db/games.csv", as_attachment=True)
 
 
 @app.route("/analytics")
