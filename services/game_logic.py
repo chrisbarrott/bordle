@@ -10,6 +10,7 @@ from services.game_database_connections import (
     record_game_result,
 )
 from services.game_get_data import (
+    get_all_drop_down_options,
     get_border_options,
     get_country_shape,
     get_shapes,
@@ -45,10 +46,14 @@ def initialize_game(session):
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
 
+    # -------- Old Logic
     # get all dropdowns from border_map keys
-    all_countries = set(border_map.keys())
-    for borders in border_map.values():
-        all_countries.update(borders)
+    # all_countries = set(border_map.keys())
+    # for borders in border_map.values():
+    #     all_countries.update(borders)
+
+    all_countries = get_all_drop_down_options()
+
     session["available_options"] = sorted(all_countries)
     session["all_countries"] = sorted(all_countries)
 

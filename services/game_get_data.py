@@ -1,10 +1,15 @@
 import json
+import os
 
 from shapely.geometry import shape
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
+
+# Load border map once
+with open("static/map_data/country_drop_down.json", "r", encoding="utf-8") as f:
+    country_drop_down = json.load(f)
 
 # Load GeoJSON shapes once
 with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
@@ -46,3 +51,8 @@ def get_correct_answers(session):
 def get_all_countries(border_map):
     all_countries = set(border_map.keys())
     return all_countries
+
+
+def get_all_drop_down_options():
+    with open("static/map_data/country_drop_down.json", 'r', encoding='utf-8') as f:
+        return json.load(f)
