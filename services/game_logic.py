@@ -52,6 +52,7 @@ def initialize_game(session):
     # for borders in border_map.values():
     #     all_countries.update(borders)
 
+    # get all countries for drop down list
     all_countries = get_all_drop_down_options()
 
     session["available_options"] = sorted(all_countries)
