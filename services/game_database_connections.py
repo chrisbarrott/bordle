@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import random
@@ -146,3 +147,35 @@ def get_total_games():
     total_games = row[0] if row and row[0] is not None else 0
 
     return total_games
+
+
+def export_table_to_csv(OUTPUT_FILE):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Perform join on game_date
+    query = """
+    SELECT
+        dg.game_date,
+        dg.country,
+        gs.successes,
+        gs.failures
+    FROM
+        daily_game dg
+    JOIN
+        game_stats gs
+    ON
+        dg.game_date = gs.game_date
+    ORDER BY dg.game_date ASC
+    """
+
+    rows = cursor.execute(query).fetchall()
+    columns = [desc[0] for desc in cursor.description]
+
+    # Write to CSV
+    with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(columns)  # Write headers
+        writer.writerows(rows)    # Write data
+
+    print(f"✅ Joined data written to {OUTPUT_FILE}")
