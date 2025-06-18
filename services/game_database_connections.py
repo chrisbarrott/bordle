@@ -76,7 +76,7 @@ def record_game_result(success: bool):
     conn.close()
 
 
-def get_today_country():
+def get_today_country_old():
     # Get current date in UK time
     uk = pytz.timezone('Europe/London')
     today = datetime.now(uk).date()
@@ -149,19 +149,22 @@ def get_total_games():
 
     return total_games
 
+
 def get_current_rotation(cursor):
-    cursor.execute("SELECT MAX(rotation) FROM daily_games")
+    cursor.execute("SELECT MAX(rotation) FROM daily_game")
     result = cursor.fetchone()[0]
     return result if result is not None else 0
 
+
 def get_used_countries(cursor, rotation):
-    cursor.execute("SELECT country FROM daily_games WHERE rotation = ?", (rotation,))
+    cursor.execute("SELECT country FROM daily_game WHERE rotation = ?", (rotation,))
     return {row[0] for row in cursor.fetchall()}
 
-def assign_today_country():
-    conn = sqlite3.connect("db/games.db")
+
+def get_today_country():
+    conn = get_db_connection()
     cursor = conn.cursor()
-    today = datetime.utcnow().date().isoformat()
+    today = date.today().isoformat()
 
     # Check if today's game is already assigned
     cursor.execute("SELECT country FROM daily_game WHERE game_date = ?", (today,))
@@ -184,53 +187,7 @@ def assign_today_country():
     new_country = random.choice(remaining)
 
     cursor.execute(
-        "INSERT INTO daily_games (game_date, country, rotation) VALUES (?, ?, ?)",
-        (today, new_country, current_rotation)
-    )
-    conn.commit()
-    conn.close()
-
-    return new_country
-
-
-def get_current_rotation(cursor):
-    cursor.execute("SELECT MAX(rotation) FROM daily_game")
-    result = cursor.fetchone()[0]
-    return result if result is not None else 0
-
-
-def get_used_countries(cursor, rotation):
-    cursor.execute("SELECT country FROM daily_game WHERE rotation = ?", (rotation,))
-    return {row[0] for row in cursor.fetchall()}
-
-
-def assign_today_country():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    today = datetime.utcnow().date().isoformat()
-
-    # Check if today's game is already assigned
-    cursor.execute("SELECT country FROM daily_games WHERE date = ?", (today,))
-    row = cursor.fetchone()
-    if row:
-        conn.close()
-        return row[0]
-
-    all_countries = set(get_all_drop_down_options())
-    current_rotation = get_current_rotation(cursor)
-    used = get_used_countries(cursor, current_rotation)
-
-    remaining = list(all_countries - used)
-    if not remaining:
-        # All countries used in this rotation, start new one
-        current_rotation += 1
-        used = set()
-        remaining = list(all_countries)
-
-    new_country = random.choice(remaining)
-
-    cursor.execute(
-        "INSERT INTO daily_games (date, country, rotation) VALUES (?, ?, ?)",
+        "INSERT INTO daily_game (game_date, country, rotation) VALUES (?, ?, ?)",
         (today, new_country, current_rotation)
     )
     conn.commit()
