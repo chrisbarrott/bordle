@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 import random
@@ -6,6 +5,8 @@ import sqlite3
 import pytz
 
 from datetime import date, datetime
+
+from services.game_get_data import get_all_drop_down_options
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -148,34 +149,91 @@ def get_total_games():
 
     return total_games
 
+def get_current_rotation(cursor):
+    cursor.execute("SELECT MAX(rotation) FROM daily_games")
+    result = cursor.fetchone()[0]
+    return result if result is not None else 0
 
-def export_table_to_csv(OUTPUT_FILE):
+def get_used_countries(cursor, rotation):
+    cursor.execute("SELECT country FROM daily_games WHERE rotation = ?", (rotation,))
+    return {row[0] for row in cursor.fetchall()}
+
+def assign_today_country():
+    conn = sqlite3.connect("db/games.db")
+    cursor = conn.cursor()
+    today = datetime.utcnow().date().isoformat()
+
+    # Check if today's game is already assigned
+    cursor.execute("SELECT country FROM daily_game WHERE game_date = ?", (today,))
+    row = cursor.fetchone()
+    if row:
+        conn.close()
+        return row[0]
+
+    all_countries = set(get_all_drop_down_options())
+    current_rotation = get_current_rotation(cursor)
+    used = get_used_countries(cursor, current_rotation)
+
+    remaining = list(all_countries - used)
+    if not remaining:
+        # All countries used in this rotation, start new one
+        current_rotation += 1
+        used = set()
+        remaining = list(all_countries)
+
+    new_country = random.choice(remaining)
+
+    cursor.execute(
+        "INSERT INTO daily_games (game_date, country, rotation) VALUES (?, ?, ?)",
+        (today, new_country, current_rotation)
+    )
+    conn.commit()
+    conn.close()
+
+    return new_country
+
+
+def get_current_rotation(cursor):
+    cursor.execute("SELECT MAX(rotation) FROM daily_game")
+    result = cursor.fetchone()[0]
+    return result if result is not None else 0
+
+
+def get_used_countries(cursor, rotation):
+    cursor.execute("SELECT country FROM daily_game WHERE rotation = ?", (rotation,))
+    return {row[0] for row in cursor.fetchall()}
+
+
+def assign_today_country():
     conn = get_db_connection()
     cursor = conn.cursor()
+    today = datetime.utcnow().date().isoformat()
 
-    # Perform join on game_date
-    query = """
-    SELECT
-        dg.game_date,
-        dg.country,
-        gs.successes,
-        gs.failures
-    FROM
-        daily_game dg
-    JOIN
-        game_stats gs
-    ON
-        dg.game_date = gs.game_date
-    ORDER BY dg.game_date ASC
-    """
+    # Check if today's game is already assigned
+    cursor.execute("SELECT country FROM daily_games WHERE date = ?", (today,))
+    row = cursor.fetchone()
+    if row:
+        conn.close()
+        return row[0]
 
-    rows = cursor.execute(query).fetchall()
-    columns = [desc[0] for desc in cursor.description]
+    all_countries = set(get_all_drop_down_options())
+    current_rotation = get_current_rotation(cursor)
+    used = get_used_countries(cursor, current_rotation)
 
-    # Write to CSV
-    with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(columns)  # Write headers
-        writer.writerows(rows)    # Write data
+    remaining = list(all_countries - used)
+    if not remaining:
+        # All countries used in this rotation, start new one
+        current_rotation += 1
+        used = set()
+        remaining = list(all_countries)
 
-    print(f"✅ Joined data written to {OUTPUT_FILE}")
+    new_country = random.choice(remaining)
+
+    cursor.execute(
+        "INSERT INTO daily_games (date, country, rotation) VALUES (?, ?, ?)",
+        (today, new_country, current_rotation)
+    )
+    conn.commit()
+    conn.close()
+
+    return new_country
