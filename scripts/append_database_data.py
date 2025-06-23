@@ -21,7 +21,7 @@ daily_game_data = [
     ("2025-06-10", "Kazakhstan", 1),
     ("2025-06-11", "Morocco", 1),
     ("2025-06-12", "Guinea-Bissau", 1),
-    ("2025-06-18", "Solvenia", 1),
+    ("2025-06-23", "Estonia", 1),
 ]
 
 game_stats_data = [

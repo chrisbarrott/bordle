@@ -173,16 +173,25 @@ def get_today_country():
         conn.close()
         return row[0]
 
+    # get all the counntries from the drop down json and compare it against the countries json
     all_countries = set(get_all_drop_down_options())
+    borderable_countries = {country for country in all_countries if country in border_map}
+    print(f"Borderable countries: {len(borderable_countries)}")
+
+    # check the rotation
     current_rotation = get_current_rotation(cursor)
+
+    # ensure its not been used
     used = get_used_countries(cursor, current_rotation)
 
-    remaining = list(all_countries - used)
+    remaining = list(borderable_countries - used)
+    print(f"Games remaining : {len(remaining)}")
+
     if not remaining:
-        # All countries used in this rotation, start new one
+        # All valid countries used in this rotation
         current_rotation += 1
         used = set()
-        remaining = list(all_countries)
+        remaining = list(borderable_countries)
 
     new_country = random.choice(remaining)
 
