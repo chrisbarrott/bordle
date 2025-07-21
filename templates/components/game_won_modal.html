@@ -72,10 +72,11 @@
   window.onload = function () {
     const map = L.map('victoryMap');
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 6,
-      attribution: '© OpenStreetMap contributors'
+    L.tileLayer('https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=shOVlsPI8fhJlEek08rF', {
+      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> contributors',
+      tileSize: 256,
+      zoomOffset: 0,
+      zoom: 1.5
     }).addTo(map);
 
     // Load data
@@ -91,6 +92,7 @@
     // Add and zoom to main country
     const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
     map.fitBounds(mainLayer.getBounds());
+    map.setZoom(map.getZoom() - 1);  // Zoom out slightly
 
     // Add correct and wrong shapes
     correctShapes.forEach(shape => {
@@ -100,6 +102,8 @@
     wrongShapes.forEach(shape => {
       L.geoJSON(shape, { style: wrongStyle }).addTo(map);
     });
+
+
   };
 </script>
 
