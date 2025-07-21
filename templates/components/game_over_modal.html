@@ -62,19 +62,24 @@
 <!-- Leaflet CSS & JS -->
 <script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <div id="failureMap" class="w-full h-96 mb-4 rounded border"></div>
+
+<!-- MapLibre CSS -->
+<link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+
+<!-- MapLibre JS -->
+<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
 
 <!-- Required for interactive map -->
 <script type="text/javascript">
   window.onload = function () {
     const map = L.map('failureMap');
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 6,
-      attribution: '© OpenStreetMap contributors'
+    L.tileLayer('https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=shOVlsPI8fhJlEek08rF', {
+      attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> contributors',
+      tileSize: 256,
+      zoomOffset: 0
     }).addTo(map);
 
     // GeoJSON data from Flask
@@ -90,6 +95,7 @@
     // Add main country and fit map to it
     const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
     map.fitBounds(mainLayer.getBounds());
+    map.setZoom(map.getZoom() - 1);  // Zoom out slightly
 
     // Add correct guesses
     correctShapes.forEach(shape => {
