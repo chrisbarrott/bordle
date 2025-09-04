@@ -189,11 +189,11 @@ def get_game_state(session):
     # Record result only once per session
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
-            record_game_result(True)
+            record_game_result(True, country_name)
             game_result = "Win"
             logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
-            record_game_result(False)
+            record_game_result(False, country_name)
             game_result = "Loss"
             logging.info(f"Game result recorded: {game_result}")
         session["game_result_recorded"] = True  # mark as recorded
@@ -202,11 +202,11 @@ def get_game_state(session):
     if game_over and not result_recorded:
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
-                record_game_result(False)
+                record_game_result(False, country_name)
                 game_result = "Loss"
                 logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
-                record_game_result(True)
+                record_game_result(True, country_name)
                 game_result = "Win"
                 logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments

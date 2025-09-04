@@ -94,6 +94,22 @@ def set_mode_and_play():
     return redirect(url_for("game"))
 
 
+@app.route('/check_played', methods=['POST'])
+def check_played():
+    game_number = get_game_number()
+
+    # You need to track session/game data on the server
+    played_games = session.get('played_games', [])
+
+    if game_number in played_games:
+        return jsonify({'blockPlay': True})
+
+    # Optionally add it (but might want to do this on victory instead)
+    session['played_games'] = played_games + [game_number]
+
+    return jsonify({'blockPlay': False})
+
+
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():

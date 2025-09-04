@@ -7,12 +7,14 @@ import pytz
 from datetime import date, datetime
 
 from services.game_get_data import get_all_drop_down_options
+from services.game_observe import send_to_observe
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
 os.makedirs(DB_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(DB_FOLDER, 'games.db')
+ENVIRONMENT = os.getenv("BORDLE_ENV", "production")  # default if not set
 
 # Load GeoJSON shapes once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -50,11 +52,13 @@ def init_db():
     conn.close()
 
 
-def record_game_result(success: bool):
+def record_game_result(success: bool, country_name: str):
     # Get today's date in UK time
     uk = pytz.timezone('Europe/London')
     today = datetime.now(uk).date()
+    now = datetime.now(uk)
 
+    # Set database environment
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -74,6 +78,16 @@ def record_game_result(success: bool):
 
     conn.commit()
     conn.close()
+
+    # Send enriched payload to Observe
+    payload = {
+        "timestamp": now.isoformat(),
+        "game_date": str(today),
+        "result": "success" if success else "failure",
+        "country_name": country_name,
+        "environment": ENVIRONMENT,
+    }
+    send_to_observe(payload)
 
 
 def get_today_country_old():
