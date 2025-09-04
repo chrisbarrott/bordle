@@ -2,7 +2,7 @@ import requests
 import os
 
 OBSERVE_API_URL = "https://118473891588.collect.observeinc.com/v1/http"
-OBSERVE_API_TOKEN = os.getenv("OBSERVER_API_TOKEN", "")
+OBSERVE_API_TOKEN = os.getenv("OBSERVE_API_TOKEN", "")
 
 
 def send_to_observe(payload: dict):
