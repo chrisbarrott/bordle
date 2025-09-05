@@ -80,6 +80,7 @@ def initialize_game(session):
 
     # Set game number for session handling
     session["game_number"] = get_game_number()
+    logging.info(f"Initialized game #{session['game_number']} for {session['country_name']}")
 
 
 # Game reset (hidden)
