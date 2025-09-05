@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
 os.makedirs(DB_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(DB_FOLDER, 'games.db')
-ENVIRONMENT = os.getenv("BORDLE_ENV", "production")  # default if not set
+ENVIRONMENT = os.getenv("FLASK_ENV", "development")  # default if not set
 
 # Load GeoJSON shapes once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -52,7 +52,7 @@ def init_db():
     conn.close()
 
 
-def record_game_result(success: bool, country_name: str):
+def record_game_result(success: bool, remaining_countries: str):
     # Get today's date in UK time
     uk = pytz.timezone('Europe/London')
     today = datetime.now(uk).date()
@@ -84,8 +84,12 @@ def record_game_result(success: bool, country_name: str):
         "timestamp": now.isoformat(),
         "game_date": str(today),
         "result": "success" if success else "failure",
-        "country_name": country_name,
         "environment": ENVIRONMENT,
+        "country_name": get_today_country(),
+        "game_number": get_game_number(),
+        "games_today": get_games_today(),
+        "total_games": get_total_games(),
+        "remaining_countries": remaining_countries
     }
     send_to_observe(payload)
 
@@ -121,7 +125,7 @@ def get_game_number():
     cur.execute("SELECT COUNT(DISTINCT game_date) FROM daily_game")
     result = cur.fetchone()
     conn.close()
-    print("Game Number:", result[0] if result else 0)
+    # print("Game Number:", result[0] if result else 0)
     return result[0] if result else 0
 
 
