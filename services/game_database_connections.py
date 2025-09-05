@@ -87,9 +87,9 @@ def record_game_result(success: bool, remaining_countries: str):
         "environment": ENVIRONMENT,
         "country_name": get_today_country(),
         "game_number": get_game_number(),
-        "games_today": get_games_today(),
+        "games_today": get_games_today()[0],
         "total_games": get_total_games(),
-        "remaining_countries": remaining_countries
+        "remaining_guesses": remaining_countries
     }
     send_to_observe(payload)
 
