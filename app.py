@@ -149,8 +149,7 @@ def game():
         bordle_stats=bordle_stats,
         games_today=games_today,
         total_games=total_games,
-        today_success_rate=today_success_rate,
-        game_number=game_number
+        today_success_rate=today_success_rate
     )
 
 
@@ -228,7 +227,7 @@ def analytics():
         'games_today': games_today,
         'total_games': total_games,
         'success_rate': success_rate,
-        'games_number': get_game_number()
+        'game_number': get_game_number()
     }
 
 
