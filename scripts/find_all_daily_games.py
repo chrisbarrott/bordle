@@ -32,6 +32,7 @@ def get_all_daily_games():
     for row in rows:
         print("\t".join(str(item) for item in row))
 
+    print(f"\nTotal daily games: {len(rows)}")  # Added count log
 
 
 if __name__ == "__main__":
