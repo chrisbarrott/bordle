@@ -34,6 +34,8 @@ def main():
     for date, country in games:
         print(f"{date}\t{country}")
 
+    print(f"\nTotal daily games: {len(games)}")  # Added count log
+
 
 if __name__ == "__main__":
     main()
