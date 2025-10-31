@@ -86,6 +86,7 @@ def initialize_game(session):
 
     # Get the IP and lookup location
     session["user_ip"] = get_user_ip()
+    logging.info(f"Player IP address: {session['user_ip']}")
     session["location"] = get_user_location(session["user_ip"])
     logging.info(f"Player playing from location: {session['location']}")
 

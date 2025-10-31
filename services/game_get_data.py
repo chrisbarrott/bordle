@@ -62,20 +62,29 @@ def get_all_drop_down_options():
 
 def get_user_location(ip: str):
     """Lookup approximate location from an IP address."""
+    if ip in ("127.0.0.1", "::1"):
+        # Localhost or internal test
+        return {"country": "Localhost", "region": "Local", "city": "Localhost"}
+
+    # Example free API (ipinfo.io, ipapi.co, or ipwho.is)
+    url = f"https://ipapi.co/{ip}/json/"
+    response = requests.get(url, timeout=5)
+
+    if response.status_code != 200:
+        print(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
+        return {}
+
     try:
-        resp = requests.get(f"https://ipapi.co/{ip}/json/", timeout=3)
-        data = resp.json()
-        return {
-            "ip": ip,
-            "country": data.get("country_name"),
-            "region": data.get("region"),
-            "city": data.get("city"),
-            "latitude": data.get("latitude"),
-            "longitude": data.get("longitude"),
-        }
-    except Exception as e:
-        print("⚠️ Geo lookup failed:", e)
-        return {"ip": ip}
+        data = response.json()
+    except json.JSONDecodeError:
+        print(f"⚠️ Geo lookup failed: invalid JSON from {url}")
+        return {}
+
+    return {
+        "country": data.get("country_name", "Unknown"),
+        "region": data.get("region", "Unknown"),
+        "city": data.get("city", "Unknown")
+    }
 
 
 def get_user_ip():
