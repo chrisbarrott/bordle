@@ -98,4 +98,6 @@ def get_user_ip():
         ip = forwarded_for.split(',')[0].strip()
     else:
         ip = request.remote_addr
+
+    print(f"User IP: {ip}")
     return ip

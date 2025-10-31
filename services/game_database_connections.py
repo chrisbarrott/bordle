@@ -276,6 +276,7 @@ def get_leaderboard_data():
 def record_world_leaderboard_result(success: bool, ip: str):
     user_ip = get_user_ip()  # Flask: get user's IP
     country, region, city = get_user_location(user_ip)
+    print(f"User Location: Country={country}, Region={region}, City={city}")
 
     # Now you can store it in your database
     uk = pytz.timezone('Europe/London')
