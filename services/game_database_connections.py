@@ -225,44 +225,58 @@ def get_today_country():
 
 def get_leaderboard_data():
     conn = get_db_connection()
+    conn.row_factory = sqlite3.Row  # ✅ Ensures we can use r["country"]
+
     cursor = conn.cursor()
 
-    # Today's stats
+    # ✅ Daily stats (for today)
     cursor.execute("""
-        SELECT country,
-            successes,
-            failures,
-            plays
+        SELECT 
+            country,
+            SUM(successes) AS total_successes,
+            SUM(failures) AS total_failures,
+            SUM(plays) AS total_plays,
+            CASE 
+                WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
+                ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
+            END AS success_rate
         FROM country_stats
-            WHERE game_date = DATE('now', 'localtime')
+        WHERE game_date = DATE('now', 'localtime')
         GROUP BY country
-        HAVING total_guesses > 0
-        ORDER BY successes DESC
-        LIMIT 5
+        HAVING total_plays > 0
+        ORDER BY success_rate DESC
+        LIMIT 5;
     """)
     daily = cursor.fetchall()
 
-    # All-time stats
+    # ✅ All-time stats
     cursor.execute("""
-        SELECT country,
-            successes,
-            failures,
-            plays
+        SELECT 
+            country,
+            SUM(successes) AS total_successes,
+            SUM(failures) AS total_failures,
+            SUM(plays) AS total_plays,
+            CASE 
+                WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
+                ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
+            END AS success_rate
         FROM country_stats
-        WHERE plays > 0
-        ORDER BY successes DESC
-        LIMIT 5
+        GROUP BY country
+        HAVING total_plays > 0
+        ORDER BY success_rate DESC
+        LIMIT 5;
     """)
     all_time = cursor.fetchall()
 
     conn.close()
 
+    # ✅ Convert SQLite rows to JSON-safe dicts
     def format_data(rows):
         return [
             {
                 "country": r["country"],
-                "success_rate": (r["successes"] / r["total_guesses"]) * 100 if r["total_guesses"] else 0,
-                "total_guesses": r["total_guesses"]
+                "success_rate": round(r["success_rate"], 1),
+                "total_guesses": int(r["total_plays"])
             }
             for r in rows
         ]

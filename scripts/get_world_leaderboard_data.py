@@ -9,6 +9,7 @@ def get_world_stats():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
         SELECT
             game_date,

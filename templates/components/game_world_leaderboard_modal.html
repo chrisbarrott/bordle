@@ -51,50 +51,74 @@
 <!-- Required for leaderboard modal -->
 
 <script>
-    async function toggleLeaderboard() {
+async function toggleLeaderboard() {
     const modal = document.getElementById("gameLeaderboardModal");
-    if (!modal.classList.contains("hidden")) {
+    const isHidden = modal.classList.contains("hidden");
+
+    if (isHidden) {
+        console.log("[Leaderboard] Opening modal...");
+        modal.classList.remove("hidden");
+        await loadLeaderboardData();
+    } else {
+        console.log("[Leaderboard] Closing modal...");
         modal.classList.add("hidden");
-        return;
     }
+}
 
-    modal.classList.remove("hidden");
-    await loadLeaderboardData();
-    }
-
-    async function loadLeaderboardData() {
+async function loadLeaderboardData() {
+    console.log("[Leaderboard] Fetching data from /leaderboard_data...");
     const dailyBody = document.getElementById("dailyLeaderboardRows");
     const allTimeBody = document.getElementById("allTimeLeaderboardRows");
 
-    dailyBody.innerHTML = "<tr><td colspan='3' class='text-center py-2 text-gray-500'>Loading...</td></tr>";
-    allTimeBody.innerHTML = "<tr><td colspan='3' class='text-center py-2 text-gray-500'>Loading...</td></tr>";
+    dailyBody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>`;
+    allTimeBody.innerHTML = `<tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>`;
 
     try {
-        const res = await fetch("/leaderboard_data");
-        const data = await res.json();
+        const response = await fetch("/leaderboard_data", { cache: "no-cache" });
 
-        const today = data.daily;
-        const allTime = data.all_time;
+        console.log("[Leaderboard] Response status:", response.status);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        dailyBody.innerHTML = today.map(row => `
-        <tr class="border-b border-gray-200">
-            <td class="py-1">${row.country}</td>
-            <td class="py-1 text-right">${row.success_rate.toFixed(1)}%</td>
-            <td class="py-1 text-right">${row.total_guesses}</td>
-        </tr>
-        `).join("");
+        const data = await response.json();
+        console.log("[Leaderboard] Data received:", data);
 
-        allTimeBody.innerHTML = allTime.map(row => `
-        <tr class="border-b border-gray-200">
-            <td class="py-1">${row.country}</td>
-            <td class="py-1 text-right">${row.success_rate.toFixed(1)}%</td>
-            <td class="py-1 text-right">${row.total_guesses}</td>
-        </tr>
-        `).join("");
+        if (!data.daily || !data.all_time) {
+            console.warn("[Leaderboard] Missing keys in data:", data);
+            throw new Error("Invalid data format");
+        }
+
+        // Render daily stats
+        dailyBody.innerHTML = data.daily.length
+            ? data.daily.map(row => `
+                <tr class="border-b border-gray-200">
+                    <td class="py-1">${row.country || "Unknown"}</td>
+                    <td class="py-1 text-right">${(row.success_rate ?? 0).toFixed(1)}%</td>
+                    <td class="py-1 text-right">${row.total_guesses ?? 0}</td>
+                </tr>
+              `).join("")
+            : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No data today</td></tr>`;
+
+        // Render all-time stats
+        allTimeBody.innerHTML = data.all_time.length
+            ? data.all_time.map(row => `
+                <tr class="border-b border-gray-200">
+                    <td class="py-1">${row.country || "Unknown"}</td>
+                    <td class="py-1 text-right">${(row.success_rate ?? 0).toFixed(1)}%</td>
+                    <td class="py-1 text-right">${row.total_guesses ?? 0}</td>
+                </tr>
+              `).join("")
+            : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No all-time data</td></tr>`;
 
     } catch (err) {
-        dailyBody.innerHTML = "<tr><td colspan='3' class='text-center text-red-500 py-2'>Failed to load.</td></tr>";
-        allTimeBody.innerHTML = "<tr><td colspan='3' class='text-center text-red-500 py-2'>Failed to load.</td></tr>";
+        console.error("[Leaderboard] Error loading data:", err);
+        dailyBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-2">Failed to load</td></tr>`;
+        allTimeBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-2">Failed to load</td></tr>`;
     }
-    }
+}
+
+// Optional: pre-load when page is ready
+window.addEventListener("DOMContentLoaded", () => {
+    console.log("[Leaderboard] Page loaded, preloading data...");
+    loadLeaderboardData();
+});
 </script>

@@ -181,6 +181,7 @@ def reset_session():
 def leaderboard_data():
     try:
         data = get_leaderboard_data()
+        print(f"Leaderboard data: {data}")
         return jsonify(data)
     except Exception as e:
         print(f"Error loading leaderboard data: {e}")
