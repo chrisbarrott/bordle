@@ -283,14 +283,12 @@ def record_world_leaderboard_result(success: bool):
     game_date = datetime.now(uk).date()
 
     # Lookup user location
-    location = get_user_location(user_ip)
-    country = location.get("country", "Unknown")
     print(f"Recording leaderboard result for country: {country}")
 
     """Update daily country stats for the leaderboard."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Default values
     country, region, city = "Unknown", "Unknown", "Unknown"
 
