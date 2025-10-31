@@ -189,8 +189,6 @@ def get_game_state(session):
     guess_history = (session.get("guess_history", []),)
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
-    ip = session.get("user_ip", "Unknown")
-    location = session.get("location", "Unknown")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -202,12 +200,12 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
-            record_world_leaderboard_result(True, ip)
+            record_world_leaderboard_result(True)
             game_result = "Win"
             logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
-            record_world_leaderboard_result(False, ip)
+            record_world_leaderboard_result(False)
             game_result = "Loss"
             logging.info(f"Game result recorded: {game_result}")
         session["game_result_recorded"] = True  # mark as recorded
@@ -217,12 +215,12 @@ def get_game_state(session):
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False, remaining_guesses)
-                record_world_leaderboard_result(False, ip)
+                record_world_leaderboard_result(False)
                 game_result = "Loss"
                 logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(True, ip)
+                record_world_leaderboard_result(True)
                 game_result = "Win"
                 logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments

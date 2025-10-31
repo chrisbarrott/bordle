@@ -60,7 +60,7 @@ def get_all_drop_down_options():
         return json.load(f)
 
 
-def get_user_location(ip: str):
+def get_user_location(user_ip: str):
     try:
         response = requests.get(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city", timeout=5)
         if response.status_code == 200:
