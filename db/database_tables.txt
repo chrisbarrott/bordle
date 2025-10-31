@@ -19,7 +19,6 @@
 - game_date (TEXT) NOT NULL
 - country (TEXT)
 - game_date (TEXT) NOT NULL
-- game_date (TEXT) NOT NULL
 - country (TEXT)
 - region (TEXT)
 - city (TEXT)

@@ -202,7 +202,7 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
-            record_world_leaderboard_result(False, ip)
+            record_world_leaderboard_result(True, ip)
             game_result = "Win"
             logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
@@ -222,7 +222,7 @@ def get_game_state(session):
                 logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(False, ip)
+                record_world_leaderboard_result(True, ip)
                 game_result = "Win"
                 logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments

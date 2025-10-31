@@ -6,7 +6,7 @@ import pytz
 
 from datetime import date, datetime
 
-from services.game_get_data import get_all_drop_down_options, get_user_location
+from services.game_get_data import get_all_drop_down_options, get_user_ip, get_user_location
 from services.game_observe import send_to_observe
 
 # Set database paths
@@ -274,36 +274,47 @@ def get_leaderboard_data():
 
 
 def record_world_leaderboard_result(success: bool, ip: str):
+    user_ip = get_user_ip()  # Flask: get user's IP
+    country, region, city = get_user_location(user_ip)
+
+    # Now you can store it in your database
     uk = pytz.timezone('Europe/London')
-    today = datetime.now(uk).date()
+    game_date = datetime.now(uk).date()
 
     # Lookup user location
-    location = get_user_location(ip)
+    location = get_user_location(user_ip)
     country = location.get("country", "Unknown")
     print(f"Recording leaderboard result for country: {country}")
 
+    """Update daily country stats for the leaderboard."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Update per-country totals
-    cursor.execute('''
-        INSERT INTO country_stats (country, successes, failures, plays, last_updated)
-        VALUES (?, ?, ?, 1, ?)
-        ON CONFLICT(country) DO UPDATE SET
-            successes = successes + ?,
-            failures = failures + ?,
-            plays = plays + 1,
-            last_updated = ?
-    ''', (
-        country,
-        1 if success else 0,
-        0 if success else 1,
-        today,
-        1 if success else 0,
-        0 if success else 1,
-        today
-    ))
+    # Make sure entry exists for today
+    cursor.execute("""
+        SELECT plays, successes, failures
+        FROM country_stats
+        WHERE game_date = ? AND country = ? AND region = ? AND city = ?
+    """, (game_date, country, region, city))
+    existing = cursor.fetchone()
+
+    if existing:
+        plays, successes, failures = existing
+        plays += 1
+        if success:
+            successes += 1
+        else:
+            failures += 1
+        cursor.execute("""
+            UPDATE country_stats
+            SET plays = ?, successes = ?, failures = ?
+            WHERE game_date = ? AND country = ? AND region = ? AND city = ?
+        """, (plays, successes, failures, game_date, country, region, city))
+    else:
+        cursor.execute("""
+            INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
+            VALUES (?, ?, ?, ?, 1, ?, ?)
+        """, (game_date, country, region, city, 1 if success else 0, 0 if success else 1))
 
     conn.commit()
     conn.close()
-    
