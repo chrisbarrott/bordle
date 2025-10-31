@@ -290,6 +290,7 @@ def record_world_leaderboard_result(success: bool):
     """Update daily country stats for the leaderboard."""
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     # Default values
     country, region, city = "Unknown", "Unknown", "Unknown"
 
