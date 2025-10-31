@@ -39,6 +39,7 @@
 
 {% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
+{% include "components/game_world_leaderboard_modal.html" %}
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
   <h2 class="text-xl font-semibold text-center mb-4">
@@ -133,6 +134,15 @@
   }
 </script>
 <!-- Required for loading stats modal -->
+
+<!-- Required for loading leaderboard modal -->
+<script>
+  function toggleLeaderboard() {
+    const modal = document.getElementById("gameLeaderboardModal");
+    modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for loading leaderboard modal -->
 
 <script>
   const defaultState = {

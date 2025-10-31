@@ -6,7 +6,7 @@ import pytz
 
 from datetime import date, datetime
 
-from services.game_get_data import get_all_drop_down_options
+from services.game_get_data import get_all_drop_down_options, get_user_location
 from services.game_observe import send_to_observe
 
 # Set database paths
@@ -221,3 +221,89 @@ def get_today_country():
     conn.close()
 
     return new_country
+
+
+def get_leaderboard_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Today's stats
+    cursor.execute("""
+        SELECT country,
+            successes,
+            failures,
+            plays
+        FROM country_stats
+            WHERE game_date = DATE('now', 'localtime')
+        GROUP BY country
+        HAVING total_guesses > 0
+        ORDER BY successes DESC
+        LIMIT 5
+    """)
+    daily = cursor.fetchall()
+
+    # All-time stats
+    cursor.execute("""
+        SELECT country,
+            successes,
+            failures,
+            plays
+        FROM country_stats
+        WHERE plays > 0
+        ORDER BY successes DESC
+        LIMIT 5
+    """)
+    all_time = cursor.fetchall()
+
+    conn.close()
+
+    def format_data(rows):
+        return [
+            {
+                "country": r["country"],
+                "success_rate": (r["successes"] / r["total_guesses"]) * 100 if r["total_guesses"] else 0,
+                "total_guesses": r["total_guesses"]
+            }
+            for r in rows
+        ]
+
+    return {
+        "daily": format_data(daily),
+        "all_time": format_data(all_time)
+    }
+
+
+def record_world_leaderboard_result(success: bool, ip: str):
+    uk = pytz.timezone('Europe/London')
+    today = datetime.now(uk).date()
+
+    # Lookup user location
+    location = get_user_location(ip)
+    country = location.get("country", "Unknown")
+    print(f"Recording leaderboard result for country: {country}")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Update per-country totals
+    cursor.execute('''
+        INSERT INTO country_stats (country, successes, failures, plays, last_updated)
+        VALUES (?, ?, ?, 1, ?)
+        ON CONFLICT(country) DO UPDATE SET
+            successes = successes + ?,
+            failures = failures + ?,
+            plays = plays + 1,
+            last_updated = ?
+    ''', (
+        country,
+        1 if success else 0,
+        0 if success else 1,
+        today,
+        1 if success else 0,
+        0 if success else 1,
+        today
+    ))
+
+    conn.commit()
+    conn.close()
+    

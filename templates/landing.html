@@ -27,14 +27,18 @@
     <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
         style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
 
-  <!-- Stats Icon Button -->
-  <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
+    <!-- Stats Icon Button -->
+    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
       style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
+    
+    <img src="{{ url_for('static', filename='images/world_icon.png') }}" alt="leaderboard" 
+      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
   </div>
 </head>
 
 {% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
+{% include "components/game_world_leaderboard_modal.html" %}
 
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
 
@@ -65,7 +69,7 @@
 
   <!-- Version Badge -->
   <div id="version-badge">
-    🚀 v2.7.0
+    🚀 v2.8.0
   </div>
 
   <!-- Release Notes Modal -->
@@ -74,6 +78,7 @@
       <span id="close-release-notes">&times;</span>
       <h2>🧾 Release Notes</h2>
       <ul>
+        <li><strong>v2.8.0</strong> – Added new world leaderboard!</li>
         <li><strong>v2.7.0</strong> – Updated the end game maps so they use game players language</li>
         <li><strong>v2.6.0</strong> – Fixed an issue where country was not available</li>
         <li><strong>v2.5.0</strong> – Fixed a bug where not all country names matched so had missing colours</li>
@@ -109,6 +114,15 @@
   }
 </script>
 <!-- Required for loading stats modal -->
+
+<!-- Required for loading leaderboard modal -->
+<script>
+  function toggleLeaderboard() {
+    const modal = document.getElementById("gameLeaderboardModal");
+    modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for loading leaderboard modal -->
 
 <script>
   const badge = document.getElementById('version-badge');

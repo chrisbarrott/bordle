@@ -1,0 +1,100 @@
+<div id="gameLeaderboardModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg relative w-96 max-h-[90vh] overflow-y-auto">
+    <button onclick="toggleLeaderboard()" class="absolute top-2 right-3 text-gray-500 text-xl">&times;</button>
+    <h3 class="text-lg font-bold text-blue-800 mb-2 text-center">🌍 World Leaderboard</h3>
+
+    <ul class="text-gray-800 space-y-3">
+      <li><strong>Top 5 Countries Today</strong></li>
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="border-b border-gray-300 text-gray-600">
+            <th class="text-left py-1">Country</th>
+            <th class="text-right py-1">Success %</th>
+            <th class="text-right py-1">Guesses</th>
+          </tr>
+        </thead>
+        <tbody id="dailyLeaderboardRows">
+          <tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>
+        </tbody>
+      </table>
+
+      <hr class="my-3">
+
+      <li><strong>Top 5 Countries (All Time)</strong></li>
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="border-b border-gray-300 text-gray-600">
+            <th class="text-left py-1">Country</th>
+            <th class="text-right py-1">Success %</th>
+            <th class="text-right py-1">Guesses</th>
+          </tr>
+        </thead>
+        <tbody id="allTimeLeaderboardRows">
+          <tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>
+        </tbody>
+      </table>
+    </ul>
+  </div>
+</div>
+
+
+<!-- Required for leaderboard modal -->
+<script>
+  function openLeaderboard() {
+      document.getElementById('gameLeaderboardModal').classList.remove('hidden');
+  }
+
+  function closeLeaderboard() {
+      document.getElementById('gameLeaderboardModal').classList.add('hidden');
+  }
+</script>
+<!-- Required for leaderboard modal -->
+
+<script>
+    async function toggleLeaderboard() {
+    const modal = document.getElementById("gameLeaderboardModal");
+    if (!modal.classList.contains("hidden")) {
+        modal.classList.add("hidden");
+        return;
+    }
+
+    modal.classList.remove("hidden");
+    await loadLeaderboardData();
+    }
+
+    async function loadLeaderboardData() {
+    const dailyBody = document.getElementById("dailyLeaderboardRows");
+    const allTimeBody = document.getElementById("allTimeLeaderboardRows");
+
+    dailyBody.innerHTML = "<tr><td colspan='3' class='text-center py-2 text-gray-500'>Loading...</td></tr>";
+    allTimeBody.innerHTML = "<tr><td colspan='3' class='text-center py-2 text-gray-500'>Loading...</td></tr>";
+
+    try {
+        const res = await fetch("/leaderboard_data");
+        const data = await res.json();
+
+        const today = data.daily;
+        const allTime = data.all_time;
+
+        dailyBody.innerHTML = today.map(row => `
+        <tr class="border-b border-gray-200">
+            <td class="py-1">${row.country}</td>
+            <td class="py-1 text-right">${row.success_rate.toFixed(1)}%</td>
+            <td class="py-1 text-right">${row.total_guesses}</td>
+        </tr>
+        `).join("");
+
+        allTimeBody.innerHTML = allTime.map(row => `
+        <tr class="border-b border-gray-200">
+            <td class="py-1">${row.country}</td>
+            <td class="py-1 text-right">${row.success_rate.toFixed(1)}%</td>
+            <td class="py-1 text-right">${row.total_guesses}</td>
+        </tr>
+        `).join("");
+
+    } catch (err) {
+        dailyBody.innerHTML = "<tr><td colspan='3' class='text-center text-red-500 py-2'>Failed to load.</td></tr>";
+        allTimeBody.innerHTML = "<tr><td colspan='3' class='text-center text-red-500 py-2'>Failed to load.</td></tr>";
+    }
+    }
+</script>

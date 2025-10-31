@@ -16,6 +16,7 @@ from services.game_database_connections import (
     get_db_connection,
     get_game_number,
     get_games_today,
+    get_leaderboard_data,
     get_total_games
 )
 from services.game_logic import (
@@ -174,6 +175,16 @@ def submit():
 def reset_session():
     reset_game(session)
     return redirect(url_for("landing"))
+
+
+@app.route("/leaderboard_data")
+def leaderboard_data():
+    try:
+        data = get_leaderboard_data()
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error loading leaderboard data: {e}")
+        return jsonify({"error": "Failed to load leaderboard data"}), 500
 
 
 @app.route("/sitemap.xml")
