@@ -290,32 +290,22 @@ def record_world_leaderboard_result(success: bool):
     """Update daily country stats for the leaderboard."""
     conn = get_db_connection()
     cursor = conn.cursor()
+    # Default values
+    country, region, city = "Unknown", "Unknown", "Unknown"
 
-    # Make sure entry exists for today
-    cursor.execute("""
-        SELECT plays, successes, failures
-        FROM country_stats
-        WHERE game_date = ? AND country = ? AND region = ? AND city = ?
-    """, (game_date, country, region, city))
-    existing = cursor.fetchone()
+    if user_ip:
+        country, region, city = get_user_location(user_ip)
 
-    if existing:
-        plays, successes, failures = existing
-        plays += 1
-        if success:
-            successes += 1
-        else:
-            failures += 1
-        cursor.execute("""
-            UPDATE country_stats
-            SET plays = ?, successes = ?, failures = ?
-            WHERE game_date = ? AND country = ? AND region = ? AND city = ?
-        """, (plays, successes, failures, game_date, country, region, city))
-    else:
-        cursor.execute("""
-            INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
-            VALUES (?, ?, ?, ?, 1, ?, ?)
-        """, (game_date, country, region, city, 1 if success else 0, 0 if success else 1))
+    # Update or insert record for today + location
+    cursor.execute('''
+        INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
+        VALUES (?, ?, ?, ?, 1, ?, ?)
+        ON CONFLICT(game_date, country, region, city)
+        DO UPDATE SET 
+            plays = plays + 1,
+            successes = successes + excluded.successes,
+            failures = failures + excluded.failures
+    ''', (game_date, country, region, city, 1 if success else 0, 0 if success else 1))
 
     conn.commit()
     conn.close()
