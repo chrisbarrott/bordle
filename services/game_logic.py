@@ -14,6 +14,8 @@ from services.game_get_data import (
     get_border_options,
     get_country_shape,
     get_shapes,
+    get_user_ip,
+    get_user_location,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -81,6 +83,11 @@ def initialize_game(session):
     # Set game number for session handling
     session["game_number"] = get_game_number()
     logging.info(f"Initialized game #{session['game_number']} for {session['country_name']}")
+
+    # Get the IP and lookup location
+    session["user_ip"] = get_user_ip()
+    session["location"] = get_user_location(session["user_ip"])
+    logging.info(f"Player playing from location: {session['location']}")
 
 
 # Game reset (hidden)
