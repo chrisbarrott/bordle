@@ -5,8 +5,27 @@
 
   <!-- Navigation -->
   <div class="text-center mb-6">
-    <a href="/" class="text-blue-600 hover:underline font-semibold">&larr; Back to Today's Game</a>
+    <a href="/game" class="text-blue-600 hover:underline font-semibold">&larr; Back to Today's Game</a>
   </div>
+
+  <!-- User Stats -->
+  <section class="mb-8">
+    <h2 class="text-xl font-semibold mb-2">🧑‍💻 Your Stats</h2>
+    <ul class="text-gray-800 space-y-2">
+      <li><strong>Games Played:</strong> <span id="gamesPlayed">0</span></li>
+      <li><strong>Games Won:</strong> <span id="gamesWon">0</span></li>
+      <li><strong>Win %:</strong> <span id="successRate">0.00</span></li>
+      <li><strong>Current Streak:</strong> <span id="currentStreak">0</span></li>
+    </ul>
+    <br>
+    <h2 class="text-xl font-semibold mb-2">📊 Bordle Stats (All Players)</h3>
+    <ul class="text-gray-800 space-y-2">
+      <li><strong>Games Played Today:</strong> <span id="gamesToday">{{ games_today }}</span></li>
+      <li><strong>Games Number:</strong> <span id="gameNumber">{{ game_number }}</span></li>
+      <li><strong>Total Games Ever:</strong> <span id="totalGames">{{ total_games }}</span></li>
+      <li><strong>Success Rate Today:</strong> <span id="todaySuccessRate">{{ today_success_rate }}%</span></li>
+    </ul>
+  </section>
 
   <!-- World Stats -->
   <section class="mb-8">
@@ -23,12 +42,6 @@
         <tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>
       </tbody>
     </table>
-  </section>
-
-  <!-- User Stats -->
-  <section class="mb-8">
-    <h2 class="text-xl font-semibold mb-2">🧑‍💻 Your Stats</h2>
-    <div id="userStats" class="text-gray-700 text-sm">Loading...</div>
   </section>
 
   <!-- All-Time Leaderboard -->

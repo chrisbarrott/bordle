@@ -28,12 +28,24 @@
       <!-- 📈 Your Current Stats Box -->
       <div id="statsContainer" class="flex-1 sm:flex-none border border-blue-300 rounded-lg p-3 bg-blue-50 shadow text-sm">
         <h3 class="font-semibold text-blue-800 mb-1 text-center">Your Stats</h3>
-        <div class="grid grid-cols-2 gap-y-1 text-gray-800">
-          <div><strong>Played:</strong></div> <div id="game_played" class="text-right">0</div>
-          <div><strong>Wins:</strong></div> <div id="game_won" class="text-right">0</div>
-          <div><strong>Streak:</strong></div> <div id="local_current_streak" class="text-right">0</div>
-          <div><strong>Rate:</strong></div> <div id="local_success_rate" class="text-right">0%</div>
-        </div>
+        <table class="w-full text-center text-gray-800 border-collapse">
+          <thead>
+            <tr class="border-b border-gray-300 text-xs text-gray-600">
+              <th>Played</th>
+              <th>Wins</th>
+              <th>Streak</th>
+              <th>Rate%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="game_played">0</td>
+              <td id="game_won">0</td>
+              <td id="local_current_streak">0</td>
+              <td id="local_success_rate">0%</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- WhatsApp Share -->
