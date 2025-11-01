@@ -230,34 +230,40 @@ def get_leaderboard_data():
     cursor = conn.cursor()
 
     # ✅ Daily stats (for today)
-    cursor.execute(cursor.execute("""
-        SELECT 
+    cursor.execute("""
+        SELECT
             country,
-            successes,
-            failures,
-            plays,
-            ROUND(CAST(successes AS FLOAT) * 100.0 / (successes + failures), 2) AS success_rate
+            SUM(successes) AS total_successes,
+            SUM(failures) AS total_failures,
+            SUM(plays) AS total_plays,
+            CASE
+                WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
+                ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
+            END AS success_rate
         FROM country_stats
         WHERE game_date = DATE('now', 'localtime')
         GROUP BY country
-        HAVING (successes + failures) > 0
-        ORDER BY success_rate DESC, plays DESC
+        HAVING total_plays > 0
+        ORDER BY success_rate DESC, total_plays DESC
         LIMIT 5
-    """))
+    """)
     daily = cursor.fetchall()
 
     # ✅ All-time stats
     cursor.execute("""
-        SELECT 
+        SELECT
             country,
-            SUM(successes) AS successes,
-            SUM(failures) AS failures,
-            SUM(plays) AS plays,
-            ROUND(CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)), 2) AS success_rate
+            SUM(successes) AS total_successes,
+            SUM(failures) AS total_failures,
+            SUM(plays) AS total_plays,
+            CASE
+                WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
+                ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
+            END AS success_rate
         FROM country_stats
         GROUP BY country
-        HAVING (SUM(successes) + SUM(failures)) > 0
-        ORDER BY success_rate DESC, plays DESC
+        HAVING total_plays > 0
+        ORDER BY success_rate DESC, total_plays DESC
         LIMIT 5
     """)
     all_time = cursor.fetchall()
