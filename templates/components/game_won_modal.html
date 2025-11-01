@@ -17,56 +17,47 @@
 
     <!-- Share Results Button -->
     <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">  
-      <!-- 📊 Show Stats Button -->
-      <button
-        onclick="window.location.href='/stats'"
-        class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-      >
-        🌍 View World Stats
-      </button>
-
       <!-- 📈 Your Current Stats Box -->
       <div id="statsContainer" class="flex-1 sm:flex-none border border-blue-300 rounded-lg p-3 bg-blue-50 shadow text-sm">
         <h3 class="font-semibold text-blue-800 mb-1 text-center">Your Stats</h3>
-        <table class="w-full text-center text-gray-800 border-collapse">
-          <thead>
-            <tr class="border-b border-gray-300 text-xs text-gray-600">
-              <th>Played</th>
-              <th>Wins</th>
-              <th>Streak</th>
-              <th>Rate%</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td id="game_played">0</td>
-              <td id="game_won">0</td>
-              <td id="local_current_streak">0</td>
-              <td id="local_success_rate">0%</td>
-            </tr>
-          </tbody>
-        </table>
+          <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
+          <ul class="text-gray-800 space-y-2">
+            <li><strong>Games Played:</strong> <span id="gamesPlayed">0</span></li>
+            <li><strong>Games Won:</strong> <span id="gamesWon">0</span></li>
+            <li><strong>Win %:</strong> <span id="successRate">0.00</span></li>
+            <li><strong>Current Streak:</strong> <span id="currentStreak">0</span></li>
+          </ul>
       </div>
 
-      <!-- WhatsApp Share -->
-      <button
-        id="whatsappShare"
-        onclick="shareToWhatsapp()"
-        type="button"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-      >
-        <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-5 w-5 mr-2">
-        Share Result
+      <!-- 📊 Show Stats Button -->
+      <button onclick="window.location.href='/stats'"
+        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+      > 🌍 View World Stats
       </button>
 
-      <!-- Copy to Clipboard -->
-      <button
-        onclick="copyToClipboard()"
-        type="button"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-      >
-        📋 Copy to Clipboard
-      </button>
+
+      <!-- Share Buttons Row -->
+      <div class="flex flex-wrap justify-center gap-3 w-full mt-4">
+        <!-- WhatsApp Share -->
+        <button
+          id="whatsappShare"
+          onclick="shareToWhatsapp()"
+          type="button"
+          class="inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-5 w-5 mr-2">
+          Share Result
+        </button>
+
+        <!-- Copy to Clipboard -->
+        <button
+          onclick="copyToClipboard()"
+          type="button"
+          class="inline-flex items-center justify-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+        >
+          📋 Copy to Clipboard
+        </button>
+      </div>
     </div>
 
 

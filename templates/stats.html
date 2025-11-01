@@ -1,66 +1,179 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="max-w-4xl mx-auto mt-8 p-6 bg-white shadow-lg rounded-2xl">
-  <h1 class="text-3xl font-bold mb-4 text-center">Game Statistics</h1>
 
-  <!-- Navigation -->
-  <div class="text-center mb-6">
-    <a href="/game" class="text-blue-600 hover:underline font-semibold">&larr; Back to Today's Game</a>
+{% block content %}
+<!-- Your stats page content -->
+{% include 'components/game_world_leaderboard_modal.html' %}
+{% include 'components/game_stats_modal.html' %}
+{% endblock %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bordle Stats</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<div class="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-lg p-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-blue-800">📈 Bordle Stats</h1>
+    <a href="/game" 
+    class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+    <span class="mr-2">🎮</span> Back to Today's Game
+    </a>
   </div>
 
-  <!-- User Stats -->
-  <section class="mb-8">
-    <h2 class="text-xl font-semibold mb-2">🧑‍💻 Your Stats</h2>
-    <ul class="text-gray-800 space-y-2">
-      <li><strong>Games Played:</strong> <span id="gamesPlayed">0</span></li>
-      <li><strong>Games Won:</strong> <span id="gamesWon">0</span></li>
-      <li><strong>Win %:</strong> <span id="successRate">0.00</span></li>
-      <li><strong>Current Streak:</strong> <span id="currentStreak">0</span></li>
-    </ul>
-    <br>
-    <h2 class="text-xl font-semibold mb-2">📊 Bordle Stats (All Players)</h3>
-    <ul class="text-gray-800 space-y-2">
-      <li><strong>Games Played Today:</strong> <span id="gamesToday">{{ games_today }}</span></li>
-      <li><strong>Games Number:</strong> <span id="gameNumber">{{ game_number }}</span></li>
-      <li><strong>Total Games Ever:</strong> <span id="totalGames">{{ total_games }}</span></li>
-      <li><strong>Success Rate Today:</strong> <span id="todaySuccessRate">{{ today_success_rate }}%</span></li>
-    </ul>
-  </section>
-
-  <!-- World Stats -->
-  <section class="mb-8">
-    <h2 class="text-xl font-semibold mb-2">🌍 World Stats (Today)</h2>
-    <table class="w-full text-sm border-collapse border-t border-gray-300">
-      <thead class="text-gray-600 border-b border-gray-300">
+  <!-- USER STATS -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-xl">
+    <h2 class="text-xl font-bold text-blue-700 mb-4">👤 Your Stats</h2>
+    <table class="w-full border border-gray-300 text-left">
+      <thead class="bg-gray-200">
         <tr>
-          <th class="text-left py-1">Country</th>
-          <th class="text-right py-1">Success %</th>
-          <th class="text-right py-1">Plays</th>
+          <th class="py-2 px-4">Metric</th>
+          <th class="py-2 px-4">Value</th>
         </tr>
       </thead>
-      <tbody id="dailyLeaderboardRows">
-        <tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>
+      <tbody class="text-gray-800">
+        <tr><td class="py-2 px-4">Games Played</td><td class="py-2 px-4" id="gamesPlayed">0</td></tr>
+        <tr><td class="py-2 px-4">Games Won</td><td class="py-2 px-4" id="gamesWon">0</td></tr>
+        <tr><td class="py-2 px-4">Win %</td><td class="py-2 px-4" id="successRate">0%</td></tr>
+        <tr><td class="py-2 px-4">Current Streak</td><td class="py-2 px-4" id="currentStreak">0</td></tr>
       </tbody>
     </table>
-  </section>
+  </div>
 
-  <!-- All-Time Leaderboard -->
-  <section>
-    <h2 class="text-xl font-semibold mb-2">🏆 All-Time Leaderboard</h2>
-    <table class="w-full text-sm border-collapse border-t border-gray-300">
-      <thead class="text-gray-600 border-b border-gray-300">
+  <!-- GLOBAL STATS -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-xl">
+    <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 Bordle Stats (All Players)</h2>
+    <table class="w-full border border-gray-300 text-left">
+      <thead class="bg-gray-200">
         <tr>
-          <th class="text-left py-1">Country</th>
-          <th class="text-right py-1">Success %</th>
-          <th class="text-right py-1">Plays</th>
+          <th class="py-2 px-4">Metric</th>
+          <th class="py-2 px-4">Value</th>
         </tr>
       </thead>
-      <tbody id="allTimeLeaderboardRows">
-        <tr><td colspan="3" class="text-center py-2 text-gray-500">Loading...</td></tr>
+      <tbody id="globalStatsBody" class="text-gray-800">
+        <tr><td class="py-2 px-4">Games Played Today</td><td class="py-2 px-4" id="gamesToday">Loading...</td></tr>
+        <tr><td class="py-2 px-4">Game Number</td><td class="py-2 px-4" id="gameNumber">Loading...</td></tr>
+        <tr><td class="py-2 px-4">Total Games Ever</td><td class="py-2 px-4" id="totalGames">Loading...</td></tr>
+        <tr><td class="py-2 px-4">Success Rate Today</td><td class="py-2 px-4" id="todaySuccessRate">Loading...</td></tr>
       </tbody>
     </table>
-  </section>
-</div>
+  </div>
 
+  <!-- WORLD STATS (Today) -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-3xl">
+    <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 World Stats (Today)</h2>
+    <table class="w-full border border-gray-300 text-left">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="py-2 px-4">Country</th>
+          <th class="py-2 px-4">Success %</th>
+          <th class="py-2 px-4">Plays</th>
+        </tr>
+      </thead>
+      <tbody id="worldStatsBody">
+        <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-3xl">
+    <h2 class="text-xl font-bold text-blue-700 mb-4">🏆 All-Time Leaderboard</h2>
+    <table class="w-full border border-gray-300 text-left">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="py-2 px-4">Country</th>
+          <th class="py-2 px-4">Success %</th>
+          <th class="py-2 px-4">Plays</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody">
+        <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // ✅ Load user's local stats
+    function showLocalStats() {
+      const stats = JSON.parse(localStorage.getItem("bordleStats"));
+      if (!stats) return;
+
+      const successRate = stats.gamesPlayed > 0
+        ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
+        : 0;
+
+      document.getElementById("gamesPlayed").innerText = stats.gamesPlayed;
+      document.getElementById("gamesWon").innerText = stats.gamesWon;
+      document.getElementById("currentStreak").innerText = stats.currentStreak;
+      document.getElementById("successRate").innerText = `${successRate}%`;
+    }
+
+    // 🌍 Load global stats from Flask API
+    async function loadGlobalStats() {
+      try {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+
+        // Global overview
+        document.getElementById("gamesToday").innerText = data.games_today ?? "0";
+        document.getElementById("gameNumber").innerText = data.game_number ?? "0";
+        document.getElementById("totalGames").innerText = data.total_games ?? "0";
+        document.getElementById("todaySuccessRate").innerText = data.today_success_rate
+          ? `${data.today_success_rate}%`
+          : "0%";
+
+        // World Stats (Today)
+        const worldBody = document.getElementById("worldStatsBody");
+        worldBody.innerHTML = "";
+        if (data.world_stats && data.world_stats.length > 0) {
+          data.world_stats.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td class="py-2 px-4">${row.country}</td>
+              <td class="py-2 px-4">${row.success_rate}%</td>
+              <td class="py-2 px-4">${row.plays}</td>
+            `;
+            worldBody.appendChild(tr);
+          });
+        } else {
+          worldBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
+        }
+
+        // Leaderboard
+        const leaderboardBody = document.getElementById("leaderboardBody");
+        leaderboardBody.innerHTML = "";
+        if (data.leaderboard && data.leaderboard.length > 0) {
+          data.leaderboard.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td class="py-2 px-4">${row.country}</td>
+              <td class="py-2 px-4">${row.success_rate}%</td>
+              <td class="py-2 px-4">${row.plays}</td>
+            `;
+            leaderboardBody.appendChild(tr);
+          });
+        } else {
+          leaderboardBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
+        }
+
+      } catch (err) {
+        console.error("Error loading global stats:", err);
+      }
+    }
+
+    // Initialize when DOM ready
+    window.addEventListener("DOMContentLoaded", () => {
+      showLocalStats();
+      loadGlobalStats();
+    });
+  </script>
+</body>
+</html>
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/stats_page.js') }}"></script>
 {% endblock %}
