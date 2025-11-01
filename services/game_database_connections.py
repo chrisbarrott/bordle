@@ -244,8 +244,8 @@ def get_leaderboard_data():
         WHERE game_date = DATE('now', 'localtime')
         GROUP BY country
         HAVING total_plays > 0
-        ORDER BY success_rate DESC, total_plays DESC
-        LIMIT 5
+        ORDER BY success_rate DESC, plays DESC
+        LIMIT 5;
     """)
     daily = cursor.fetchall()
 
@@ -263,8 +263,8 @@ def get_leaderboard_data():
         FROM country_stats
         GROUP BY country
         HAVING total_plays > 0
-        ORDER BY success_rate DESC, total_plays DESC
-        LIMIT 5
+        ORDER BY success_rate DESC, plays DESC
+        LIMIT 5;
     """)
     all_time = cursor.fetchall()
 
