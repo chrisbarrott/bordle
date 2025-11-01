@@ -17,23 +17,23 @@
 
     <!-- Share Results Button -->
     <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">  
-      <!-- Show Stats -->
+      <!-- 📊 Show Stats Button -->
       <button
-        onclick="showStatsContainter()"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        onclick="window.location.href='/stats'"
+        class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
       >
-        📊 Show Stats
+        🌍 View World Stats
       </button>
 
-      <!-- 📊 Embedded Stats Panel -->
-      <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
-        <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
-        <ul class="text-sm text-gray-800 list-disc list-inside">
-          <li><strong>Your Total Games Played:</strong> <span id="game_played">0</span></li>
-          <li><strong>Wins:</strong> <span id="game_won">0</span></li>
-          <li><strong>Current Streak:</strong> <span id="local_current_streak">0</span></li>
-          <li><strong>Your Success Rate:</strong> <span id="local_success_rate">0</span></li>
-        </ul>
+      <!-- 📈 Your Current Stats Box -->
+      <div id="statsContainer" class="flex-1 sm:flex-none border border-blue-300 rounded-lg p-3 bg-blue-50 shadow text-sm">
+        <h3 class="font-semibold text-blue-800 mb-1 text-center">Your Stats</h3>
+        <div class="grid grid-cols-2 gap-y-1 text-gray-800">
+          <div><strong>Played:</strong></div> <div id="game_played" class="text-right">0</div>
+          <div><strong>Wins:</strong></div> <div id="game_won" class="text-right">0</div>
+          <div><strong>Streak:</strong></div> <div id="local_current_streak" class="text-right">0</div>
+          <div><strong>Rate:</strong></div> <div id="local_success_rate" class="text-right">0%</div>
+        </div>
       </div>
 
       <!-- WhatsApp Share -->

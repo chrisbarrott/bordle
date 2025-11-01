@@ -154,6 +154,11 @@ def game():
     )
 
 
+@app.route("/stats")
+def stats_page():
+    return render_template("stats.html")
+
+
 @app.route("/submit", methods=["POST"])
 def submit():
     # Handle the guess
@@ -186,6 +191,11 @@ def leaderboard_data():
     except Exception as e:
         print(f"Error loading leaderboard data: {e}")
         return jsonify({"error": "Failed to load leaderboard data"}), 500
+
+
+@app.route("/api/leaderboard")
+def leaderboard_api():
+    return jsonify(get_leaderboard_data())
 
 
 @app.route("/sitemap.xml")
