@@ -114,8 +114,6 @@ def check_played():
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():
-    game_number = get_game_number()
-
     # init the game if a new day
     today = str(date.today())
     if "game_date" not in session or session["game_date"] != today:
@@ -155,8 +153,23 @@ def game():
 
 
 @app.route("/stats")
-def stats_page():
-    return render_template("stats.html")
+def stats():
+    # Fetch or reuse the same data
+    bordle_stats = analytics()
+    games_today = get_games_today()
+    total_games = get_total_games()
+    games_today, today_success_rate = get_games_today()
+    game_number = get_game_number()
+    print(f"Rendering stats page with: {bordle_stats}, {games_today}, {total_games}, {today_success_rate}")
+
+    return render_template(
+        "stats.html",
+        bordle_stats=bordle_stats,
+        games_today=games_today,
+        total_games=total_games,
+        today_success_rate=today_success_rate,
+        game_number=game_number
+    )
 
 
 @app.route("/submit", methods=["POST"])

@@ -1,29 +1,19 @@
 {% extends "base.html" %}
-
 {% block content %}
-<!-- Your stats page content -->
-{% include 'components/game_world_leaderboard_modal.html' %}
-{% include 'components/game_stats_modal.html' %}
-{% endblock %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bordle Stats</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+
 
 <div class="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-lg p-6">
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-blue-800">📈 Bordle Stats</h1>
-    <a href="/game" 
-    class="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-    <span class="mr-2">🎮</span> Back to Today's Game
+    <!-- Header -->
+    <div class="mb-8 text-center">
+    <h1 class="text-2xl font-bold text-blue-800 mb-4">📈 Bordle Stats</h1>
+    <a href="/game"
+        class="inline-flex items-center gap-2 px-6 py-2 bg-gray-100 text-gray-800 
+                rounded-full shadow hover:bg-gray-200 hover:shadow-md transition-all duration-200">
+        <img src="/static/images/arrow_left.svg" alt="" class="h-4 w-4">
+        Back to Game
     </a>
-  </div>
+    </div>
 
   <!-- USER STATS -->
   <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-xl">
@@ -98,10 +88,15 @@
   </div>
 
   <script>
+    console.log("[stats.html] Template rendered for:", window.location.pathname);
+  </script>
+  
+  <script>
     // ✅ Load user's local stats
     function showLocalStats() {
       const stats = JSON.parse(localStorage.getItem("bordleStats"));
       if (!stats) return;
+      console.log("Loading local stats:", stats);
 
       const successRate = stats.gamesPlayed > 0
         ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
@@ -118,6 +113,7 @@
       try {
         const res = await fetch("/api/stats");
         const data = await res.json();
+        console.log("Loaded global stats:", data);
 
         // Global overview
         document.getElementById("gamesToday").innerText = data.games_today ?? "0";
@@ -166,14 +162,15 @@
       }
     }
 
-    // Initialize when DOM ready
+    // Initialize stats display when DOM is ready
     window.addEventListener("DOMContentLoaded", () => {
-      showLocalStats();
-      loadGlobalStats();
+    if (window.location.pathname !== "/stats") return;
+    showLocalStats();
+    loadGlobalStats();
+    loadLeaderboardData();
     });
+
   </script>
 </body>
 </html>
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/stats_page.js') }}"></script>
 {% endblock %}

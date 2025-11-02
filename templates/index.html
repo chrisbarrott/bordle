@@ -179,6 +179,25 @@
   }
 
   const currentState = loadGameState();
+
+  async function toggleLeaderboard() {
+    const modal = document.getElementById("gameLeaderboardModal");
+    if (!modal) {
+        console.warn("[Leaderboard] Modal not found — skipping toggle.");
+        return;
+    }
+
+    const isHidden = modal.classList.contains("hidden");
+
+    if (isHidden) {
+        console.log("[Leaderboard] Opening modal...");
+        modal.classList.remove("hidden");
+        await loadLeaderboardData();
+    } else {
+        console.log("[Leaderboard] Closing modal...");
+        modal.classList.add("hidden");
+    }
+}
 </script>
 
 {% endblock %}
