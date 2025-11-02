@@ -5,172 +5,218 @@
 
 <div class="max-w-3xl mx-auto mt-10 bg-white rounded-xl shadow-lg p-6">
     <!-- Header -->
-    <div class="mb-8 text-center">
-    <h1 class="text-2xl font-bold text-blue-800 mb-4">📈 Bordle Stats</h1>
-    <a href="/game"
-        class="inline-flex items-center gap-2 px-6 py-2 bg-gray-100 text-gray-800 
-                rounded-full shadow hover:bg-gray-200 hover:shadow-md transition-all duration-200">
-        <img src="/static/images/arrow_left.svg" alt="" class="h-4 w-4">
-        Back to Game
-    </a>
-    </div>
+    <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-blue-800">📈 Bordle Stats  </h1>
+</div>
+
+
+  <a href="/game" 
+     class="inline-flex items-center gap-2 text-blue-600 font-medium hover:underline hover:text-blue-800 transition-all duration-200">
+    <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
+    <span><u>Back to Game Result</u></span>
+  </a>
+  <br><br>
 
   <!-- USER STATS -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-xl">
-    <h2 class="text-xl font-bold text-blue-700 mb-4">👤 Your Stats</h2>
-    <table class="w-full border border-gray-300 text-left">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="py-2 px-4">Metric</th>
-          <th class="py-2 px-4">Value</th>
-        </tr>
-      </thead>
-      <tbody class="text-gray-800">
-        <tr><td class="py-2 px-4">Games Played</td><td class="py-2 px-4" id="gamesPlayed">0</td></tr>
-        <tr><td class="py-2 px-4">Games Won</td><td class="py-2 px-4" id="gamesWon">0</td></tr>
-        <tr><td class="py-2 px-4">Win %</td><td class="py-2 px-4" id="successRate">0%</td></tr>
-        <tr><td class="py-2 px-4">Current Streak</td><td class="py-2 px-4" id="currentStreak">0</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2 class="text-xl font-bold text-blue-700 mb-4">👤 Your Stats</h2>
+  <table class="w-full border border-gray-300 text-left">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="py-2 px-4">Metric</th>
+        <th class="py-2 px-4">Value</th>
+      </tr>
+    </thead>
+    <tbody class="text-gray-800">
+      <tr><td class="py-2 px-4">Games Played</td><td class="py-2 px-4" id="gamesPlayed">0</td></tr>
+      <tr><td class="py-2 px-4">Games Won</td><td class="py-2 px-4" id="gamesWon">0</td></tr>
+      <tr><td class="py-2 px-4">Win %</td><td class="py-2 px-4" id="successRate">0%</td></tr>
+      <tr><td class="py-2 px-4">Current Streak</td><td class="py-2 px-4" id="currentStreak">0</td></tr>
+    </tbody>
+  </table>
+  <br>
 
   <!-- GLOBAL STATS -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-xl">
-    <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 Bordle Stats (All Players)</h2>
-    <table class="w-full border border-gray-300 text-left">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="py-2 px-4">Metric</th>
-          <th class="py-2 px-4">Value</th>
-        </tr>
-      </thead>
-      <tbody id="globalStatsBody" class="text-gray-800">
-        <tr><td class="py-2 px-4">Games Played Today</td><td class="py-2 px-4" id="gamesToday">Loading...</td></tr>
-        <tr><td class="py-2 px-4">Game Number</td><td class="py-2 px-4" id="gameNumber">Loading...</td></tr>
-        <tr><td class="py-2 px-4">Total Games Ever</td><td class="py-2 px-4" id="totalGames">Loading...</td></tr>
-        <tr><td class="py-2 px-4">Success Rate Today</td><td class="py-2 px-4" id="todaySuccessRate">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 Bordle Stats (All Players)</h2>
+  <table class="w-full border border-gray-300 text-left">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="py-2 px-4">Metric</th>
+        <th class="py-2 px-4">Value</th>
+      </tr>
+    </thead>
+    <tbody id="globalStatsBody" class="text-gray-800">
+      <tr><td class="py-2 px-4">Games Played Today</td><td class="py-2 px-4" id="gamesToday">Loading...</td></tr>
+      <tr><td class="py-2 px-4">Game Number</td><td class="py-2 px-4" id="gameNumber">Loading...</td></tr>
+      <tr><td class="py-2 px-4">Total Games Ever</td><td class="py-2 px-4" id="totalGames">Loading...</td></tr>
+      <tr><td class="py-2 px-4">Success Rate Today</td><td class="py-2 px-4" id="todaySuccessRate">Loading...</td></tr>
+    </tbody>
+  </table>
+  <br>
 
   <!-- WORLD STATS (Today) -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-3xl">
-    <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 World Stats (Today)</h2>
-    <table class="w-full border border-gray-300 text-left">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="py-2 px-4">Country</th>
-          <th class="py-2 px-4">Success %</th>
-          <th class="py-2 px-4">Plays</th>
-        </tr>
-      </thead>
-      <tbody id="worldStatsBody">
-        <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2 class="text-xl font-bold text-blue-700 mb-4">🌍 World Stats (Today)</h2>
+  <table class="w-full border border-gray-300 text-left">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="py-2 px-4">Country</th>
+        <th class="py-2 px-4">Success %</th>
+        <th class="py-2 px-4">Plays</th>
+      </tr>
+    </thead>
+    <tbody id="dailyLeaderboardBody">
+      <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+    </tbody>
+  </table>
+  <br>
 
   <!-- LEADERBOARD -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-10 w-full max-w-3xl">
-    <h2 class="text-xl font-bold text-blue-700 mb-4">🏆 All-Time Leaderboard</h2>
-    <table class="w-full border border-gray-300 text-left">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="py-2 px-4">Country</th>
-          <th class="py-2 px-4">Success %</th>
-          <th class="py-2 px-4">Plays</th>
-        </tr>
-      </thead>
-      <tbody id="leaderboardBody">
-        <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <h2 class="text-xl font-bold text-blue-700 mb-4">🏆 All-Time Leaderboard</h2>
+  <table class="w-full border border-gray-300 text-left">
+    <thead class="bg-gray-200">
+      <tr>
+        <th class="py-2 px-4">Country</th>
+        <th class="py-2 px-4">Success %</th>
+        <th class="py-2 px-4">Plays</th>
+      </tr>
+    </thead>
+    <tbody id="allTimeLeaderboardBody">
+      <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
 
-  <script>
-    console.log("[stats.html] Template rendered for:", window.location.pathname);
-  </script>
-  
-  <script>
-    // ✅ Load user's local stats
-    function showLocalStats() {
-      const stats = JSON.parse(localStorage.getItem("bordleStats"));
-      if (!stats) return;
-      console.log("Loading local stats:", stats);
+<script>
+  console.log("[stats.html] Template rendered for:", window.location.pathname);
+</script>
 
-      const successRate = stats.gamesPlayed > 0
-        ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
-        : 0;
+<script>
+  async function loadLeaderboardData() {
+    console.log("[Stats Page] Fetching leaderboard data...");
 
-      document.getElementById("gamesPlayed").innerText = stats.gamesPlayed;
-      document.getElementById("gamesWon").innerText = stats.gamesWon;
-      document.getElementById("currentStreak").innerText = stats.currentStreak;
-      document.getElementById("successRate").innerText = `${successRate}%`;
+    const dailyBody = document.getElementById("dailyLeaderboardBody");
+    const allTimeBody = document.getElementById("allTimeLeaderboardBody");
+
+    if (!dailyBody || !allTimeBody) {
+      console.warn("[Stats Page] Leaderboard tables not found — skipping load.");
+      return;
     }
 
-    // 🌍 Load global stats from Flask API
-    async function loadGlobalStats() {
-      try {
-        const res = await fetch("/api/stats");
-        const data = await res.json();
-        console.log("Loaded global stats:", data);
+    dailyBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-2">Loading...</td></tr>`;
+    allTimeBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-2">Loading...</td></tr>`;
 
-        // Global overview
-        document.getElementById("gamesToday").innerText = data.games_today ?? "0";
-        document.getElementById("gameNumber").innerText = data.game_number ?? "0";
-        document.getElementById("totalGames").innerText = data.total_games ?? "0";
-        document.getElementById("todaySuccessRate").innerText = data.today_success_rate
-          ? `${data.today_success_rate}%`
-          : "0%";
+    try {
+      const response = await fetch("/leaderboard_data", { cache: "no-cache" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
 
-        // World Stats (Today)
-        const worldBody = document.getElementById("worldStatsBody");
-        worldBody.innerHTML = "";
-        if (data.world_stats && data.world_stats.length > 0) {
-          data.world_stats.forEach(row => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td class="py-2 px-4">${row.country}</td>
-              <td class="py-2 px-4">${row.success_rate}%</td>
-              <td class="py-2 px-4">${row.plays}</td>
-            `;
-            worldBody.appendChild(tr);
-          });
-        } else {
-          worldBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
-        }
+      // ✅ Daily Leaderboard
+      dailyBody.innerHTML = data.daily?.length
+        ? data.daily.map(row => `
+            <tr class="border-b border-gray-200">
+              <td class="py-2 px-4">${row.country || "Unknown"}</td>
+              <td class="py-2 px-4 text-right">${(row.success_rate ?? 0).toFixed(1)}%</td>
+              <td class="py-2 px-4 text-right">${row.total_guesses ?? 0}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No data today</td></tr>`;
 
-        // Leaderboard
-        const leaderboardBody = document.getElementById("leaderboardBody");
-        leaderboardBody.innerHTML = "";
-        if (data.leaderboard && data.leaderboard.length > 0) {
-          data.leaderboard.forEach(row => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td class="py-2 px-4">${row.country}</td>
-              <td class="py-2 px-4">${row.success_rate}%</td>
-              <td class="py-2 px-4">${row.plays}</td>
-            `;
-            leaderboardBody.appendChild(tr);
-          });
-        } else {
-          leaderboardBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
-        }
+      // 🏆 All-Time Leaderboard
+      allTimeBody.innerHTML = data.all_time?.length
+        ? data.all_time.map(row => `
+            <tr class="border-b border-gray-200">
+              <td class="py-2 px-4">${row.country || "Unknown"}</td>
+              <td class="py-2 px-4 text-right">${(row.success_rate ?? 0).toFixed(1)}%</td>
+              <td class="py-2 px-4 text-right">${row.total_guesses ?? 0}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No all-time data</td></tr>`;
 
-      } catch (err) {
-        console.error("Error loading global stats:", err);
+    } catch (err) {
+      console.error("[Stats Page] Error loading leaderboard data:", err);
+      dailyBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-2">Failed to load</td></tr>`;
+      allTimeBody.innerHTML = `<tr><td colspan="3" class="text-center text-red-500 py-2">Failed to load</td></tr>`;
+    }
+  }
+</script>
+
+<script>
+  // ✅ Load user's local stats
+  function showLocalStats() {
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    if (!stats) return;
+    console.log("Loading local stats:", stats);
+
+    const successRate = stats.gamesPlayed > 0
+      ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
+      : 0;
+
+    document.getElementById("gamesPlayed").innerText = stats.gamesPlayed;
+    document.getElementById("gamesWon").innerText = stats.gamesWon;
+    document.getElementById("currentStreak").innerText = stats.currentStreak;
+    document.getElementById("successRate").innerText = `${successRate}%`;
+  }
+
+  // 🌍 Load global stats from Flask API
+  async function loadGlobalStats() {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      console.log("Loaded global stats:", data);
+
+      // Global overview
+      document.getElementById("gamesToday").innerText = data.games_today ?? "0";
+      document.getElementById("gameNumber").innerText = data.game_number ?? "0";
+      document.getElementById("totalGames").innerText = data.total_games ?? "0";
+      document.getElementById("todaySuccessRate").innerText = data.today_success_rate
+        ? `${data.today_success_rate}%`
+        : "0%";
+
+      // World Stats (Today)
+      const worldBody = document.getElementById("worldStatsBody");
+      worldBody.innerHTML = "";
+      if (data.world_stats && data.world_stats.length > 0) {
+        data.world_stats.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="py-2 px-4">${row.country}</td>
+            <td class="py-2 px-4">${row.success_rate}%</td>
+            <td class="py-2 px-4">${row.plays}</td>
+          `;
+          worldBody.appendChild(tr);
+        });
+      } else {
+        worldBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
       }
+
+      // Leaderboard
+      const leaderboardBody = document.getElementById("leaderboardBody");
+      leaderboardBody.innerHTML = "";
+      if (data.leaderboard && data.leaderboard.length > 0) {
+        data.leaderboard.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="py-2 px-4">${row.country}</td>
+            <td class="py-2 px-4">${row.success_rate}%</td>
+            <td class="py-2 px-4">${row.plays}</td>
+          `;
+          leaderboardBody.appendChild(tr);
+        });
+      } else {
+        leaderboardBody.innerHTML = `<tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">No data available</td></tr>`;
+      }
+
+    } catch (err) {
+      console.error("Error loading global stats:", err);
     }
+  }
 
-    // Initialize stats display when DOM is ready
-    window.addEventListener("DOMContentLoaded", () => {
-    if (window.location.pathname !== "/stats") return;
-    showLocalStats();
-    loadGlobalStats();
-    loadLeaderboardData();
-    });
+  // Initialize stats display when DOM is ready
+  window.addEventListener("DOMContentLoaded", () => {
+  if (window.location.pathname !== "/stats") return;
+  showLocalStats();
+  loadGlobalStats();
+  loadLeaderboardData();
+  });
 
-  </script>
-</body>
-</html>
+</script>
 {% endblock %}
