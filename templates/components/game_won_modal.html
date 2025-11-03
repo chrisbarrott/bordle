@@ -14,19 +14,19 @@
         <div class="grid grid-cols-4 divide-x divide-gray-300 text-gray-800 font-semibold text-center">
           <div class="px-1">
             <span class="block text-blue-700">Played</span>
-            <span id="game_played">0</span>
+            <span id="gamesPlayed">0</span>
           </div>
           <div class="px-1">
             <span class="block text-blue-700">Wins</span>
-            <span id="game_won">0</span>
+            <span id="gamesWon">0</span>
           </div>
           <div class="px-1">
             <span class="block text-blue-700">Rate%</span>
-            <span id="local_success_rate">0</span>
+            <span id="successRate">0%</span>
           </div>
           <div class="px-1">
             <span class="block text-blue-700">Streak</span>
-            <span id="local_current_streak">0</span>
+            <span id="currentStreak">0</span>
           </div>
         </div>
       </div>
@@ -40,47 +40,43 @@
       <strong>{{ all_correct | join(", ") }}</strong>
     </div>
 
-    <!-- 🗺️ Victory Map (Reduced Height for mobile) -->
+    <!-- 🗺️ Victory Map -->
     <div id="victoryMap" class="w-full h-56 sm:h-72 mb-4 rounded border bg-gray-200"></div>
 
     <p class="text-center text-gray-600">Try again tomorrow for a new challenge!</p>
 
     <!-- 📤 Buttons -->
     <div class="flex flex-wrap justify-center gap-3 w-full mt-2">
-      <!-- 🌍 Stats -->
       <button onclick="window.location.href='/stats'"
         class="inline-flex items-center justify-center bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
         🌍 View World Stats
       </button>
 
-      <!-- 📲 WhatsApp -->
       <button id="whatsappShare" onclick="shareToWhatsapp()" type="button"
         class="inline-flex items-center justify-center bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600 text-sm sm:text-base">
         <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-4 w-4 mr-2">
         Share
       </button>
 
-      <!-- 📋 Copy -->
       <button onclick="copyToClipboard()" type="button"
         class="inline-flex items-center justify-center bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 text-sm sm:text-base">
         📋 Copy
       </button>
     </div>
-
   </div>
 </div>
 
-<!-- Leaflet CSS & JS -->
-<script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
-
 <script type="text/javascript">
   window.onload = function () {
-    const map = L.map('victoryMap');
+    // Update local stats display
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    if (stats) updateUserStats(stats);
 
+    // Map rendering
+    const map = L.map('victoryMap');
     L.tileLayer('https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=shOVlsPI8fhJlEek08rF', {
       attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> contributors',
       tileSize: 256,
@@ -88,133 +84,34 @@
       zoom: 1.5
     }).addTo(map);
 
-    // Load data
     const mainCountry = {{ country_geojson | tojson }};
     const correctShapes = {{ correct_shapes | tojson }};
     const wrongShapes = {{ wrong_shapes | tojson }};
 
-    // Style functions
     const mainStyle = { color: "black", weight: 2, fillOpacity: 0.7 };
     const correctStyle = { color: "green", weight: 1, fillOpacity: 0.5 };
     const wrongStyle = { color: "red", weight: 1, fillOpacity: 0.5 };
 
-    // Add and zoom to main country
     const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
     map.fitBounds(mainLayer.getBounds());
-    map.setZoom(map.getZoom() - 1);  // Zoom out slightly
+    map.setZoom(map.getZoom() - 1);
 
-    // Add correct and wrong shapes
-    correctShapes.forEach(shape => {
-      L.geoJSON(shape, { style: correctStyle }).addTo(map);
-    });
-
-    wrongShapes.forEach(shape => {
-      L.geoJSON(shape, { style: wrongStyle }).addTo(map);
-    });
-
-
+    correctShapes.forEach(shape => L.geoJSON(shape, { style: correctStyle }).addTo(map));
+    wrongShapes.forEach(shape => L.geoJSON(shape, { style: wrongStyle }).addTo(map));
   };
-</script>
 
-<script>
-  // Function to get the flag
-  function countryToFlagEmoji(country) {
-    const isoUrl = "{{ url_for('static', filename='map_data/iso_country_codes.json') }}";
-    const isoMap = {{ iso_map | tojson }};
-    const code = isoMap[country.trim()];
-
-    if (!code) return ""; // fallback: no flag
-
-    return code
-      .toUpperCase()
-      .split("")
-      .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
-      .join("");
-  }
-
-  function generateResults() {
-    console.log("Starting to generateResults")
-    const country = "{{ country_name }}";
-    const correct = {{ correct_count }};
-    const total = {{ border_count }};
-    const hardMode = {{ 'true' if hard_mode else 'false' }};
-    const date = new Date().toLocaleDateString('en-GB');
-    const gameNumber = {{ game_number }}
-
-    // get the guess data
-    const guessHistory = {{ guess_history | default([]) | tojson }};
-    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
-    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
-    const flatGuessHistory = guessHistory.flat();
-
-    let resultEmojis = [];
-
-    // populate squares
-    for (let guess of flatGuessHistory) {
-      if (correctGuesses.includes(guess)) {
-        resultEmojis.push("🟩");
-      } else if (wrongGuesses.includes(guess)) {
-        resultEmojis.push("🟥");
-      }
+  function updateUserStats(stats) {
+    const successRate = stats.gamesPlayed > 0
+      ? ((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(2)
+      : 0;
+    const mapping = {
+      gamesPlayed: stats.gamesPlayed,
+      gamesWon: stats.gamesWon,
+      currentStreak: stats.currentStreak,
+      successRate: `${successRate}%`
+    };
+    for (const [id, value] of Object.entries(mapping)) {
+      document.querySelectorAll(`#${id}`).forEach(el => el.innerText = value);
     }
-
-    // populate content
-    const flag = countryToFlagEmoji(country) 
-    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
-    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
-    ${resultEmojis.join('')} (${correct}/${total})
-    https://bordle.world`;
-    return result;
   }
-
-  // function to copy to clipboard
-  function copyToClipboard() {
-    const resultsText = generateResults(); // Assume this returns the game results string
-    navigator.clipboard.writeText(resultsText).then(() => {
-      alert('Results copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-      alert('Failed to copy results. Please try again.');
-    });
-  }
-
-  // function to copy to clipboard
-  function shareToWhatsapp() {
-    const country = "{{ country_name }}";
-    const correct = {{ correct_count }};
-    const total = {{ border_count }};
-    const hardMode = {{ 'true' if hard_mode else 'false' }};
-    const date = new Date().toLocaleDateString('en-GB');
-    const gameNumber = {{ game_number }}
-
-    // get the guess data
-    const guessHistory = {{ guess_history | default([]) | tojson }};
-    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
-    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
-    const flatGuessHistory = guessHistory.flat();
-
-    let resultEmojis = [];
-
-    // populate squares
-    for (let guess of flatGuessHistory) {
-      if (correctGuesses.includes(guess)) {
-        resultEmojis.push("🟩");
-      } else if (wrongGuesses.includes(guess)) {
-        resultEmojis.push("🟥");
-      }
-    }
-
-    // populate content
-    const flag = countryToFlagEmoji(country) 
-    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
-    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
-    ${resultEmojis.join('')} (${correct}/${total})
-    https://bordle.world`;
-    
-    const encodedMessage = encodeURIComponent(result);
-    console.log(encodedMessage);
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    window.open(whatsappUrl, "_blank");
-    console.log('Shareing to whatsapp: ', encodedMessage);
-  };
 </script>
