@@ -160,7 +160,6 @@ def stats():
     total_games = get_total_games()
     games_today, today_success_rate = get_games_today()
     game_number = get_game_number()
-    print(f"Rendering stats page with: {bordle_stats}, {games_today}, {total_games}, {today_success_rate}")
 
     return render_template(
         "stats.html",
@@ -199,7 +198,6 @@ def reset_session():
 def leaderboard_data():
     try:
         data = get_leaderboard_data()
-        print(f"Leaderboard data: {data}")
         return jsonify(data)
     except Exception as e:
         print(f"Error loading leaderboard data: {e}")

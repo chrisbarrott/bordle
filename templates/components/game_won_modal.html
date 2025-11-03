@@ -133,7 +133,7 @@
   }
 
   function generateResults() {
-    console.log("Starting to generateResults")
+    // console.log("Starting to generateResults")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -212,9 +212,9 @@
     https://bordle.world`;
     
     const encodedMessage = encodeURIComponent(result);
-    console.log(encodedMessage);
+    // console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-    console.log('Shareing to whatsapp: ', encodedMessage);
+    // console.log('Shareing to whatsapp: ', encodedMessage);
   };
 </script>

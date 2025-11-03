@@ -3,7 +3,7 @@ function showStatsContainter() {
     container.classList.toggle('hidden');
 
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    console.log("Showing stats:", stats)
+    // console.log("Showing stats:", stats)
 
     if (!stats) return 
     const gamesPlayed = parseInt(stats.gamesPlayed ?? 0);
@@ -15,5 +15,5 @@ function showStatsContainter() {
     document.getElementById("game_won").innerText = stats.gamesWon;
     document.getElementById("local_current_streak").innerText = stats.currentStreak;
     document.getElementById("local_success_rate").innerText = `${successRate}%`;
-    console.log("success rate: ", successRate)
+    // console.log("success rate: ", successRate)
 }

@@ -105,12 +105,8 @@
 </div>
 
 <script>
-  console.log("[stats.html] Template rendered for:", window.location.pathname);
-</script>
-
-<script>
   async function loadLeaderboardData() {
-    console.log("[Stats Page] Fetching leaderboard data...");
+    // console.log("[Stats Page] Fetching leaderboard data...");
 
     const dailyBody = document.getElementById("dailyLeaderboardBody");
     const allTimeBody = document.getElementById("allTimeLeaderboardBody");
@@ -152,7 +148,7 @@
 
   function showLocalStats() {
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    console.log("Loaded stats from localStorage:", stats);
+    // console.log("Loaded stats from localStorage:", stats);
     if (!stats) return;
     const successRate = stats.gamesPlayed > 0
       ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)

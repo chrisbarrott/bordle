@@ -69,7 +69,6 @@ def get_user_location(user_ip: str):
                 country = data.get("country", "Unknown")
                 region = data.get("regionName", "Unknown")
                 city = data.get("city", "Unknown")
-                print(f"Geo lookup success: {country}, {region}, {city}")
                 return country, region, city
             else:
                 print(f"⚠️ Geo lookup failed: {data}")
@@ -93,6 +92,4 @@ def get_user_ip():
         ip = forwarded_for.split(',')[0].strip()
     else:
         ip = request.remote_addr
-
-    print(f"User IP: {ip}")
     return ip

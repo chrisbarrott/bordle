@@ -7,7 +7,7 @@ import pytz
 from datetime import date, datetime
 
 from services.game_get_data import get_all_drop_down_options, get_user_ip, get_user_location
-from services.game_observe import send_to_observe
+# from services.game_observe import send_to_observe
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -80,18 +80,18 @@ def record_game_result(success: bool, remaining_countries: str):
     conn.close()
 
     # Send enriched payload to Observe
-    payload = {
-        "timestamp": now.isoformat(),
-        "game_date": str(today),
-        "result": "success" if success else "failure",
-        "environment": ENVIRONMENT,
-        "country_name": get_today_country(),
-        "game_number": get_game_number(),
-        "games_today": get_games_today()[0],
-        "total_games": get_total_games(),
-        "remaining_guesses": remaining_countries
-    }
-    send_to_observe(payload)
+    # payload = {
+    #     "timestamp": now.isoformat(),
+    #     "game_date": str(today),
+    #     "result": "success" if success else "failure",
+    #     "environment": ENVIRONMENT,
+    #     "country_name": get_today_country(),
+    #     "game_number": get_game_number(),
+    #     "games_today": get_games_today()[0],
+    #     "total_games": get_total_games(),
+    #     "remaining_guesses": remaining_countries
+    # }
+    # send_to_observe(payload)
 
 
 def get_today_country_old():
@@ -194,7 +194,7 @@ def get_today_country():
     # get all the counntries from the drop down json and compare it against the countries json
     all_countries = set(get_all_drop_down_options())
     borderable_countries = {country for country in all_countries if country in border_map}
-    print(f"Borderable countries: {len(borderable_countries)}")
+    # print(f"Borderable countries: {len(borderable_countries)}")
 
     # check the rotation
     current_rotation = get_current_rotation(cursor)
@@ -203,7 +203,7 @@ def get_today_country():
     used = get_used_countries(cursor, current_rotation)
 
     remaining = list(borderable_countries - used)
-    print(f"Games remaining : {len(remaining)}")
+    # print(f"Games remaining : {len(remaining)}")
 
     if not remaining:
         # All valid countries used in this rotation
@@ -290,16 +290,12 @@ def get_leaderboard_data():
 def record_world_leaderboard_result(success: bool):
     user_ip = get_user_ip()  # Flask: get user's IP
     country, region, city = get_user_location(user_ip)
-    print(f"User Location: Country={country}, Region={region}, City={city}")
 
     # Now you can store it in your database
     uk = pytz.timezone('Europe/London')
     game_date = datetime.now(uk).date()
 
     # Lookup user location
-    print(f"Recording leaderboard result for country: {country}")
-
-    """Update daily country stats for the leaderboard."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -308,6 +304,8 @@ def record_world_leaderboard_result(success: bool):
 
     if user_ip:
         country, region, city = get_user_location(user_ip)
+
+    print(f"Recording result for player from Location: {country}, {region}, Success: {success}")
 
     # Update or insert record for today + location
     cursor.execute('''
