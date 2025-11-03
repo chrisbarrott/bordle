@@ -102,7 +102,7 @@
 
   function updateUserStats(stats) {
     const successRate = stats.gamesPlayed > 0
-      ? ((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(2)
+      ? ((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(0)
       : 0;
     const mapping = {
       gamesPlayed: stats.gamesPlayed,
