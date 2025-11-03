@@ -115,3 +115,106 @@
     }
   }
 </script>
+
+<script>
+  // Function to get the flag
+  function countryToFlagEmoji(country) {
+    const isoUrl = "{{ url_for('static', filename='map_data/iso_country_codes.json') }}";
+    const isoMap = {{ iso_map | tojson }};
+    const code = isoMap[country.trim()];
+
+    if (!code) return ""; // fallback: no flag
+
+    return code
+      .toUpperCase()
+      .split("")
+      .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+      .join("");
+  }
+
+  function generateResults() {
+    console.log("Starting to generateResults")
+    const country = "{{ country_name }}";
+    const correct = {{ correct_count }};
+    const total = {{ border_count }};
+    const hardMode = {{ 'true' if hard_mode else 'false' }};
+    const date = new Date().toLocaleDateString('en-GB');
+    const gameNumber = {{ game_number }}
+
+    // get the guess data
+    const guessHistory = {{ guess_history | default([]) | tojson }};
+    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
+    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
+    const flatGuessHistory = guessHistory.flat();
+
+    let resultEmojis = [];
+
+    // populate squares
+    for (let guess of flatGuessHistory) {
+      if (correctGuesses.includes(guess)) {
+        resultEmojis.push("🟩");
+      } else if (wrongGuesses.includes(guess)) {
+        resultEmojis.push("🟥");
+      }
+    }
+
+    // populate content
+    const flag = countryToFlagEmoji(country) 
+    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
+    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
+    ${resultEmojis.join('')} (${correct}/${total})
+    https://bordle.world`;
+    return result;
+  }
+
+  // function to copy to clipboard
+  function copyToClipboard() {
+    const resultsText = generateResults(); // Assume this returns the game results string
+    navigator.clipboard.writeText(resultsText).then(() => {
+      alert('Results copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+      alert('Failed to copy results. Please try again.');
+    });
+  }
+
+  // function to copy to clipboard
+  function shareToWhatsapp() {
+    const country = "{{ country_name }}";
+    const correct = {{ correct_count }};
+    const total = {{ border_count }};
+    const hardMode = {{ 'true' if hard_mode else 'false' }};
+    const date = new Date().toLocaleDateString('en-GB');
+    const gameNumber = {{ game_number }}
+
+    // get the guess data
+    const guessHistory = {{ guess_history | default([]) | tojson }};
+    const correctGuesses = {{ correct_guesses | default([]) | tojson }};
+    const wrongGuesses = {{ wrong_guesses | default([]) | tojson }};
+    const flatGuessHistory = guessHistory.flat();
+
+    let resultEmojis = [];
+
+    // populate squares
+    for (let guess of flatGuessHistory) {
+      if (correctGuesses.includes(guess)) {
+        resultEmojis.push("🟩");
+      } else if (wrongGuesses.includes(guess)) {
+        resultEmojis.push("🟥");
+      }
+    }
+
+    // populate content
+    const flag = countryToFlagEmoji(country) 
+    const result = `Bordle 🌍 - ${date} - (#${gameNumber})
+    Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
+    ${resultEmojis.join('')} (${correct}/${total})
+    https://bordle.world`;
+    
+    const encodedMessage = encodeURIComponent(result);
+    console.log(encodedMessage);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+    console.log('Shareing to whatsapp: ', encodedMessage);
+  };
+</script>
