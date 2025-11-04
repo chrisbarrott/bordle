@@ -87,7 +87,6 @@ def initialize_game(session):
 
     # Get the IP and lookup location
     session["user_ip"] = get_user_ip()
-    logging.info(f"Player IP address: {session['user_ip']}")
     session["location"] = get_user_location(session["user_ip"])
     logging.info(f"Player playing from location: {session['location']}")
 
@@ -202,13 +201,12 @@ def get_game_state(session):
             record_game_result(True, remaining_guesses)
             record_world_leaderboard_result(True)
             game_result = "Win"
-            logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
             record_world_leaderboard_result(False)
             game_result = "Loss"
-            logging.info(f"Game result recorded: {game_result}")
         session["game_result_recorded"] = True  # mark as recorded
+        logging.info(f"Game result recorded: {game_result}")
 
     # log if gameover
     if game_over and not result_recorded:
@@ -217,12 +215,10 @@ def get_game_state(session):
                 record_game_result(False, remaining_guesses)
                 record_world_leaderboard_result(False)
                 game_result = "Loss"
-                logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
                 record_world_leaderboard_result(True)
                 game_result = "Win"
-                logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
             logging.info(f"Game result: {game_result}")
