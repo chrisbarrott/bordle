@@ -1,6 +1,8 @@
 import json
 import os
 
+from flask import request
+import requests
 from shapely.geometry import shape
 
 # Load border map once
@@ -56,3 +58,38 @@ def get_all_countries(border_map):
 def get_all_drop_down_options():
     with open("static/map_data/country_drop_down.json", 'r', encoding='utf-8') as f:
         return json.load(f)
+
+
+def get_user_location(user_ip: str):
+    try:
+        response = requests.get(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "success":
+                country = data.get("country", "Unknown")
+                region = data.get("regionName", "Unknown")
+                city = data.get("city", "Unknown")
+                return country, region, city
+            else:
+                print(f"⚠️ Geo lookup failed: {data}")
+        else:
+            print(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
+    except Exception as e:
+        print(f"⚠️ Geo lookup exception: {e}")
+
+    # Always return something
+    return "Unknown", "Unknown", "Unknown"
+
+
+def get_user_ip():
+    """
+    Extract the user's real IP address.
+    Works even if the app is behind a proxy (e.g., Render, Cloudflare).
+    """
+    # X-Forwarded-For may contain multiple IPs – client first, proxy last
+    forwarded_for = request.headers.get('X-Forwarded-For', None)
+    if forwarded_for:
+        ip = forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.remote_addr
+    return ip

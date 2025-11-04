@@ -9,16 +9,44 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
   {% block head %}{% endblock %}
 
-  <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
-    <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
-        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+  <!-- Open Graph / WhatsApp Meta Tags -->
+  <meta property="og:title" content="Bordle – The Country Border Game!" />
+  <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
+  <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+  <meta property="og:url" content="https://www.bordle.world" />
+  <meta property="og:type" content="website" />
 
-  <!-- Stats Icon Button -->
-  <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()">
+  <!-- Twitter Card (optional, improves previews on X/Twitter) -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Bordle – The Country Border Game!" />
+  <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
+  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+
+  <!--  Google friendly icon -->
+  <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+
+  <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
+    {% if request.endpoint == 'stats' %}
+      <a href="/game"
+        class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
+        <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
+        <span>Back to Game</span>
+      </a>
+    {% endif %}
   </div>
 
-</head>
+
+  <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
+    <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
+      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+
+    <!-- Stats Icon Button
+    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
+      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()"> -->
+
+    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
+      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
+  </div>
 
 <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
   {% block content %}{% endblock %}
@@ -30,6 +58,7 @@
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
   {% block scripts %}{% endblock %}
+  
 </body>
 </html>
 
@@ -46,3 +75,10 @@
     transition: transform 0.3s ease-in-out;
   }
 </style>
+
+<!-- Required for loading leaderboard modal -->
+<script>
+  function toggleLeaderboard() {
+    window.location.href = "/stats";
+  }
+</script>

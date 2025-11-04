@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Header with back link above logo -->
+<header class="mb-4 relative">
+  <!-- Centered Bordle logo -->
+  <img src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+       alt="BORDLE Logo"
+       class="h-20 mx-auto mt-6">
+</header>
+
+{% include "components/game_how_to_play_modal.html" %}
+
+<!-- USER STATS -->
+<h2 class="text-xl font-bold text-blue-800 mb-4 border-b border-gray-300 pb-2 text-center">
+  👤📈 Your Bordle Stats
+</h2>
+
+<div id="statsContainer"
+  class="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 shadow-md text-sm sm:text-base w-full sm:w-auto">
+  <div class="grid grid-cols-4 divide-x divide-gray-300 text-gray-900 font-semibold text-center">
+    <div class="px-2">
+      <span class="block text-blue-800 text-base sm:text-lg font-bold">Played</span>
+      <span id="gamesPlayed" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-blue-800 text-base sm:text-lg font-bold">Wins</span>
+      <span id="gamesWon" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-blue-800 text-base sm:text-lg font-bold">Streak</span>
+      <span id="currentStreak" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-blue-800 text-base sm:text-lg font-bold">Success%</span>
+      <span id="userSuccessRate" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+  </div>
+</div>
+
+<br>
+
+<!-- GLOBAL STATS OVERVIEW -->
+<h2 class="text-xl font-bold text-green-800 mb-4 border-b border-gray-300 pb-2 text-center">
+  🌍 Global Stats Overview
+</h2>
+
+<div id="overviewStatsContainer"
+  class="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 shadow-md text-sm sm:text-base w-full sm:w-auto mt-3">
+  <div class="grid grid-cols-4 divide-x divide-gray-300 text-gray-900 font-semibold text-center">
+    <div class="px-2">
+      <span class="block text-green-800 text-base sm:text-lg font-bold">Games Today</span>
+      <span id="gamesToday" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-green-800 text-base sm:text-lg font-bold">Game Number</span>
+      <span id="gameNumber" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-green-800 text-base sm:text-lg font-bold">Total Games</span>
+      <span id="totalGames" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-green-800 text-base sm:text-lg font-bold">Success Rate%</span>
+      <span id="todaySuccessRate" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+  </div>
+</div>
+
+<br>
+
+<!-- WORLD STATS (Today) -->
+<h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1">🌍 World Stats (Today)</h2>
+<table class="w-full text-left border-collapse border border-gray-200">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="py-2 px-4">Country</th>
+      <th class="py-2 px-4">Success %</th>
+      <th class="py-2 px-4">Plays</th>
+    </tr>
+  </thead>
+  <tbody id="dailyLeaderboardBody">
+    <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+  </tbody>
+</table>
+
+<br>
+
+<!-- LEADERBOARD -->
+<h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1">🏆 All-Time Leaderboard</h2>
+<table class="w-full text-left border-collapse border border-gray-200">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="py-2 px-4">Country</th>
+      <th class="py-2 px-4">Success %</th>
+      <th class="py-2 px-4">Plays</th>
+    </tr>
+  </thead>
+  <tbody id="allTimeLeaderboardBody">
+    <tr><td colspan="3" class="py-2 px-4 text-center text-gray-500">Loading...</td></tr>
+  </tbody>
+</table>
+
+<script>
+  async function loadLeaderboardData() {
+    // console.log("[Stats Page] Fetching leaderboard data...");
+
+    const dailyBody = document.getElementById("dailyLeaderboardBody");
+    const allTimeBody = document.getElementById("allTimeLeaderboardBody");
+
+    if (!dailyBody || !allTimeBody) {
+      console.warn("[Stats Page] Leaderboard tables not found — skipping load.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/leaderboard_data", { cache: "no-cache" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+
+      dailyBody.innerHTML = data.daily?.length
+        ? data.daily.map(row => `
+            <tr class="border-t border-gray-200">
+              <td class="py-2 px-4">${row.country || "Unknown"}</td>
+              <td class="py-2 px-4 text-right">${(row.success_rate ?? 0).toFixed(0)}%</td>
+              <td class="py-2 px-4 text-right">${row.total_guesses ?? 0}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No data today</td></tr>`;
+
+      allTimeBody.innerHTML = data.all_time?.length
+        ? data.all_time.map(row => `
+            <tr class="border-t border-gray-200">
+              <td class="py-2 px-4">${row.country || "Unknown"}</td>
+              <td class="py-2 px-4 text-right">${(row.success_rate ?? 0).toFixed(0)}%</td>
+              <td class="py-2 px-4 text-right">${row.total_guesses ?? 0}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="3" class="text-center py-2 text-gray-500">No all-time data</td></tr>`;
+
+    } catch (err) {
+      console.error("[Stats Page] Error loading leaderboard data:", err);
+    }
+  }
+
+  function showLocalStats() {
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    // console.log("Loaded stats from localStorage:", stats);
+    if (!stats) return;
+    const userSuccessRate = stats.gamesPlayed > 0
+      ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
+      : 0;
+
+    document.getElementById("gamesPlayed").innerText = stats.gamesPlayed;
+    document.getElementById("gamesWon").innerText = stats.gamesWon;
+    document.getElementById("currentStreak").innerText = stats.currentStreak;
+    document.getElementById("userSuccessRate").innerText = `${userSuccessRate}%`;
+  }
+
+  async function loadGlobalStats() {
+    try {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      document.getElementById("gamesToday").innerText = data.games_today ?? "0";
+      document.getElementById("gameNumber").innerText = data.game_number ?? "0";
+      document.getElementById("totalGames").innerText = data.total_games ?? "0";
+      document.getElementById("todaySuccessRate").innerText = data.success_rate
+        ? `${data.success_rate.toFixed(0)}%`
+        : "0%";
+    } catch (err) {
+      console.error("Error loading global stats:", err);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (window.location.pathname !== "/stats") return;
+    showLocalStats();
+    loadGlobalStats();
+    loadLeaderboardData();
+  });
+</script>
+
+<!-- Required for how to play modal -->
+<script>
+  function toggleHowToPlay() {
+      const modal = document.getElementById("howToPlayModal");
+      modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for how to play modal -->
+
+
+{% endblock %}

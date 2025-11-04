@@ -1,77 +1,82 @@
 <!-- components/game_won_modal.html -->
 <div id="gameWonMessage" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 relative">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-4 sm:p-6 relative overflow-y-auto max-h-[90vh]">
 
-    <h2 class="text-2xl font-bold text-green-600 text-center mb-4">Well done!</h2>
-    <p class="text-center text-lg mb-2">
-      You correctly guessed all of <strong>{{ country_name }}</strong>'s bordering countries:
+    <!-- 🎉 Title & Stats Row -->
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+      <h2 class="text-xl sm:text-2xl font-bold text-green-600 text-center sm:text-left">
+        🎉 You Win!
+      </h2>
+
+      <!-- 📊 Compact Stats Table -->
+      <div id="statsContainer"
+        class="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 shadow-md text-sm sm:text-base w-full sm:w-auto">
+        <div class="grid grid-cols-4 divide-x divide-gray-300 text-gray-900 font-semibold text-center">
+          <div class="px-2">
+            <span class="block text-blue-800 text-base sm:text-lg font-bold">Played</span>
+            <span id="gamesPlayed" class="text-xl sm:text-2xl font-bold">0</span>
+          </div>
+          <div class="px-2">
+            <span class="block text-blue-800 text-base sm:text-lg font-bold">Wins</span>
+            <span id="gamesWon" class="text-xl sm:text-2xl font-bold">0</span>
+          </div>
+          <div class="px-2">
+            <span class="block text-blue-800 text-base sm:text-lg font-bold">Success%</span>
+            <span id="successRate" class="text-xl sm:text-2xl font-bold">0</span>
+          </div>
+          <div class="px-2">
+            <span class="block text-blue-800 text-base sm:text-lg font-bold">Streak</span>
+            <span id="currentStreak" class="text-xl sm:text-2xl font-bold">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Correct Countries -->
+    <p class="text-center text-sm sm:text-base mb-2">
+      You correctly guessed all of <strong>{{ country_name }}</strong>’s bordering countries:
     </p>
-
-    <div class="text-center text-gray-700 mb-4">
+    <div class="text-center text-gray-700 mb-3 text-sm sm:text-base">
       <strong>{{ all_correct | join(", ") }}</strong>
     </div>
 
-    <div id="victoryMap" class="w-full h-80 mb-4 bg-gray-200"></div>
+    <!-- 🗺️ Victory Map -->
+    <div id="victoryMap" class="w-full h-80 sm:h-72 mb-4 rounded border bg-gray-200"></div>
 
-    <p class="text-center text-gray-600">Come back tomorrow for a new challenge!</p>
+    <p class="text-center text-gray-600">Try again tomorrow for a new challenge!</p>
 
-    <!-- Share Results Button -->
-    <div class="mt-4 flex flex-col items-center space-y-2 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-2">  
-      <!-- Show Stats -->
-      <button
-        onclick="showStatsContainter()"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        📊 Show Stats
+    <!-- 📤 Buttons -->
+    <div class="flex flex-wrap justify-center gap-3 w-full mt-2">
+      <button onclick="window.location.href='/stats'"
+        class="inline-flex items-center justify-center bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
+        🌍 View World Stats
       </button>
 
-      <!-- 📊 Embedded Stats Panel -->
-      <div id="statsContainer" class="hidden mt-6 max-w-md mx-auto border border-blue-300 rounded-lg p-4 bg-blue-50 shadow">
-        <h3 class="text-lg font-bold text-blue-800 mb-2">📊 Your Stats</h3>
-        <ul class="text-sm text-gray-800 list-disc list-inside">
-          <li><strong>Your Total Games Played:</strong> <span id="game_played">0</span></li>
-          <li><strong>Wins:</strong> <span id="game_won">0</span></li>
-          <li><strong>Current Streak:</strong> <span id="local_current_streak">0</span></li>
-          <li><strong>Your Success Rate:</strong> <span id="local_success_rate">0</span></li>
-        </ul>
-      </div>
-
-      <!-- WhatsApp Share -->
-      <button
-        id="whatsappShare"
-        onclick="shareToWhatsapp()"
-        type="button"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-      >
-        <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-5 w-5 mr-2">
-        Share Result
+      <button id="whatsappShare" onclick="shareToWhatsapp()" type="button"
+        class="inline-flex items-center justify-center bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600 text-sm sm:text-base">
+        <img src="/static/images/whatsapp_icon.png" alt="Share on WhatsApp" class="h-4 w-4 mr-2">
+        Share
       </button>
 
-      <!-- Copy to Clipboard -->
-      <button
-        onclick="copyToClipboard()"
-        type="button"
-        class="w-11/12 sm:w-auto inline-flex items-center justify-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-      >
-        📋 Copy to Clipboard
+      <button onclick="copyToClipboard()" type="button"
+        class="inline-flex items-center justify-center bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 text-sm sm:text-base">
+        📋 Copy
       </button>
     </div>
-
-
   </div>
 </div>
 
-<!-- Leaflet CSS & JS -->
-<script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<div id="victoryMap" class="w-full h-96 mb-4 rounded border"></div>
-
 <script type="text/javascript">
   window.onload = function () {
-    const map = L.map('victoryMap');
+    // Update local stats display
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    if (stats) updateUserStats(stats);
 
+    // Map rendering
+    const map = L.map('victoryMap');
     L.tileLayer('https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=shOVlsPI8fhJlEek08rF', {
       attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> contributors',
       tileSize: 256,
@@ -79,32 +84,36 @@
       zoom: 1.5
     }).addTo(map);
 
-    // Load data
     const mainCountry = {{ country_geojson | tojson }};
     const correctShapes = {{ correct_shapes | tojson }};
     const wrongShapes = {{ wrong_shapes | tojson }};
 
-    // Style functions
     const mainStyle = { color: "black", weight: 2, fillOpacity: 0.7 };
     const correctStyle = { color: "green", weight: 1, fillOpacity: 0.5 };
     const wrongStyle = { color: "red", weight: 1, fillOpacity: 0.5 };
 
-    // Add and zoom to main country
     const mainLayer = L.geoJSON(mainCountry, { style: mainStyle }).addTo(map);
     map.fitBounds(mainLayer.getBounds());
-    map.setZoom(map.getZoom() - 1);  // Zoom out slightly
+    map.setZoom(map.getZoom() - 1);
 
-    // Add correct and wrong shapes
-    correctShapes.forEach(shape => {
-      L.geoJSON(shape, { style: correctStyle }).addTo(map);
-    });
-
-    wrongShapes.forEach(shape => {
-      L.geoJSON(shape, { style: wrongStyle }).addTo(map);
-    });
-
-
+    correctShapes.forEach(shape => L.geoJSON(shape, { style: correctStyle }).addTo(map));
+    wrongShapes.forEach(shape => L.geoJSON(shape, { style: wrongStyle }).addTo(map));
   };
+
+  function updateUserStats(stats) {
+    const successRate = stats.gamesPlayed > 0
+      ? ((stats.gamesWon / stats.gamesPlayed) * 100).toFixed(0)
+      : 0;
+    const mapping = {
+      gamesPlayed: stats.gamesPlayed,
+      gamesWon: stats.gamesWon,
+      currentStreak: stats.currentStreak,
+      successRate: `${successRate}%`
+    };
+    for (const [id, value] of Object.entries(mapping)) {
+      document.querySelectorAll(`#${id}`).forEach(el => el.innerText = value);
+    }
+  }
 </script>
 
 <script>
@@ -124,7 +133,7 @@
   }
 
   function generateResults() {
-    console.log("Starting to generateResults")
+    // console.log("Starting to generateResults")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -203,9 +212,9 @@
     https://bordle.world`;
     
     const encodedMessage = encodeURIComponent(result);
-    console.log(encodedMessage);
+    // console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-    console.log('Shareing to whatsapp: ', encodedMessage);
+    // console.log('Shareing to whatsapp: ', encodedMessage);
   };
 </script>

@@ -16,6 +16,7 @@ from services.game_database_connections import (
     get_db_connection,
     get_game_number,
     get_games_today,
+    get_leaderboard_data,
     get_total_games
 )
 from services.game_logic import (
@@ -113,8 +114,6 @@ def check_played():
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():
-    game_number = get_game_number()
-
     # init the game if a new day
     today = str(date.today())
     if "game_date" not in session or session["game_date"] != today:
@@ -153,6 +152,25 @@ def game():
     )
 
 
+@app.route("/stats")
+def stats():
+    # Fetch or reuse the same data
+    bordle_stats = analytics()
+    games_today = get_games_today()
+    total_games = get_total_games()
+    games_today, today_success_rate = get_games_today()
+    game_number = get_game_number()
+
+    return render_template(
+        "stats.html",
+        bordle_stats=bordle_stats,
+        games_today=games_today,
+        total_games=total_games,
+        today_success_rate=today_success_rate,
+        game_number=game_number
+    )
+
+
 @app.route("/submit", methods=["POST"])
 def submit():
     # Handle the guess
@@ -174,6 +192,21 @@ def submit():
 def reset_session():
     reset_game(session)
     return redirect(url_for("landing"))
+
+
+@app.route("/leaderboard_data")
+def leaderboard_data():
+    try:
+        data = get_leaderboard_data()
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error loading leaderboard data: {e}")
+        return jsonify({"error": "Failed to load leaderboard data"}), 500
+
+
+@app.route("/api/leaderboard")
+def leaderboard_api():
+    return jsonify(get_leaderboard_data())
 
 
 @app.route("/sitemap.xml")

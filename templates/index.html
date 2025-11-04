@@ -134,6 +134,14 @@
 </script>
 <!-- Required for loading stats modal -->
 
+<!-- Required for loading leaderboard modal -->
+<script>
+  function toggleLeaderboard() {
+    window.location.href = "/stats";
+  }
+</script>
+<!-- Required for loading leaderboard modal -->
+
 <script>
   const defaultState = {
     gamesPlayed: 0,
@@ -169,6 +177,7 @@
   }
 
   const currentState = loadGameState();
+
 </script>
 
 {% endblock %}

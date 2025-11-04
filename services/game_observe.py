@@ -11,8 +11,8 @@ def send_to_observe(payload: dict):
         "Authorization": f"Bearer {OBSERVE_API_TOKEN}"
     }
     try:
-        resp = requests.post(OBSERVE_API_URL, headers=headers, json=payload, timeout=5)
-        resp.raise_for_status()
-        print("✅ Sent to Observe:", payload)
+        # resp = requests.post(OBSERVE_API_URL, headers=headers, json=payload, timeout=5)
+        # resp.raise_for_status()
+        print("Not sending to Observe anymore, POC completed")
     except requests.exceptions.RequestException as e:
         print("❌ Failed to send to Observe:", e)

@@ -8,12 +8,15 @@ from services.game_database_connections import (
     get_today_country,
     init_db,
     record_game_result,
+    record_world_leaderboard_result,
 )
 from services.game_get_data import (
     get_all_drop_down_options,
     get_border_options,
     get_country_shape,
     get_shapes,
+    get_user_ip,
+    get_user_location,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -81,6 +84,11 @@ def initialize_game(session):
     # Set game number for session handling
     session["game_number"] = get_game_number()
     logging.info(f"Initialized game #{session['game_number']} for {session['country_name']}")
+
+    # Get the IP and lookup location
+    session["user_ip"] = get_user_ip()
+    session["location"] = get_user_location(session["user_ip"])
+    logging.info(f"Player playing from location: {session['location']}")
 
 
 # Game reset (hidden)
@@ -191,25 +199,26 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
+            record_world_leaderboard_result(True)
             game_result = "Win"
-            logging.info(f"Game result recorded: {game_result}")
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
+            record_world_leaderboard_result(False)
             game_result = "Loss"
-            logging.info(f"Game result recorded: {game_result}")
         session["game_result_recorded"] = True  # mark as recorded
+        logging.info(f"Game result recorded: {game_result}")
 
     # log if gameover
     if game_over and not result_recorded:
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False, remaining_guesses)
+                record_world_leaderboard_result(False)
                 game_result = "Loss"
-                logging.info(f"Game result recorded: {game_result}")
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
+                record_world_leaderboard_result(True)
                 game_result = "Win"
-                logging.info(f"Game result recorded: {game_result}")
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
             logging.info(f"Game result: {game_result}")

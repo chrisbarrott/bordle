@@ -22,7 +22,7 @@
 <script>
   // function to update stats 
   function updateLocalStats(win) {
-    console.log("Starting update of stats")
+    // console.log("Starting update of stats")
     let stats = JSON.parse(localStorage.getItem("bordleStats")) || {
       gamesPlayed: 0,
       gamesWon: 0,
@@ -61,7 +61,7 @@
     showLocalStats();
 
     const gameOver = "{{ game_over }}";  // `true` or `false`
-    console.log("Game over?", gameOver)
+    // console.log("Game over?", gameOver)
     if(gameOver == "True"){
       // listener for updating the game stats
       const gameResult = "{{ game_result }}";
@@ -73,11 +73,11 @@
 
         // check we havent already updated the stats today
         if (!localStorage.getItem(statsKey)) {
-          console.log("Updating results for game: ", gameNumber);
+          // console.log("Updating results for game: ", gameNumber);
           updateLocalStats(gameResult);  // mark win/loss in local stats
           localStorage.setItem(statsKey, "true");  // Mark as updated
         } else {
-          console.log("Stats already updated for game", gameNumber);
+          // console.log("Stats already updated for game", gameNumber);
         }
       }
     }

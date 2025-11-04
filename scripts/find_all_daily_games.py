@@ -1,11 +1,17 @@
+from datetime import datetime, timedelta
 import sqlite3
 import os
+import json
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FOLDER = os.path.join(BASE_DIR, '..', 'db')  # assumes this file is in services/
 os.makedirs(DB_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(DB_FOLDER, 'games.db')
+
+# Load dropdown options
+with open("static/map_data/country_drop_down.json", "r", encoding="utf-8") as f:
+    dropdown_options = set(json.load(f))
 
 
 def get_all_daily_games():
@@ -33,6 +39,12 @@ def get_all_daily_games():
         print("\t".join(str(item) for item in row))
 
     print(f"\nTotal daily games: {len(rows)}")  # Added count log
+    print(f"All available countries: {len(dropdown_options)}")  # Added count log
+    print(f"Games remaining until flip over: {len(dropdown_options) - len(rows)}")  # Corrected calculation
+
+    base_date = datetime.now()
+    target_date = base_date + timedelta(days=len(dropdown_options) - len(rows))
+    print(f"Flip over date: {target_date.strftime('%Y-%m-%d')}")
 
 
 if __name__ == "__main__":
