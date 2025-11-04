@@ -28,12 +28,12 @@
       <span id="gamesWon" class="text-xl sm:text-2xl font-bold">0</span>
     </div>
     <div class="px-2">
-      <span class="block text-blue-800 text-base sm:text-lg font-bold">Success%</span>
-      <span id="successRate" class="text-xl sm:text-2xl font-bold">0</span>
-    </div>
-    <div class="px-2">
       <span class="block text-blue-800 text-base sm:text-lg font-bold">Streak</span>
       <span id="currentStreak" class="text-xl sm:text-2xl font-bold">0</span>
+    </div>
+    <div class="px-2">
+      <span class="block text-blue-800 text-base sm:text-lg font-bold">Success%</span>
+      <span id="userSuccessRate" class="text-xl sm:text-2xl font-bold">0</span>
     </div>
   </div>
 </div>
@@ -61,7 +61,7 @@
       <span id="totalGames" class="text-xl sm:text-2xl font-bold">0</span>
     </div>
     <div class="px-2">
-      <span class="block text-green-800 text-base sm:text-lg font-bold">Success Rate</span>
+      <span class="block text-green-800 text-base sm:text-lg font-bold">Success Rate%</span>
       <span id="todaySuccessRate" class="text-xl sm:text-2xl font-bold">0</span>
     </div>
   </div>
@@ -147,26 +147,25 @@
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
     // console.log("Loaded stats from localStorage:", stats);
     if (!stats) return;
-    const successRate = stats.gamesPlayed > 0
+    const userSuccessRate = stats.gamesPlayed > 0
       ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
       : 0;
 
     document.getElementById("gamesPlayed").innerText = stats.gamesPlayed;
     document.getElementById("gamesWon").innerText = stats.gamesWon;
     document.getElementById("currentStreak").innerText = stats.currentStreak;
-    document.getElementById("successRate").innerText = `${successRate}%`;
+    document.getElementById("userSuccessRate").innerText = `${userSuccessRate}%`;
   }
 
   async function loadGlobalStats() {
     try {
       const res = await fetch("/api/stats");
       const data = await res.json();
-
       document.getElementById("gamesToday").innerText = data.games_today ?? "0";
       document.getElementById("gameNumber").innerText = data.game_number ?? "0";
       document.getElementById("totalGames").innerText = data.total_games ?? "0";
-      document.getElementById("todaySuccessRate").innerText = data.today_success_rate
-        ? `${data.today_success_rate}%`
+      document.getElementById("todaySuccessRate").innerText = data.success_rate
+        ? `${data.success_rate.toFixed(0)}%`
         : "0%";
     } catch (err) {
       console.error("Error loading global stats:", err);
