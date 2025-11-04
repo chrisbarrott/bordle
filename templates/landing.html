@@ -39,6 +39,52 @@
 {% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
 
+
+<style>
+  /* Tooltip styling */
+  .leaderboard-tooltip {
+    position: absolute;
+    top: 60px; /* adjust depending on your stats icon position */
+    right: 20px;
+    background-color: #fef3c7;
+    color: #1e3a8a;
+    border: 1px solid #fcd34d;
+    padding: 10px 14px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-size: 0.95rem;
+    font-weight: 500;
+    z-index: 9999;
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .leaderboard-tooltip::after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent #fef3c7 transparent;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .leaderboard-tooltip button {
+    margin-top: 6px;
+    background-color: #1e3a8a;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+</style>
+
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
 
     {% if stats is defined %}
@@ -138,6 +184,34 @@
   window.addEventListener('click', (event) => {
     if (event.target === modal) {
       modal.style.display = 'none';
+    }
+  });
+</script>
+
+<script>
+  // Leaderboard Tooltip Logic
+  document.addEventListener('DOMContentLoaded', () => {
+    const tooltipSeen = localStorage.getItem('leaderboardTooltipSeen');
+
+    if (!tooltipSeen) {
+      const tooltip = document.createElement('div');
+      tooltip.classList.add('leaderboard-tooltip');
+      tooltip.innerHTML = `
+        🌍 <strong>New!</strong> Check out the <br>Country Leaderboard in your stats!
+        <br><button id="gotItBtn">Got it</button>
+      `;
+      document.body.appendChild(tooltip);
+
+      document.getElementById('gotItBtn').addEventListener('click', () => {
+        tooltip.remove();
+        localStorage.setItem('leaderboardTooltipSeen', 'true');
+      });
+
+      // Auto-hide after 7 seconds
+      setTimeout(() => {
+        if (tooltip.parentNode) tooltip.remove();
+        localStorage.setItem('leaderboardTooltipSeen', 'true');
+      }, 7000);
     }
   });
 </script>
