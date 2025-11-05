@@ -264,7 +264,7 @@ def get_leaderboard_data():
         GROUP BY country
         HAVING total_plays > 0
         ORDER BY success_rate DESC, plays DESC
-        LIMIT 5;
+        LIMIT 10;
     """)
     all_time = cursor.fetchall()
 
