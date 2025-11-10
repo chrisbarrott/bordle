@@ -112,6 +112,10 @@
     </div>
   </form>
 
+  <p id="gameNumberDisplay" class="text-gray-600 mt-2 text-sm italic">
+    Loading game number...
+  </p>
+
   <!-- Version Badge -->
   <div id="version-badge">
     🚀 v3.1.0
@@ -123,7 +127,7 @@
       <span id="close-release-notes">&times;</span>
       <h2>🧾 Release Notes</h2>
       <ul>
-        <li><strong>v3.0.1</strong> – Had to update the stats to have more countries because apparently this is global! 05/11/2025</li>        
+        <li><strong>v3.1.0</strong> – Had to update the stats to have more countries because apparently this is global! 05/11/2025</li>        
         <li><strong>v3.0.1</strong> – Added new world leaderboard! 04/11/2025</li>
         <li><strong>v2.7.0</strong> – Updated the end game maps so they use game players language 21/07/2025</li>
         <li><strong>v2.6.0</strong> – Fixed an issue where country was not available 17/07/2025</li>
@@ -215,4 +219,27 @@
       }, 7000);
     }
   });
+</script>
+
+<script>
+async function loadGameNumber() {
+  const display = document.getElementById("gameNumberDisplay");
+  if (!display) return;
+
+  try {
+    const res = await fetch("/api/stats");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.game_number) {
+      display.textContent = `🌍 Game #${data.game_number}`;
+    } else {
+      display.textContent = "🌍 Game info unavailable";
+    }
+  } catch (err) {
+    console.error("Error fetching game number:", err);
+    display.textContent = "🌍 Game info unavailable";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadGameNumber);
 </script>
