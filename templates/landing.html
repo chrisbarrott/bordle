@@ -112,6 +112,10 @@
     </div>
   </form>
 
+  <p id="gameNumberDisplay" class="text-gray-600 mt-2 text-sm italic">
+    Loading game number...
+  </p>
+
   <!-- Version Badge -->
   <div id="version-badge">
     🚀 v3.1.0
@@ -215,4 +219,27 @@
       }, 7000);
     }
   });
+</script>
+
+<script>
+async function loadGameNumber() {
+  const display = document.getElementById("gameNumberDisplay");
+  if (!display) return;
+
+  try {
+    const res = await fetch("/api/stats");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.game_number) {
+      display.textContent = `🌍 Game #${data.game_number}`;
+    } else {
+      display.textContent = "🌍 Game info unavailable";
+    }
+  } catch (err) {
+    console.error("Error fetching game number:", err);
+    display.textContent = "🌍 Game info unavailable";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", loadGameNumber);
 </script>
