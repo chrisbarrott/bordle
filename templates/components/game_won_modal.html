@@ -58,6 +58,12 @@
         Share
       </button>
 
+      <div id="leaderboardPopup"
+          class="hidden mt-4 bg-blue-50 border border-blue-300 text-blue-900 text-sm rounded-lg px-4 py-3 flex items-center justify-between shadow-md">
+        <span>🌍 Represent your country on the new <strong>leaderboard</strong>! Share your result to help your nation climb the ranks.</span>
+        <button onclick="document.getElementById('leaderboardPopup').classList.add('hidden')" class="text-blue-600 font-bold ml-3">✖</button>
+      </div>
+
       <button onclick="copyToClipboard()" type="button"
         class="inline-flex items-center justify-center bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 text-sm sm:text-base">
         📋 Copy
@@ -217,4 +223,28 @@
     window.open(whatsappUrl, "_blank");
     // console.log('Shareing to whatsapp: ', encodedMessage);
   };
+</script>
+
+<script>
+  function maybeShowLeaderboardPopup() {
+    // Only show once
+    if (localStorage.getItem("leaderboardPopupShown")) return;
+
+    const popup = document.getElementById("leaderboardPopup");
+    if (!popup) return;
+
+    popup.classList.remove("hidden");
+
+    // Mark as shown so it doesn’t appear again
+    localStorage.setItem("leaderboardPopupShown", "true");
+  }
+
+  // Example hook — call this when you display the “game won” modal
+  function showGameWonModal() {
+    const modal = document.getElementById("gameWonModal");
+    modal.classList.remove("hidden");
+    
+    // Trigger popup once
+    maybeShowLeaderboardPopup();
+  }
 </script>
