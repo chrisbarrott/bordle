@@ -445,12 +445,6 @@
     "Uganda",
     "Tanzania"
   ],
-  "Kosovo": [
-    "Albania",
-    "Montenegro",
-    "North Macedonia",
-    "Serbia"
-  ],
   "Kuwait": [
     "Iraq",
     "Saudi Arabia"
@@ -557,8 +551,7 @@
     "Serbia"
   ],
   "Morocco": [
-    "Algeria",
-    "Spain"
+    "Algeria"
   ],
   "Mozambique": [
     "Malawi",
@@ -780,7 +773,6 @@
   "Spain": [
     "Andorra",
     "France",
-    "Morocco",
     "Portugal"
   ],
   "Sudan": [
