@@ -223,83 +223,67 @@
   };
 </script>
 
+
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const shareButton = document.getElementById("whatsappShare");
     const popup = document.getElementById("share-popup");
     const closeBtn = popup?.querySelector(".close-popup");
+    const shareButton = document.getElementById("share-whatsapp");
 
-    if (shareButton && popup) {
-      // Show popup shortly after modal opens
-      setTimeout(() => {
-        popup.classList.remove("hidden");
-        popup.classList.add("visible");
-      }, 800);
+    if (!popup) return;
 
-      // Auto-hide after 7 seconds if not dismissed
-      setTimeout(() => {
-        popup.classList.remove("visible");
-        setTimeout(() => popup.classList.add("hidden"), 400);
-      }, 7000);
+    // Show shortly after modal loads
+    setTimeout(() => {
+      popup.classList.remove("hidden");
+      popup.classList.add("visible");
+    }, 800);
 
-      // Close button hides popup immediately
-      closeBtn?.addEventListener("click", () => {
-        popup.classList.remove("visible");
-        setTimeout(() => popup.classList.add("hidden"), 400);
-      });
+    // Auto hide after 7 seconds
+    setTimeout(() => {
+      popup.classList.remove("visible");
+      setTimeout(() => popup.classList.add("hidden"), 300);
+    }, 7000);
 
-      // Optional: hide popup if user clicks share button
-      shareButton.addEventListener("click", () => {
-        popup.classList.remove("visible");
-        setTimeout(() => popup.classList.add("hidden"), 400);
-      });
-    }
+    // Dismiss immediately
+    closeBtn?.addEventListener("click", () => {
+      popup.classList.remove("visible");
+      setTimeout(() => popup.classList.add("hidden"), 300);
+    });
   });
-
 </script>
 
 <style>
-  .share-section {
-    position: relative;
-    display: inline-block;
-  }
+.share-section {
+  width: 100%;
+  text-align: center;
+}
 
-  .share-popup {
-    position: absolute;
-    top: 110%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #d8f0ff, #a7d9ff);
-    color: #003366;
-    padding: 12px 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    font-size: 0.9rem;
-    font-weight: 500;
-    width: 280px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.4s ease, transform 0.3s ease;
-    z-index: 1000;
-  }
+.share-popup {
+  margin-top: 12px;
+  background: linear-gradient(135deg, #d8f0ff, #a7d9ff);
+  color: #003366;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  position: relative;
+}
 
-  .share-popup.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-6px);
-  }
+.share-popup.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-  .share-popup .close-popup {
-    position: absolute;
-    top: 6px;
-    right: 10px;
-    font-size: 1.1rem;
-    color: #003366;
-    cursor: pointer;
-    font-weight: bold;
-  }
-
-  .hidden {
-    display: none;
-  }
-
+.close-popup {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
 </style>
