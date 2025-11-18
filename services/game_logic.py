@@ -1,7 +1,6 @@
 from datetime import date
 import json
 import math
-import logging
 
 from services.game_database_connections import (
     get_game_number,
@@ -18,8 +17,10 @@ from services.game_get_data import (
     get_user_ip,
     get_user_location,
 )
+from services.game_logger import setup_logger
 
-logging.basicConfig(level=logging.INFO)
+# Setup logger
+logger = setup_logger()
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -28,7 +29,6 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 # Load GeoJSON shapes once
 with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
     geojson_data = json.load(f)
-# print("Shapes: ", geojson_data.keys())
 
 
 # Game init
@@ -83,12 +83,13 @@ def initialize_game(session):
 
     # Set game number for session handling
     session["game_number"] = get_game_number()
-    logging.info(f"Initialized game #{session['game_number']} for {session['country_name']}")
+    logger.info(f"Initialized game #{session['game_number']} for {session['country_name']}")
 
     # Get the IP and lookup location
     session["user_ip"] = get_user_ip()
     session["location"] = get_user_location(session["user_ip"])
-    logging.info(f"Player playing from location: {session['location']}")
+    # logger.info(f"Player playing from location: {session['location']}")
+    logger.info(json.dumps({"player_location": session["location"]}))
 
 
 # Game reset (hidden)
@@ -206,7 +207,7 @@ def get_game_state(session):
             record_world_leaderboard_result(False)
             game_result = "Loss"
         session["game_result_recorded"] = True  # mark as recorded
-        logging.info(f"Game result recorded: {game_result}")
+        logger.info(json.dumps({"game_number": game_number, "result": game_result}))
 
     # log if gameover
     if game_over and not result_recorded:
@@ -221,10 +222,28 @@ def get_game_state(session):
                 game_result = "Win"
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
-            logging.info(f"Game result: {game_result}")
+            logger.info(json.dumps({"game_number": game_number, "result": game_result}))
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
+
+    game_state = {
+        "all_correct": border_names,
+        "attempts_left": remaining_guesses,
+        "border_count": border_count,
+        "borders_remaining": borders_remaining,
+        "correct_count": len(correct_guesses),
+        "correct_guesses": correct_guesses,
+        "country_name": country_name,
+        "game_result": game_result,
+        "game_over": game_over,
+        "game_number": game_number,
+        "guess_history": guess_history,
+        "guessed_main_country": guessed_main_country,
+        "hard_mode": hard_mode,
+        "wrong_guesses": wrong_guesses
+    }
+    logger.info(json.dumps(game_state))
 
     return {
         "all_correct": border_names,

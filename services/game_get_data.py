@@ -1,9 +1,13 @@
 import json
-import os
 
 from flask import request
 import requests
 from shapely.geometry import shape
+
+from services.game_logger import setup_logger
+
+# Setup logger
+logger = setup_logger()
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -71,11 +75,11 @@ def get_user_location(user_ip: str):
                 city = data.get("city", "Unknown")
                 return country, region, city
             else:
-                print(f"⚠️ Geo lookup failed: {data}")
+                logger.error(f"⚠️ Geo lookup failed: {data}")
         else:
-            print(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
+            logger.error(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
     except Exception as e:
-        print(f"⚠️ Geo lookup exception: {e}")
+        logger.error(f"⚠️ Geo lookup exception: {e}")
 
     # Always return something
     return "Unknown", "Unknown", "Unknown"

@@ -7,7 +7,11 @@ import pytz
 from datetime import date, datetime
 
 from services.game_get_data import get_all_drop_down_options, get_user_ip, get_user_location
+from services.game_logger import setup_logger
 # from services.game_observe import send_to_observe
+
+# Setup logger
+logger = setup_logger()
 
 # Set database paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -305,7 +309,7 @@ def record_world_leaderboard_result(success: bool):
     if user_ip:
         country, region, city = get_user_location(user_ip)
 
-    print(f"Recording result for player from Location: {country}, {region}, Success: {success}")
+    logger.info(json.dumps({"player_country": country, "player_region": region, "player_success": success}))
 
     # Update or insert record for today + location
     cursor.execute('''

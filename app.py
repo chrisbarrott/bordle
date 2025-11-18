@@ -200,7 +200,7 @@ def leaderboard_data():
         data = get_leaderboard_data()
         return jsonify(data)
     except Exception as e:
-        print(f"Error loading leaderboard data: {e}")
+        logger.warning(f"Error loading leaderboard data: {e}")
         return jsonify({"error": "Failed to load leaderboard data"}), 500
 
 
