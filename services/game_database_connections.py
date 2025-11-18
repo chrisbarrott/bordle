@@ -309,8 +309,6 @@ def record_world_leaderboard_result(success: bool):
     if user_ip:
         country, region, city = get_user_location(user_ip)
 
-    logger.info(json.dumps({"player_country": country, "player_region": region, "player_success": success}))
-
     # Update or insert record for today + location
     cursor.execute('''
         INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
@@ -324,3 +322,5 @@ def record_world_leaderboard_result(success: bool):
 
     conn.commit()
     conn.close()
+
+    return country, region, city

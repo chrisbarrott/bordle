@@ -75,14 +75,22 @@ def get_user_location(user_ip: str):
                 city = data.get("city", "Unknown")
                 return country, region, city
             else:
-                logger.error(f"⚠️ Geo lookup failed: {data}")
+                logger.error(f"Geo lookup failed: {data}")
         else:
-            logger.error(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
+            logger.error(f"Geo lookup failed: HTTP {response.status_code}")
+
     except Exception as e:
-        logger.error(f"⚠️ Geo lookup exception: {e}")
+        logger.error(f"Geo lookup exception: {e}")
+
+    logger.info(json.dumps({
+        "player_country": country,
+        "player_region": region,
+        "player_city": city,
+        "player_success": data.get("status", "")
+    }))
 
     # Always return something
-    return "Unknown", "Unknown", "Unknown"
+    return country, region, city
 
 
 def get_user_ip():

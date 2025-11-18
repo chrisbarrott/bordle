@@ -105,6 +105,9 @@ def process_guess(guess, session):
     # Always sort before rendering
     dropdown_options = sorted(session["available_options"])
 
+    # Set the guess
+    session["guess_country"] = guess
+
     # Remove guess from available options and sort
     if guess in dropdown_options:
         session["available_options"].remove(guess)
@@ -189,6 +192,7 @@ def get_game_state(session):
     guess_history = (session.get("guess_history", []),)
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
+    guess_country = session.get("guess_country", "")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -200,29 +204,33 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
-            record_world_leaderboard_result(True)
+            player_country, player_region, player_city = record_world_leaderboard_result(True)
             game_result = "Win"
+            
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
-            record_world_leaderboard_result(False)
+            player_country, player_region, player_city = record_world_leaderboard_result(False)
             game_result = "Loss"
+
         session["game_result_recorded"] = True  # mark as recorded
-        logger.info(json.dumps({"game_number": game_number, "result": game_result}))
+        logger.info(json.dumps({"game_number": game_number, "game_result": game_result}))
 
     # log if gameover
     if game_over and not result_recorded:
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False, remaining_guesses)
-                record_world_leaderboard_result(False)
+                player_country, player_region, player_city = record_world_leaderboard_result(False)
                 game_result = "Loss"
+
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(True)
+                player_country, player_region, player_city = record_world_leaderboard_result(True)
                 game_result = "Win"
+
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
-            logger.info(json.dumps({"game_number": game_number, "result": game_result}))
+            logger.info(json.dumps({"game_number": game_number, "game_result": game_result}))
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
@@ -238,9 +246,13 @@ def get_game_state(session):
         "game_result": game_result,
         "game_over": game_over,
         "game_number": game_number,
+        "guess_country": guess_country,
         "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
+        "player_country": player_country,
+        "player_region": player_region, 
+        "player_city": player_city, 
         "wrong_guesses": wrong_guesses
     }
     logger.info(json.dumps(game_state))
@@ -261,6 +273,7 @@ def get_game_state(session):
         "game_result": game_result,
         "game_over": game_over,
         "game_number": game_number,
+        "guess_country": guess_country,
         "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
