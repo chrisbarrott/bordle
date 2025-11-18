@@ -12,4 +12,4 @@ services/__pycache__/game_get_data.cpython-311.pyc
 services/__pycache__/game_database_connections.cpython-311.pyc
 services/__pycache__/game_logic.cpython-311.pyc
 services/__pycache__/*
-services/game_logger.py
+scripts/logging_test.py

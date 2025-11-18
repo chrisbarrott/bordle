@@ -27,14 +27,14 @@ from services.game_logic import (
 )
 import json
 from dotenv import load_dotenv
+from services.game_logger import setup_logger
 
+
+# Setup logger
+logger = setup_logger()
+
+# Setup Flask app
 app = Flask(__name__)
-
-# Use Redis for session storage
-# app.config['SESSION_TYPE'] = 'redis'
-# app.config['SESSION_REDIS'] = redis.StrictRedis(host='localhost', port=6379)
-# app.config['SESSION_PERMANENT'] = True
-
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 1 day
 app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 
