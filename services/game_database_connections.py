@@ -323,4 +323,8 @@ def record_world_leaderboard_result(success: bool):
     conn.commit()
     conn.close()
 
-    return country, region, city
+    return {
+        "player_country": country,
+        "player_region": region,
+        "player_city": city
+    }

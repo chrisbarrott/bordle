@@ -89,9 +89,9 @@ def initialize_game(session):
 
     # Get the IP and lookup location
     session["user_ip"] = get_user_ip()
-    session["location"] = get_user_location(session["user_ip"])
+    session["player_data"] = get_user_location(session["user_ip"])
     # logger.info(f"Player playing from location: {session['location']}")
-    logger.info(json.dumps({"player_location": session["location"]}))
+    logger.info(json.dumps({"player_location": session["player_data"]}))
 
 
 # Game reset (hidden)
@@ -191,10 +191,21 @@ def get_game_state(session):
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
     result_recorded = session.get("game_result_recorded", False)
-    guess_history = (session.get("guess_history", []),)
+    guess_history = session.get("guess_history", [])  # FIXED: no tuple
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
     guess_country = session.get("guess_country", "")
+    
+    player_data = session.get("player_data", {
+        "player_country": "Unknown",
+        "player_region": "Unknown",
+        "player_city": "Unknown"
+    })
+
+    # Unpack player_data into session for easy access
+    session["player_country"] = player_data.get("player_country", "Unknown")
+    session["player_region"] = player_data.get("player_region", "Unknown")
+    session["player_city"] = player_data.get("player_city", "Unknown")
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -206,16 +217,12 @@ def get_game_state(session):
     if game_over and not session.get("game_result_recorded", False):
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
-            player_country, player_region, player_city = (
-                record_world_leaderboard_result(True)
-            )
+            record_world_leaderboard_result(True)
             game_result = "Win"
 
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
-            player_country, player_region, player_city = (
-                record_world_leaderboard_result(False)
-            )
+            record_world_leaderboard_result(False)
             game_result = "Loss"
 
         session["game_result_recorded"] = True  # mark as recorded
@@ -231,23 +238,19 @@ def get_game_state(session):
         if not session.get("game_result_recorded", False):
             if remaining_guesses <= 0:
                 record_game_result(False, remaining_guesses)
-                player_country, player_region, player_city = (
-                    record_world_leaderboard_result(False)
-                )
+                record_world_leaderboard_result(False)
                 game_result = "Loss"
 
             if set(correct_guesses) == set(border_names):
                 record_game_result(True, remaining_guesses)
-                player_country, player_region, player_city = (
-                    record_world_leaderboard_result(True)
-                )
+                record_world_leaderboard_result(True)
                 game_result = "Win"
 
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
             logger.info(
                 json.dumps({
-                    "game_number": game_number,
+                    "gplayer_dataame_number": game_number,
                     "game_result": game_result
                 })
             )
@@ -270,9 +273,9 @@ def get_game_state(session):
         "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
-        "player_country": player_country,
-        "player_region": player_region,
-        "player_city": player_city,
+        "player_country": session["player_country"],
+        "player_region": session["player_region"],
+        "player_city": session["player_city"],
         "wrong_guesses": wrong_guesses,
     }
     logger.info(json.dumps(game_state))
@@ -299,4 +302,7 @@ def get_game_state(session):
         "hard_mode": hard_mode,
         "wrong_guesses": wrong_guesses,
         "wrong_shapes": wrong_shapes,
+        "player_country": session["player_country"],
+        "player_region": session["player_region"],
+        "player_city": session["player_city"],
     }
