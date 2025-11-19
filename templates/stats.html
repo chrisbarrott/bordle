@@ -73,13 +73,13 @@
 <h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1 text-center">🌍 World Stats (Today)</h2>
 
 <div class="max-w-md mx-auto overflow-x-auto">
-  <table class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
-    <thead class="bg-gray-100">
+  <table id="dailyLeaderboardTable" class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
+    <thead class="bg-gray-100 select-none cursor-pointer">
       <tr>
-        <th class="py-2 px-3 text-center w-8">#</th>
-        <th class="py-2 px-4">Country</th>
-        <th class="py-2 px-4 text-right">Success %</th>
-        <th class="py-2 px-4 text-right">Plays</th>
+        <th class="py-2 px-3 text-center sortable" data-column="0">#</th>
+        <th class="py-2 px-4 sortable" data-column="1">Country</th>
+        <th class="py-2 px-4 text-right sortable" data-column="2">Success %</th>
+        <th class="py-2 px-4 text-right sortable" data-column="3">Plays</th>
       </tr>
     </thead>
     <tbody id="dailyLeaderboardBody">
@@ -94,13 +94,13 @@
 <h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1 text-center">🏆 All-Time Leaderboard</h2>
 
 <div class="max-w-md mx-auto overflow-x-auto">
-  <table class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
-    <thead class="bg-gray-100">
+  <table id="allTimeLeaderboardTable" class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
+    <thead class="bg-gray-100 select-none cursor-pointer">
       <tr>
-        <th class="py-2 px-3 text-center w-8">#</th>
-        <th class="py-2 px-4">Country</th>
-        <th class="py-2 px-4 text-right">Success %</th>
-        <th class="py-2 px-4 text-right">Plays</th>
+        <th class="py-2 px-3 text-center sortable" data-column="0">#</th>
+        <th class="py-2 px-4 sortable" data-column="1">Country</th>
+        <th class="py-2 px-4 text-right sortable" data-column="2">Success %</th>
+        <th class="py-2 px-4 text-right sortable" data-column="3">Plays</th>
       </tr>
     </thead>
     <tbody id="allTimeLeaderboardBody">
@@ -108,6 +108,7 @@
     </tbody>
   </table>
 </div>
+
 
 <script>
   async function loadLeaderboardData() {
@@ -199,5 +200,58 @@
 </script>
 <!-- Required for how to play modal -->
 
+<script>
+  function makeTablesSortable(tableId) {
+    const table = document.getElementById(tableId);
+    const headers = table.querySelectorAll('.sortable');
+
+    headers.forEach((header, idx) => {
+      header.addEventListener('click', () => {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const currentDir = header.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+
+        // Reset other headers
+        headers.forEach(h => {
+          h.dataset.sortDir = '';
+          h.textContent = h.textContent.replace(/[\u25B2\u25BC]/g, '');
+        });
+
+        // Update arrow
+        header.dataset.sortDir = currentDir;
+        header.textContent += currentDir === 'asc' ? ' ▲' : ' ▼';
+
+        // Decide which columns are numeric (0 = #, 2 = Success %, 3 = Plays)
+        const numericColumns = [0, 2, 3];
+        const isNumeric = numericColumns.includes(idx);
+
+        // Sort rows
+        const sortedRows = rows.sort((a, b) => {
+          const aText = a.children[idx].textContent.trim().replace('%', '');
+          const bText = b.children[idx].textContent.trim().replace('%', '');
+
+          if (isNumeric) {
+            const aNum = parseFloat(aText) || 0;
+            const bNum = parseFloat(bText) || 0;
+            return currentDir === 'asc' ? aNum - bNum : bNum - aNum;
+          } else {
+            return currentDir === 'asc'
+              ? aText.localeCompare(bText)
+              : bText.localeCompare(aText);
+          }
+        });
+
+        // Rebuild table body
+        tbody.innerHTML = '';
+        sortedRows.forEach(row => tbody.appendChild(row));
+      });
+    });
+  }
+
+  makeTablesSortable('dailyLeaderboardTable');
+  makeTablesSortable('allTimeLeaderboardTable');
+
+
+</script>
 
 {% endblock %}

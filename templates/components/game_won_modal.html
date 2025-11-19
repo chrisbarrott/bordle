@@ -62,6 +62,11 @@
         class="inline-flex items-center justify-center bg-gray-600 text-white px-3 py-2 rounded hover:bg-gray-700 text-sm sm:text-base">
         📋 Copy
       </button>
+
+      <div id="share-popup" class="share-popup hidden">
+        <span class="close-popup">&times;</span>
+        🌍 Represent your country! Share your result to boost your nation's leaderboard score!
+      </div>
     </div>
   </div>
 </div>
@@ -218,3 +223,68 @@
     // console.log('Shareing to whatsapp: ', encodedMessage);
   };
 </script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const popup = document.getElementById("share-popup");
+    const closeBtn = popup?.querySelector(".close-popup");
+    const shareButton = document.getElementById("share-whatsapp");
+
+    if (!popup) return;
+
+    // Show shortly after modal loads
+    setTimeout(() => {
+      popup.classList.remove("hidden");
+      popup.classList.add("visible");
+    }, 800);
+
+    // Auto hide after 7 seconds
+    setTimeout(() => {
+      popup.classList.remove("visible");
+      setTimeout(() => popup.classList.add("hidden"), 300);
+    }, 7000);
+
+    // Dismiss immediately
+    closeBtn?.addEventListener("click", () => {
+      popup.classList.remove("visible");
+      setTimeout(() => popup.classList.add("hidden"), 300);
+    });
+  });
+</script>
+
+<style>
+.share-section {
+  width: 100%;
+  text-align: center;
+}
+
+.share-popup {
+  margin-top: 12px;
+  background: linear-gradient(135deg, #d8f0ff, #a7d9ff);
+  color: #003366;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  position: relative;
+}
+
+.share-popup.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.close-popup {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+</style>
