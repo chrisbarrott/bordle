@@ -1,6 +1,7 @@
 from datetime import date
 import json
 import math
+import uuid
 
 from services.game_database_connections import (
     get_game_number,
@@ -91,7 +92,11 @@ def initialize_game(session):
     session["user_ip"] = get_user_ip()
     session["player_data"] = get_user_location(session["user_ip"])
     # logger.info(f"Player playing from location: {session['location']}")
-    logger.info(json.dumps({"player_location": session["player_data"]}))
+    # logger.info(json.dumps({"player_location": session["player_data"]}))
+
+    # Assign a temp UID for the player if not already set
+    if "player_uid" not in session:
+        session["player_uid"] = str(uuid.uuid4())
 
 
 # Game reset (hidden)
@@ -221,12 +226,12 @@ def get_game_state(session):
             game_result = "Loss"
 
         session["game_result_recorded"] = True  # mark as recorded
-        logger.info(
-            json.dumps({
-                "game_number": game_number,
-                "game_result": game_result
-            })
-        )
+        # logger.info(
+        #     json.dumps({
+        #         "game_number": game_number,
+        #         "game_result": game_result
+        #     })
+        # )
 
     # log if gameover
     if game_over and not result_recorded:
@@ -243,12 +248,12 @@ def get_game_state(session):
 
             session["game_result_recorded"] = True  # prevent multiple increments
             session["game_result"] = game_result
-            logger.info(
-                json.dumps({
-                    "game_number": game_number,
-                    "game_result": game_result
-                })
-            )
+            # logger.info(
+            #     json.dumps({
+            #         "game_number": game_number,
+            #         "game_result": game_result
+            #     })
+            # )
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
@@ -271,6 +276,7 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
+        "player_uid": session["player_uid"],
         "wrong_guesses": wrong_guesses,
     }
     logger.info(json.dumps(game_state))
@@ -300,4 +306,5 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
+        "player_uid": session["player_uid"],
     }

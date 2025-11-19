@@ -95,12 +95,12 @@ def get_user_location(user_ip: str):
     except Exception as e:
         logger.error(f"Geo lookup exception: {e}")
 
-    logger.info(json.dumps({
-        "player_country": country,
-        "player_region": region,
-        "player_city": city,
-        "player_success": data.get("status", "")
-    }))
+    # logger.info(json.dumps({
+    #     "player_country": country,
+    #     "player_region": region,
+    #     "player_city": city,
+    #     "player_success": data.get("status", "")
+    # }))
 
     # Always return something
     return country, region, city
