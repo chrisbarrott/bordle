@@ -65,20 +65,33 @@ def get_all_drop_down_options():
 
 
 def get_user_location(user_ip: str):
+
+    # Default values
+    country = "Unknown"
+    region = "Unknown"
+    city = "Unknown"
+    data = {}
+
+    # IP geolocation lookup
     try:
         response = requests.get(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city", timeout=5)
         if response.status_code == 200:
             data = response.json()
+
+            # Extract location info
             if data.get("status") == "success":
                 country = data.get("country", "Unknown")
                 region = data.get("regionName", "Unknown")
                 city = data.get("city", "Unknown")
                 return country, region, city
+            
+            # Log failure
             else:
                 logger.error(f"Geo lookup failed: {data}")
         else:
             logger.error(f"Geo lookup failed: HTTP {response.status_code}")
 
+    # Log exception for geo lookup
     except Exception as e:
         logger.error(f"Geo lookup exception: {e}")
 

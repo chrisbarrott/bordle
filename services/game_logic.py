@@ -195,17 +195,12 @@ def get_game_state(session):
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
     guess_country = session.get("guess_country", "")
-    
-    player_data = session.get("player_data", {
-        "player_country": "Unknown",
-        "player_region": "Unknown",
-        "player_city": "Unknown"
-    })
 
-    # Unpack player_data into session for easy access
-    session["player_country"] = player_data.get("player_country", "Unknown")
-    session["player_region"] = player_data.get("player_region", "Unknown")
-    session["player_city"] = player_data.get("player_city", "Unknown")
+    # Unpack player_data tuple into session for easy access
+    country, region, city = session.get("player_data", ("Unknown", "Unknown", "Unknown"))
+    session["player_country"] = country
+    session["player_region"] = region
+    session["player_city"] = city
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -250,7 +245,7 @@ def get_game_state(session):
             session["game_result"] = game_result
             logger.info(
                 json.dumps({
-                    "gplayer_dataame_number": game_number,
+                    "game_number": game_number,
                     "game_result": game_result
                 })
             )
