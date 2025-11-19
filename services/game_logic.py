@@ -43,6 +43,11 @@ def initialize_game(session):
     # Pull todays game from SQL
     session["country_name"] = get_today_country()
 
+    # Assign a temp UID for the player if not already set
+    if "player_uid" not in session:
+        session["player_uid"] = str(uuid.uuid4())
+        print(f"Assigned new player UID: {session['player_uid']}")
+
     # Saved for testing
     # session["country_name"] = random.choice(list(border_map.keys()))
 
@@ -93,10 +98,6 @@ def initialize_game(session):
     session["player_data"] = get_user_location(session["user_ip"])
     # logger.info(f"Player playing from location: {session['location']}")
     # logger.info(json.dumps({"player_location": session["player_data"]}))
-
-    # Assign a temp UID for the player if not already set
-    if "player_uid" not in session:
-        session["player_uid"] = str(uuid.uuid4())
 
 
 # Game reset (hidden)
@@ -200,6 +201,7 @@ def get_game_state(session):
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
     guess_country = session.get("guess_country", "")
+    player_uid = session.get("player_uid", "Unknown")
 
     # Unpack player_data tuple into session for easy access
     country, region, city = session.get("player_data", ("Unknown", "Unknown", "Unknown"))
@@ -276,7 +278,7 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
-        "player_uid": session["player_uid"],
+        "player_uid": player_uid,
         "wrong_guesses": wrong_guesses,
     }
     logger.info(json.dumps(game_state))
@@ -306,5 +308,5 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
-        "player_uid": session["player_uid"],
+        "player_uid": player_uid,
     }
