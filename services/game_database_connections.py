@@ -309,19 +309,24 @@ def record_world_leaderboard_result(success: bool):
     if user_ip:
         country, region, city = get_user_location(user_ip)
 
-    # Update or insert record for today + location
-    cursor.execute('''
-        INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
-        VALUES (?, ?, ?, ?, 1, ?, ?)
-        ON CONFLICT(game_date, country, region, city)
-        DO UPDATE SET 
-            plays = plays + 1,
-            successes = successes + excluded.successes,
-            failures = failures + excluded.failures
-    ''', (game_date, country, region, city, 1 if success else 0, 0 if success else 1))
+    if country == "Unknown":
+        logger.warning(f"Not updating country stats for IP: {user_ip} - could not determine location")
 
-    conn.commit()
-    conn.close()
+    else:
+        logger.info(f"Updating country stats for user location: {country}, {region}, {city}")
+        # Update or insert record for today + location
+        cursor.execute('''
+            INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
+            VALUES (?, ?, ?, ?, 1, ?, ?)
+            ON CONFLICT(game_date, country, region, city)
+            DO UPDATE SET 
+                plays = plays + 1,
+                successes = successes + excluded.successes,
+                failures = failures + excluded.failures
+        ''', (game_date, country, region, city, 1 if success else 0, 0 if success else 1))
+
+        conn.commit()
+        conn.close()
 
     return {
         "player_country": country,
