@@ -254,8 +254,6 @@ def get_game_state(session):
         "wrong_guesses": wrong_guesses,
     }
 
-    logger.info(f"Game State: {json.dumps(game_state)}")
-
     # Only log game state if not an invalid session
     skip_log = game_over and game_result == "Started"
     if skip_log:
