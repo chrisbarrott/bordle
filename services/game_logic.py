@@ -258,12 +258,12 @@ def get_game_state(session):
     }
 
     # Only log game state if not an invalid session
-    # Log if game_result == 'Started' only when game is NOT over
-    should_log = not (game_over and game_result == "Started")
-    if should_log:
-        logger.info(json.dumps(game_state))
-    else:
+    skip_log = game_over and game_result == "Started"
+    if skip_log:
         logger.info("Skipped logging for game over and game started")
+    else:
+        # Valid session, log full game state
+        logger.info(json.dumps(game_state))
 
     return {
         "all_correct": border_names,
