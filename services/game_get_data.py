@@ -1,9 +1,13 @@
 import json
-import os
 
 from flask import request
 import requests
 from shapely.geometry import shape
+
+from services.game_logger import setup_logger
+
+# Setup logger
+logger = setup_logger()
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -61,24 +65,45 @@ def get_all_drop_down_options():
 
 
 def get_user_location(user_ip: str):
+
+    # Default values
+    country = "Unknown"
+    region = "Unknown"
+    city = "Unknown"
+    data = {}
+
+    # IP geolocation lookup
     try:
         response = requests.get(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city", timeout=5)
         if response.status_code == 200:
             data = response.json()
+
+            # Extract location info
             if data.get("status") == "success":
                 country = data.get("country", "Unknown")
                 region = data.get("regionName", "Unknown")
                 city = data.get("city", "Unknown")
                 return country, region, city
+            
+            # Log failure
             else:
-                print(f"⚠️ Geo lookup failed: {data}")
+                logger.error(f"Geo lookup failed: {data}")
         else:
-            print(f"⚠️ Geo lookup failed: HTTP {response.status_code}")
+            logger.error(f"Geo lookup failed: HTTP {response.status_code}")
+
+    # Log exception for geo lookup
     except Exception as e:
-        print(f"⚠️ Geo lookup exception: {e}")
+        logger.error(f"Geo lookup exception: {e}")
+
+    # logger.info(json.dumps({
+    #     "player_country": country,
+    #     "player_region": region,
+    #     "player_city": city,
+    #     "player_success": data.get("status", "")
+    # }))
 
     # Always return something
-    return "Unknown", "Unknown", "Unknown"
+    return country, region, city
 
 
 def get_user_ip():
