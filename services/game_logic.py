@@ -243,6 +243,7 @@ def get_game_state(session):
         "correct_guesses": correct_guesses,
         "country_name": country_name,
         "game_result": game_result,
+        "game_result_recorded": session["game_result_recorded"],
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
@@ -255,7 +256,12 @@ def get_game_state(session):
         "player_uid": player_uid,
         "wrong_guesses": wrong_guesses,
     }
-    logger.info(json.dumps(game_state))
+
+    # Only log game state if not an invalid session
+    # Log if game_result == 'Started' only when game is NOT over
+    should_log = not (game_over and game_result == "Started")
+    if should_log:
+        logger.info(json.dumps(game_state))
 
     return {
         "all_correct": border_names,
@@ -271,6 +277,7 @@ def get_game_state(session):
         "country_name": country_name,
         "final_shapes": final_shapes,
         "game_result": game_result,
+        "game_result_recorded": session["game_result_recorded"],
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
