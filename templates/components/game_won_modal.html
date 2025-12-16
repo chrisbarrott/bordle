@@ -215,8 +215,16 @@
     Country: ${hardMode === 'true' ? '???' : `${country} ${flag}`}
     ${resultEmojis.join('')} (${correct}/${total})
     https://bordle.world`;
-    
+
     const encodedMessage = encodeURIComponent(result);
+
+    // Log the share event to backend
+    fetch('/api/observability/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ country, gameNumber, result, gameResult: "Win"})
+    });
+
     // console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
