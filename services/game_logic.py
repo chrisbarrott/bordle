@@ -262,6 +262,8 @@ def get_game_state(session):
     should_log = not (game_over and game_result == "Started")
     if should_log:
         logger.info(json.dumps(game_state))
+    else:
+        logger.info("Skipped logging for game over and game started")
 
     return {
         "all_correct": border_names,
