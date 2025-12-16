@@ -278,15 +278,20 @@ def api_stats():
     return jsonify(stats)
 
 
+# Added observability for WhatsApp share events
 @app.route("/api/observability/share", methods=["POST"])
 def log_share_event():
     data = request.get_json(force=True)
 
     whatsapp_share_event = {
+        "env": os.getenv("FLASK_ENV", "production"),
         "event": "WHATSAPP_SHARE_EVENT",
         "game_number": data.get("gameNumber"),
         "country": data.get("country"),
-        "encoded_message": data.get("encodedMessage")
+        "encoded_message": data.get("result"),
+        "player_uid": session.get("player_uid", "unknown"),
+        "player_country": session.get("player_country", "unknown"),
+        "game_result": data.get("result")
     }
     logger.info(json.dumps(whatsapp_share_event))
 
