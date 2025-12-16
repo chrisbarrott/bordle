@@ -221,41 +221,12 @@ def get_game_state(session):
             record_game_result(True, remaining_guesses)
             record_world_leaderboard_result(True)
             game_result = "Win"
-
         elif remaining_guesses <= 0:
             record_game_result(False, remaining_guesses)
             record_world_leaderboard_result(False)
             game_result = "Loss"
-
         session["game_result_recorded"] = True  # mark as recorded
-        # logger.info(
-        #     json.dumps({
-        #         "game_number": game_number,
-        #         "game_result": game_result
-        #     })
-        # )
-
-    # log if gameover
-    if game_over and not result_recorded:
-        if not session.get("game_result_recorded", False):
-            if remaining_guesses <= 0:
-                record_game_result(False, remaining_guesses)
-                record_world_leaderboard_result(False)
-                game_result = "Loss"
-
-            if set(correct_guesses) == set(border_names):
-                record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(True)
-                game_result = "Win"
-
-            session["game_result_recorded"] = True  # prevent multiple increments
-            session["game_result"] = game_result
-            # logger.info(
-            #     json.dumps({
-            #         "game_number": game_number,
-            #         "game_result": game_result
-            #     })
-            # )
+        session["game_result"] = game_result
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
@@ -269,6 +240,7 @@ def get_game_state(session):
         "correct_guesses": correct_guesses,
         "country_name": country_name,
         "game_result": game_result,
+        "game_result_recorded": session["game_result_recorded"],
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
@@ -281,7 +253,14 @@ def get_game_state(session):
         "player_uid": player_uid,
         "wrong_guesses": wrong_guesses,
     }
-    logger.info(json.dumps(game_state))
+
+    # Only log game state if not an invalid session
+    skip_log = game_over and game_result == "Started"
+    if skip_log:
+        logger.info("Skipped logging for game over and game started")
+    else:
+        # Valid session, log full game state
+        logger.info(json.dumps(game_state))
 
     return {
         "all_correct": border_names,
@@ -297,6 +276,7 @@ def get_game_state(session):
         "country_name": country_name,
         "final_shapes": final_shapes,
         "game_result": game_result,
+        "game_result_recorded": session["game_result_recorded"],
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
