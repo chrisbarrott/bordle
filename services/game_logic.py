@@ -217,19 +217,16 @@ def get_game_state(session):
 
     # Record result only once per session
     if game_over and not session.get("game_result_recorded", False):
-        # Only record if game_result is not 'Started'
-        if game_result != "Started":
-            if set(correct_guesses) == set(border_names):
-                record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(True)
-                game_result = "Win"
-            elif remaining_guesses <= 0:
-                record_game_result(False, remaining_guesses)
-                record_world_leaderboard_result(False)
-                game_result = "Loss"
-            session["game_result_recorded"] = True  # mark as recorded
-            session["game_result"] = game_result
-        # If game_result is 'Started', do not record or update session flags
+        if set(correct_guesses) == set(border_names):
+            record_game_result(True, remaining_guesses)
+            record_world_leaderboard_result(True)
+            game_result = "Win"
+        elif remaining_guesses <= 0:
+            record_game_result(False, remaining_guesses)
+            record_world_leaderboard_result(False)
+            game_result = "Loss"
+        session["game_result_recorded"] = True  # mark as recorded
+        session["game_result"] = game_result
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
@@ -256,6 +253,8 @@ def get_game_state(session):
         "player_uid": player_uid,
         "wrong_guesses": wrong_guesses,
     }
+
+    logger.info(f"Game State: {json.dumps(game_state)}")
 
     # Only log game state if not an invalid session
     skip_log = game_over and game_result == "Started"
