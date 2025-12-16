@@ -291,7 +291,7 @@ def log_share_event():
         "encoded_message": data.get("result"),
         "player_uid": session.get("player_uid", "unknown"),
         "player_country": session.get("player_country", "unknown"),
-        "game_result": data.get("result")
+        "game_result": session.get("game_result", "unknown")
     }
     logger.info(json.dumps(whatsapp_share_event))
 
