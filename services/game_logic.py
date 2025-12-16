@@ -228,34 +228,7 @@ def get_game_state(session):
             game_result = "Loss"
 
         session["game_result_recorded"] = True  # mark as recorded
-        # logger.info(
-        #     json.dumps({
-        #         "game_number": game_number,
-        #         "game_result": game_result
-        #     })
-        # )
-
-    # log if gameover
-    if game_over and not result_recorded:
-        if not session.get("game_result_recorded", False):
-            if remaining_guesses <= 0:
-                record_game_result(False, remaining_guesses)
-                record_world_leaderboard_result(False)
-                game_result = "Loss"
-
-            if set(correct_guesses) == set(border_names):
-                record_game_result(True, remaining_guesses)
-                record_world_leaderboard_result(True)
-                game_result = "Win"
-
-            session["game_result_recorded"] = True  # prevent multiple increments
-            session["game_result"] = game_result
-            # logger.info(
-            #     json.dumps({
-            #         "game_number": game_number,
-            #         "game_result": game_result
-            #     })
-            # )
+        session["game_result"] = game_result
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
