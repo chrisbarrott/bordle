@@ -217,7 +217,7 @@ def get_game_state(session):
 
     # Record result only once per session
     if game_over and game_result_recorded is False:
-        logger.info(f"Game is over: {game_over} and result recorded: {game_result_recorded}")
+        logger.info(f"Game over: {game_over} and result recorded: {game_result_recorded}")
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
             record_world_leaderboard_result(True)
@@ -227,10 +227,11 @@ def get_game_state(session):
             record_world_leaderboard_result(False)
             game_result = "Loss"
         session["game_result_recorded"] = True
+        logger.debug("Setting game_result_recorded to True")
         game_result_recorded = True  # mark as recorded
         session["game_result"] = game_result
     else:
-        logger.info(f"Game is not over: {game_over} or result not recorded: {game_result_recorded}")
+        logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")
         game_result = session.get("game_result", "In progress")
 
     # If game is over, show all correct answers in the final map
