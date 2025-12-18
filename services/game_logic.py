@@ -46,7 +46,7 @@ def initialize_game(session):
     # Assign a temp UID for the player if not already set
     if "player_uid" not in session:
         session["player_uid"] = str(uuid.uuid4())
-        print(f"Assigned new player UID: {session['player_uid']}")
+        logger.info(f"Assigned new player UID: {session['player_uid']}")
 
     # Saved for testing
     # session["country_name"] = random.choice(list(border_map.keys()))
@@ -90,7 +90,7 @@ def initialize_game(session):
     # Set game number for session handling
     session["game_number"] = get_game_number()
     logger.info(
-        f"Initialized game #{session['game_number']} for {session['country_name']}"
+        f"Initialized game #{session['game_number']} for player {session['player_uid']} in {session['player_country']}"
     )
 
     # Get the IP and lookup location

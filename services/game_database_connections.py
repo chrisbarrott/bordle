@@ -224,6 +224,8 @@ def get_today_country():
     conn.commit()
     conn.close()
 
+    logger.info(f"Assigned new daily country: {new_country} for date: {today}")
+
     return new_country
 
 
