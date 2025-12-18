@@ -196,7 +196,7 @@ def get_game_state(session):
     remaining_guesses = session.get("remaining_guesses", 0)
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
-    result_recorded = session.get("game_result_recorded", False)
+    game_result_recorded = session.get("game_result_recorded", False)
     guess_history = session.get("guess_history", [])  # FIXED: no tuple
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
@@ -216,7 +216,8 @@ def get_game_state(session):
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
 
     # Record result only once per session
-    if game_over and not session.get("game_result_recorded", False):
+    if game_over and game_result_recorded is False:
+        logger.info(f"Game is over: {game_over} and result recorded: {game_result_recorded}")
         if set(correct_guesses) == set(border_names):
             record_game_result(True, remaining_guesses)
             record_world_leaderboard_result(True)
@@ -225,8 +226,12 @@ def get_game_state(session):
             record_game_result(False, remaining_guesses)
             record_world_leaderboard_result(False)
             game_result = "Loss"
-        session["game_result_recorded"] = True  # mark as recorded
+        session["game_result_recorded"] = True
+        game_result_recorded = True  # mark as recorded
         session["game_result"] = game_result
+    else:
+        logger.info(f"Game is not over: {game_over} or result not recorded: {game_result_recorded}")
+        game_result = session.get("game_result", "In progress")
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
