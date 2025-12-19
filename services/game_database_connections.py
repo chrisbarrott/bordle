@@ -80,7 +80,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS player_results (
             game_number INTEGER,
             game_date DATE,
-            player_results TEXT,
+            player_result TEXT,
             player_uid TEXT,
             PRIMARY KEY (game_date, game_number, player_uid)
         )
