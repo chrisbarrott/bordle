@@ -80,6 +80,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS player_results (
             game_number INTEGER,
             game_date DATE,
+            player_results TEXT,
             player_uid TEXT,
             PRIMARY KEY (game_date, game_number, player_uid)
         )
@@ -119,8 +120,8 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
         
         # mark player as recorded
         cursor.execute(
-            "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
-            (today, game_number, player_uid),
+            "INSERT INTO player_results (game_date, game_number, player_result, player_uid) VALUES (?, ?, ?)",
+            (today, game_number, success, player_uid),
         )
 
     # ----- Update daily aggregated stats -----
