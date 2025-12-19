@@ -204,7 +204,9 @@ def get_game_state(session):
     player_uid = session.get("player_uid", "Unknown")
 
     # Unpack player_data tuple into session for easy access
-    country, region, city = session.get("player_data", ("Unknown", "Unknown", "Unknown"))
+    country, region, city = session.get(
+        "player_data", ("Unknown", "Unknown", "Unknown")
+    )
     session["player_country"] = country
     session["player_region"] = region
     session["player_city"] = city
@@ -217,21 +219,26 @@ def get_game_state(session):
 
     # Record result only once per session
     if game_over and game_result_recorded is False:
-        logger.info(f"Game over: {game_over} and result recorded: {game_result_recorded}")
+        logger.info(
+            f"Game over: {game_over} and result recorded: {game_result_recorded}"
+        )
         if set(correct_guesses) == set(border_names):
-            record_game_result(True, remaining_guesses)
-            record_world_leaderboard_result(True)
+            # Update world leaderboard first (idempotent check), then record aggregated game result
+            record_world_leaderboard_result(True, session.get("player_uid"))
+            record_game_result(True, remaining_guesses, session.get("player_uid"))
             game_result = "Win"
         elif remaining_guesses <= 0:
-            record_game_result(False, remaining_guesses)
-            record_world_leaderboard_result(False)
+            record_world_leaderboard_result(False, session.get("player_uid"))
+            record_game_result(False, remaining_guesses, session.get("player_uid"))
             game_result = "Loss"
         session["game_result_recorded"] = True
         logger.debug("Setting game_result_recorded to True")
         game_result_recorded = True  # mark as recorded
         session["game_result"] = game_result
     else:
-        logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")
+        logger.info(
+            f"Game over: {game_over} or result recorded: {game_result_recorded}"
+        )
         game_result = session.get("game_result", "In progress")
 
     # If game is over, show all correct answers in the final map

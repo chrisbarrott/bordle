@@ -8,7 +8,6 @@ from datetime import date, datetime
 
 from services.game_get_data import get_all_drop_down_options, get_user_ip, get_user_location
 from services.game_logger import setup_logger
-# from services.game_observe import send_to_observe
 
 # Setup logger
 logger = setup_logger()
@@ -82,20 +81,6 @@ def record_game_result(success: bool, remaining_countries: str):
 
     conn.commit()
     conn.close()
-
-    # Send enriched payload to Observe
-    # payload = {
-    #     "timestamp": now.isoformat(),
-    #     "game_date": str(today),
-    #     "result": "success" if success else "failure",
-    #     "environment": ENVIRONMENT,
-    #     "country_name": get_today_country(),
-    #     "game_number": get_game_number(),
-    #     "games_today": get_games_today()[0],
-    #     "total_games": get_total_games(),
-    #     "remaining_guesses": remaining_countries
-    # }
-    # send_to_observe(payload)
 
 
 def get_today_country_old():
