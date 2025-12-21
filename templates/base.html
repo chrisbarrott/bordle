@@ -1,90 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-  <title>{% block title %}Bordle 🌍{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
-  {% block head %}{% endblock %}
+  <head>
+    <title>{% block title %}Bordle 🌍{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
+    {% block head %}{% endblock %}
 
-  <!-- Open Graph / WhatsApp Meta Tags -->
-  <meta property="og:title" content="Bordle – The Country Border Game!" />
-  <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
-  <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
-  <meta property="og:url" content="https://www.bordle.world" />
-  <meta property="og:type" content="website" />
+    <!-- Open Graph / WhatsApp Meta Tags -->
+    <meta property="og:title" content="Bordle – The Country Border Game!" />
+    <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
+    <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+    <meta property="og:url" content="https://www.bordle.world" />
+    <meta property="og:type" content="website" />
 
-  <!-- Twitter Card (optional, improves previews on X/Twitter) -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Bordle – The Country Border Game!" />
-  <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
-  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+    <!-- Twitter Card (optional, improves previews on X/Twitter) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bordle – The Country Border Game!" />
+    <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
+    <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
 
-  <!--  Google friendly icon -->
-  <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+    <!--  Google friendly icon -->
+    <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+  </head>
 
-  <style>
-    html, body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
+  <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
+    <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
+      {% if request.endpoint == 'stats' %}
+        <a href="/game"
+          class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
+          <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
+          <span>Back to Game</span>
+        </a>
+      {% endif %}
+    </div>
 
-    input:checked + .block {
-      background-color: #4ade80; /* green for ON */
-    }
+    <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
+      <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
+        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
 
-    input:checked + .block + .dot {
-      transform: translateX(100%);
-    }
+      <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
+        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
+    </div>
 
-    .dot {
-      transition: transform 0.3s ease-in-out;
-    }
-  </style>
+    {% block content %}{% endblock %}
 
-  <!-- header controls moved into body to avoid invalid head content -->
+    <!-- Common JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
-</head>
+    {% block scripts %}{% endblock %}
 
-<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
-  <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
-    {% if request.endpoint == 'stats' %}
-      <a href="/game"
-        class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
-        <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
-        <span>Back to Game</span>
-      </a>
-    {% endif %}
-  </div>
+    <style>
+      input:checked + .block {
+        background-color: #4ade80; /* green for ON */
+      }
 
-  <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
-    <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+      input:checked + .block + .dot {
+        transform: translateX(100%);
+      }
 
-    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
-  </div>
+      .dot {
+        transition: transform 0.3s ease-in-out;
+      }
+    </style>
 
-  {% block content %}{% endblock %}
+    <!-- Required for loading leaderboard modal -->
+    <script>
+      function toggleLeaderboard() {
+        window.location.href = "/stats";
+      }
+    </script>
 
-  <!-- Common JS -->
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-
-  {% block scripts %}{% endblock %}
-
-  <!-- Required for loading leaderboard modal -->
-  <script>
-    function toggleLeaderboard() {
-      window.location.href = "/stats";
-    }
-  </script>
-</body>
+  </body>
 </html>
