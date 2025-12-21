@@ -209,33 +209,7 @@
   });
 </script>
 
-<script>
-  // Leaderboard Tooltip Logic
-  document.addEventListener('DOMContentLoaded', () => {
-    const tooltipSeen = localStorage.getItem('leaderboardTooltipSeen');
-
-    if (!tooltipSeen) {
-      const tooltip = document.createElement('div');
-      tooltip.classList.add('leaderboard-tooltip');
-      tooltip.innerHTML = `
-        🌍 <strong>New!</strong> Check out the <br>Country Leaderboard in your stats!
-        <br><button id="gotItBtn">Got it</button>
-      `;
-      document.body.appendChild(tooltip);
-
-      document.getElementById('gotItBtn').addEventListener('click', () => {
-        tooltip.remove();
-        localStorage.setItem('leaderboardTooltipSeen', 'true');
-      });
-
-      // Auto-hide after 7 seconds
-      setTimeout(() => {
-        if (tooltip.parentNode) tooltip.remove();
-        localStorage.setItem('leaderboardTooltipSeen', 'true');
-      }, 7000);
-    }
-  });
-</script>
+<!-- Leaderboard tooltip removed per user request -->
 
 <script>
 async function loadGameNumber() {
