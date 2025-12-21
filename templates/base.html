@@ -25,9 +25,33 @@
   <!--  Google friendly icon -->
   <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
 
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    input:checked + .block {
+      background-color: #4ade80; /* green for ON */
+    }
+
+    input:checked + .block + .dot {
+      transform: translateX(100%);
+    }
+
+    .dot {
+      transition: transform 0.3s ease-in-out;
+    }
+  </style>
+
   <!-- header controls moved into body to avoid invalid head content -->
 
-<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
   <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
     {% if request.endpoint == 'stats' %}
       <a href="/game"
@@ -55,27 +79,12 @@
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
   {% block scripts %}{% endblock %}
-  
+
+  <!-- Required for loading leaderboard modal -->
+  <script>
+    function toggleLeaderboard() {
+      window.location.href = "/stats";
+    }
+  </script>
 </body>
 </html>
-
-<style>
-  input:checked + .block {
-    background-color: #4ade80; /* green for ON */
-  }
-
-  input:checked + .block + .dot {
-    transform: translateX(100%);
-  }
-
-  .dot {
-    transition: transform 0.3s ease-in-out;
-  }
-</style>
-
-<!-- Required for loading leaderboard modal -->
-<script>
-  function toggleLeaderboard() {
-    window.location.href = "/stats";
-  }
-</script>
