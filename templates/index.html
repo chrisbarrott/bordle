@@ -140,6 +140,9 @@
 </style>
 
 <script>
+  // Skip if game has ended
+  if (window.gameEnded) return;
+  
   // Show hint modal after 60 seconds if not already accepted/declined
   document.addEventListener('DOMContentLoaded', () => {
     try {
