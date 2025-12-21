@@ -76,6 +76,9 @@
 
 <script type="text/javascript">
   window.onload = function () {
+    // Indicate game over state
+    window.gameOver = true;
+
     // Update local stats display
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
     if (stats) updateUserStats(stats);

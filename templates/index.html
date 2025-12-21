@@ -140,30 +140,40 @@
 </style>
 
 <script>
-  // Skip if game has ended
-  if (window.gameEnded) return;
-  
-  // Show hint modal after 60 seconds if not already accepted/declined
   document.addEventListener('DOMContentLoaded', () => {
-    try {
-      if (localStorage.getItem('bordersAccepted') === 'true' || localStorage.getItem('bordersDeclined') === 'true') return;
-    } catch (e) {}
 
     setTimeout(() => {
-      // If borders are already enabled for this session/page, don't prompt
+      // Check if game ended right before showing the modal
+      if (window.gameOver) {
+        console.log("[Hint Modal] Skipping because the game has ended.");
+        return;
+      } else {
+        console.log("[Hint Modal] Game is ongoing, showing modal now.");
+      }
+
       try {
-        if (typeof showBorders !== 'undefined' && showBorders) return;
-      } catch (e) {}
+        if (localStorage.getItem('bordersAccepted') === 'true' || localStorage.getItem('bordersDeclined') === 'true') {
+          console.log("[Hint Modal] Already accepted/declined, skipping modal.");
+          return;
+        }
+      } catch (e) {
+        console.warn("[Hint Modal] Error accessing localStorage:", e);
+      }
+
       const modal = document.getElementById('hint-modal');
-      if (!modal) return;
+      if (!modal) {
+        console.log("[Hint Modal] Modal element not found, skipping.");
+        return;
+      }
+
       modal.classList.remove('hidden');
 
       const yes = document.getElementById('hint-yes');
       const no = document.getElementById('hint-no');
 
       yes.addEventListener('click', () => {
+        console.log("[Hint Modal] User accepted borders.");
         try { localStorage.setItem('bordersAccepted', 'true'); } catch (e) {}
-        // call global loader (map_render exposes this)
         if (window.addBorderOutlines) {
           window.addBorderOutlines('/static/map_data/border_outlines.geojson');
         }
@@ -171,11 +181,14 @@
       });
 
       no.addEventListener('click', () => {
+        console.log("[Hint Modal] User declined borders.");
         try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}
         modal.classList.add('hidden');
       });
-    }, 15000);
+
+    }, 15000); // 15 seconds delay
   });
+
 </script>
 
 <!-- Required for how to play modal -->
