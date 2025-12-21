@@ -314,8 +314,22 @@ def get_leaderboard_data():
 
 
 def record_world_leaderboard_result(success: bool, player_uid: str = None):
+    # Default values
+    country, region, city = "Unknown", "Unknown", "Unknown"
+
+    # If user IP available, get location
     user_ip = get_user_ip()  # Flask: get user's IP
-    country, region, city = get_user_location(user_ip)
+    if user_ip:
+        country, region, city = get_user_location(user_ip)
+
+    # Sometimes location can't be determined
+    if country == "Unknown":
+        logger.warning(f"Not updating country stats for IP: {user_ip} - could not determine location")
+        return {
+            "player_country": "Unknown", 
+            "player_region": "Unknown", 
+            "player_city": "Unknown"
+        }
 
     # Now you can store it in your database
     uk = pytz.timezone('Europe/London')
@@ -331,24 +345,23 @@ def record_world_leaderboard_result(success: bool, player_uid: str = None):
             "SELECT 1 FROM player_results WHERE game_date = ? AND player_uid = ?",
             (game_date, player_uid),
         )
+
+        # If already recorded, skip
         if cursor.fetchone():
             logger.info(f"Skipping world leaderboard update for already-recorded player {player_uid} on {game_date}")
             conn.close()
-            return {"player_country": "Unknown", "player_region": "Unknown", "player_city": "Unknown"}
 
-    # Default values
-    country, region, city = "Unknown", "Unknown", "Unknown"
+            # Default return values
+            return {
+                "player_country": country, 
+                "player_region": region, 
+                "player_city": city
+            }
 
-    # If user IP available, get location
-    if user_ip:
-        country, region, city = get_user_location(user_ip)
-
-    # Sometimes location can't be determined
-    if country == "Unknown":
-        logger.warning(f"Not updating country stats for IP: {user_ip} - could not determine location")
-
-    else:
+    # ----- Update country stats -----
+    if country != "Unknown":
         logger.info(f"Updating country stats for user location: {country}, {region}, {city}")
+        
         # Update or insert record for today + location
         cursor.execute('''
             INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
