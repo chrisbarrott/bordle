@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     zoom: 2,
     minZoom: 1,
     maxZoom: 10,
-    zoomControl: true,
+    zoomControl: false, // use custom +/- controls
     attributionControl: false,
   });
 
@@ -54,6 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     // showBorders not enabled; no outlines will be loaded
   }
+
+  // Wire up custom zoom buttons (if present)
+  const zi = document.getElementById('zoom-in');
+  const zo = document.getElementById('zoom-out');
+  if (zi) zi.addEventListener('click', () => map.zoomIn());
+  if (zo) zo.addEventListener('click', () => map.zoomOut());
 
   // Fit bounds to all shapes
   const allLayers = [];
