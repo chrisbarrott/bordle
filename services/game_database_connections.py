@@ -290,7 +290,7 @@ def get_leaderboard_data():
         GROUP BY country
         HAVING total_plays > 0
         ORDER BY success_rate DESC, total_plays DESC
-        LIMIT 50;
+        LIMIT 100;
     """)
     all_time = cursor.fetchall()
 
@@ -361,7 +361,7 @@ def record_world_leaderboard_result(success: bool, player_uid: str = None):
     # ----- Update country stats -----
     if country != "Unknown":
         logger.info(f"Updating country stats for user location: {country}, {region}, {city}")
-        
+
         # Update or insert record for today + location
         cursor.execute('''
             INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
