@@ -94,22 +94,28 @@
   <img src="{{ url_for('static', filename='images/bordle_logo.png') }}"
        alt="BORDLE Logo" class="w-64 mb-8">
 
-  <!-- Hard Mode Toggle -->
-   
-  <form action="{{ url_for('set_mode_and_play') }}" method="post" class="mb-6">
-    <div class="toggle-container">
-    <label class="toggle-switch">
-        <input type="checkbox" id="hard_mode" name="hard_mode" {% if hard_mode %}checked{% endif %}>
-        <span class="slider"></span>
-    </label>
-    <span class="toggle-label">Hard Mode (No country name!)</span>
+  <!-- Mode Toggles -->
+  <form action="{{ url_for('set_mode_and_play') }}" method="post" class="mb-6 flex flex-col items-center">
+    <div class="mb-4 text-center w-full">
+      <div class="flex items-center justify-center space-x-3">
+        <label class="toggle-switch">
+          <input type="checkbox" id="hard_mode" name="hard_mode" {% if hard_mode %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <label for="hard_mode" class="font-medium">Hard Mode</label>
+      </div>
+      <p class="text-sm text-gray-500 mt-1 mx-auto max-w-md">Hide the country name — guess borders only.</p>
     </div>
-    <div class="toggle-container mt-4">
-      <label class="toggle-switch">
-        <input type="checkbox" id="show_border_lines" name="show_border_lines" {% if show_border_lines %}checked{% endif %}>
-        <span class="slider"></span>
-      </label>
-      <span class="toggle-label">Easy Mode (Show border outlines on map)</span>
+
+    <div class="mb-4 text-center w-full">
+      <div class="flex items-center justify-center space-x-3">
+        <label class="toggle-switch">
+          <input type="checkbox" id="show_border_lines" name="show_border_lines" {% if show_border_lines %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <label for="show_border_lines" class="font-medium">Easy Mode</label>
+      </div>
+      <p class="text-sm text-gray-500 mt-1 mx-auto max-w-md">Display country border outlines on the base map to help identify neighbors.</p>
     </div>
     <div class="mt-6 text-center">
       <button type="submit"
@@ -125,7 +131,7 @@
 
   <!-- Version Badge -->
   <div id="version-badge">
-    🚀 v3.1.2
+    🚀 v3.2.1
   </div>
 
   <!-- Release Notes Modal -->
@@ -134,6 +140,7 @@
       <span id="close-release-notes">&times;</span>
       <h2>🧾 Release Notes</h2>
       <ul>
+        <li><strong>v3.2.1</strong> – Added feature where border lines are displayed in an easy mode. 21/12/2025</li>
         <li><strong>v3.1.2</strong> – Added backend observability update. 16/12/2025</li> 
         <li><strong>v3.1.1</strong> – Added sortable function for stats view. 12/11/2025</li> 
         <li><strong>v3.1.0</strong> – Had to update the stats to have more countries because apparently this is global! 05/11/2025</li>        
