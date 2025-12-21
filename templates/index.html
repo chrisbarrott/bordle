@@ -151,6 +151,7 @@
         console.log("[Hint Modal] Game is ongoing, showing modal now.");
       }
 
+      // Check localStorage to see if already accepted/declined
       try {
         if (localStorage.getItem('bordersAccepted') === 'true' || localStorage.getItem('bordersDeclined') === 'true') {
           console.log("[Hint Modal] Already accepted/declined, skipping modal.");
@@ -160,6 +161,7 @@
         console.warn("[Hint Modal] Error accessing localStorage:", e);
       }
 
+      // Show the modal
       const modal = document.getElementById('hint-modal');
       if (!modal) {
         console.log("[Hint Modal] Modal element not found, skipping.");
@@ -171,15 +173,21 @@
       const yes = document.getElementById('hint-yes');
       const no = document.getElementById('hint-no');
 
+      // Handle button clicks
       yes.addEventListener('click', () => {
-        console.log("[Hint Modal] User accepted borders.");
-        try { localStorage.setItem('bordersAccepted', 'true'); } catch (e) {}
+        try { 
+          localStorage.setItem('bordersAccepted', 'true'); // persist
+        } catch (e) {}
+
+        window.showBorders = true; // current page
         if (window.addBorderOutlines) {
           window.addBorderOutlines('/static/map_data/border_outlines.geojson');
         }
+
         modal.classList.add('hidden');
       });
 
+      // Handle "No" click
       no.addEventListener('click', () => {
         console.log("[Hint Modal] User declined borders.");
         try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}

@@ -50,12 +50,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // Add incorrect guesses in red
   addLayer(wrongShapes, "red");
 
-  // Add border outlines if requested (flag provided by template)
-  if (typeof showBorders !== 'undefined' && showBorders) {
-    // Load from the static folder
-    addBorderOutlines('/static/map_data/border_outlines.geojson');
-  } else {
-    // showBorders not enabled; no outlines will be loaded
+  // Check localStorage for border preference
+  try {
+    // If previously accepted, show borders
+    if (localStorage.getItem('bordersAccepted') === 'true') {
+      // Set global flag
+      window.showBorders = true;
+
+      // Load border outlines
+      if (window.addBorderOutlines) {
+        window.addBorderOutlines('/static/map_data/border_outlines.geojson');
+      }
+      console.log("[Borders] Restored from localStorage");
+    } else {
+      window.showBorders = false;
+      console.log("[Borders] Not enabled");
+    }
+  } catch (e) {
+    console.error(e);
   }
 
   // Wire up custom zoom buttons (if present)
