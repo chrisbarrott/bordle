@@ -28,6 +28,7 @@ from services.game_logic import (
 import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
+import mimetypes
 
 
 # Setup logger
@@ -35,6 +36,11 @@ logger = setup_logger()
 
 # Setup Flask app
 app = Flask(__name__)
+
+# Ensure .geojson files are served with a geo+json MIME type
+mimetypes.add_type('application/geo+json', '.geojson')
+
+# Session configuration
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 1 day
 app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 
@@ -87,6 +93,9 @@ def landing():
 def set_mode_and_play():
     # hard_mode checkbox is only present if checked
     session["hard_mode"] = bool(request.form.get("hard_mode"))
+    
+    # show borders option
+    session["show_border_lines"] = bool(request.form.get("show_border_lines"))
 
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:

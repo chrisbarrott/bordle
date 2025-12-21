@@ -55,12 +55,6 @@ def initialize_game(session):
     session["correct_guesses"] = []
     session["wrong_guesses"] = []
 
-    # -------- Old Logic
-    # get all dropdowns from border_map keys
-    # all_countries = set(border_map.keys())
-    # for borders in border_map.values():
-    #     all_countries.update(borders)
-
     # get all countries for drop down list
     all_countries = get_all_drop_down_options()
 
@@ -69,6 +63,9 @@ def initialize_game(session):
 
     # Set hard_mode
     hard_mode = session.get("hard_mode", False)
+    
+    # Set show border lines
+    show_border_lines = session.get("show_border_lines", False),
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
@@ -82,7 +79,6 @@ def initialize_game(session):
     )  # Will decrement as user guesses
 
     # Set the game attempts logic
-    # session["remaining_guesses"] = allowed_attempts_fixed(session["border_count"])
     session["remaining_guesses"] = 5
     session["game_result_recorded"] = False
     session["game_result"] = "Started"
@@ -193,6 +189,7 @@ def get_game_state(session):
     correct_guesses = session.get("correct_guesses", [])
     country_geojson = get_country_shape(country_name)
     hard_mode = session.get("hard_mode", False)
+    show_border_lines = session.get("show_border_lines", False)
     remaining_guesses = session.get("remaining_guesses", 0)
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
@@ -276,6 +273,7 @@ def get_game_state(session):
         "player_region": session["player_region"],
         "player_city": session["player_city"],
         "player_uid": player_uid,
+        "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
     }
 
@@ -308,6 +306,7 @@ def get_game_state(session):
         "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
+        "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
         "wrong_shapes": wrong_shapes,
         "player_country": session["player_country"],
