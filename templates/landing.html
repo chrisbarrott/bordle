@@ -104,6 +104,13 @@
     </label>
     <span class="toggle-label">Hard Mode (No country name!)</span>
     </div>
+    <div class="toggle-container mt-4">
+      <label class="toggle-switch">
+        <input type="checkbox" id="show_border_lines" name="show_border_lines" {% if show_border_lines %}checked{% endif %}>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Easy Mode (Show border outlines on map)</span>
+    </div>
     <div class="mt-6 text-center">
       <button type="submit"
               class="bg-green-600 text-white px-6 py-3 rounded-lg text-xl hover:bg-green-700">

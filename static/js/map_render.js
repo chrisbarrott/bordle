@@ -24,6 +24,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
+  // Optionally load global border outlines (no fill)
+  function addBorderOutlines(url) {
+    // Fetch and render a single GeoJSON outlines file from the static folder
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load border outlines');
+        return r.json();
+      })
+      .then((geo) => {
+        L.geoJSON(geo, { style: { color: '#888', weight: 1, fillOpacity: 0 } }).addTo(map);
+      })
+      .catch(() => {});
+  }
+
   // Add main country in black
   addLayer(countryShape, "black");
 
@@ -32,6 +46,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add incorrect guesses in red
   addLayer(wrongShapes, "red");
+
+  // Add border outlines if requested (flag provided by template)
+  if (typeof showBorders !== 'undefined' && showBorders) {
+    // Load from the static folder
+    addBorderOutlines('/static/map_data/border_outlines.geojson');
+  } else {
+    // showBorders not enabled; no outlines will be loaded
+  }
 
   // Fit bounds to all shapes
   const allLayers = [];

@@ -114,6 +114,7 @@
   const countryShape = {{ country_geojson | tojson }};
   const correctShapes = {{ correct_shapes | tojson }};
   const wrongShapes = {{ wrong_shapes | tojson }};
+  const showBorders = {{ 'true' if show_border_lines else 'false' }};
 </script>
 
 <!-- Required for how to play modal -->
