@@ -226,6 +226,15 @@ def static_files(filename):
 
 @app.route("/download_db")
 def download_db():
+    # Basic auth to protect the database download
+    auth = request.authorization
+    download_user = os.getenv("DOWNLOAD_DB_USER")
+    download_pass = os.getenv("DOWNLOAD_DB_PASSWORD")
+    
+    # Validate credentials
+    if not download_user or not download_pass or not auth or auth.username != download_user or auth.password != download_pass:
+        return {"error": "Unauthorized"}, 401, {"WWW-Authenticate": 'Basic realm="Download DB"'}
+    
     return send_file("db/games.db", as_attachment=True)
 
 
