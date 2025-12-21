@@ -117,6 +117,50 @@
   const showBorders = {{ 'true' if show_border_lines else 'false' }};
 </script>
 
+<!-- Hint modal for turning on border outlines -->
+<div id="hint-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4 text-center">
+    <h3 class="text-lg font-semibold mb-2">Want a hint?</h3>
+    <p class="text-sm text-gray-600 mb-4">Turn on border outlines to get a subtle hint for nearby countries.</p>
+    <div class="flex justify-center space-x-3">
+      <button id="hint-yes" class="bg-green-600 text-white px-4 py-2 rounded">Yes, show borders</button>
+      <button id="hint-no" class="bg-gray-200 text-gray-800 px-4 py-2 rounded">No, I'm good</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Show hint modal after 60 seconds if not already accepted/declined
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      if (localStorage.getItem('bordersAccepted') === 'true' || localStorage.getItem('bordersDeclined') === 'true') return;
+    } catch (e) {}
+
+    setTimeout(() => {
+      const modal = document.getElementById('hint-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      const yes = document.getElementById('hint-yes');
+      const no = document.getElementById('hint-no');
+
+      yes.addEventListener('click', () => {
+        try { localStorage.setItem('bordersAccepted', 'true'); } catch (e) {}
+        // call global loader (map_render exposes this)
+        if (window.addBorderOutlines) {
+          window.addBorderOutlines('/static/map_data/border_outlines.geojson');
+        }
+        modal.classList.add('hidden');
+      });
+
+      no.addEventListener('click', () => {
+        try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}
+        modal.classList.add('hidden');
+      });
+    }, 30000);
+  });
+</script>
+
 <!-- Required for how to play modal -->
 <script>
   function toggleHowToPlay() {

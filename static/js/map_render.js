@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(() => {});
   }
 
+  // Expose for external callers (e.g., hint prompt)
+  window.addBorderOutlines = addBorderOutlines;
+
   // Add main country in black
   addLayer(countryShape, "black");
 
