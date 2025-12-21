@@ -25,6 +25,9 @@
   <!--  Google friendly icon -->
   <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
 
+  <!-- header controls moved into body to avoid invalid head content -->
+
+<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
   <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
     {% if request.endpoint == 'stats' %}
       <a href="/game"
@@ -35,20 +38,14 @@
     {% endif %}
   </div>
 
-
   <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
     <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
       style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
-
-    <!-- Stats Icon Button
-    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()"> -->
 
     <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
       style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
   </div>
 
-<body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center min-h-screen py-6">
   {% block content %}{% endblock %}
 
   <!-- Common JS -->
