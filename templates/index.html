@@ -137,6 +137,10 @@
     } catch (e) {}
 
     setTimeout(() => {
+      // If borders are already enabled for this session/page, don't prompt
+      try {
+        if (typeof showBorders !== 'undefined' && showBorders) return;
+      } catch (e) {}
       const modal = document.getElementById('hint-modal');
       if (!modal) return;
       modal.classList.remove('hidden');
