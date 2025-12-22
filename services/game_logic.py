@@ -65,8 +65,7 @@ def initialize_game(session):
     hard_mode = session.get("hard_mode", False)
     
     # Set show border lines
-    show_border_lines = session.get("show_border_lines", False),
-    session["show_border_lines"] = show_border_lines
+    session["show_border_lines"] = borders_enabled_for_today(session)
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
@@ -172,6 +171,18 @@ def allowed_attempts_fixed(n_borders):
 def allowed_attempts_scaling(n_borders):
     # Logarithmic Scaling
     return max(1, math.floor(math.log2(n_borders + 1)))
+
+
+def borders_enabled_for_today(session):
+    borders = session.get("show_border_lines")
+
+    if not borders:
+        return False
+
+    return (
+        borders.get("enabled") is True and
+        borders.get("game_number") == get_game_number()
+    )
 
 
 def get_game_state(session):

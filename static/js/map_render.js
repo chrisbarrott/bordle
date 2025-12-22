@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // If previously accepted, show borders
     if (localStorage.getItem('bordersAccepted') === 'true') {
       // Set global flag
-      window.showBorders = true;
+      // window.showBorders = true;
 
       // Load border outlines
       if (window.addBorderOutlines) {
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       console.log("[Borders] Restored from localStorage");
     } else {
-      window.showBorders = false;
+      //window.showBorders = false;
       console.log("[Borders] Not enabled");
     }
   } catch (e) {

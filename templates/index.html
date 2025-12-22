@@ -182,7 +182,7 @@
         } catch (e) {}
 
         try {
-          const res = await fetch("/set_show_borders", {
+          const res = await fetch("/api/enable-borders", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ enabled: true })
@@ -193,7 +193,7 @@
           console.error("[Hint Modal] Failed to save borders", e);
         }
 
-        window.showBorders = true;
+        //window.showBorders = true;
 
         if (window.addBorderOutlines) {
           window.addBorderOutlines('/static/map_data/border_outlines.geojson');
