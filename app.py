@@ -120,6 +120,17 @@ def check_played():
     return jsonify({"blockPlay": False})
 
 
+@app.route("/set_show_borders", methods=["POST"])
+def set_borders():
+    data = request.get_json(silent=True) or {}
+    session["show_border_lines"] = bool(data.get("enabled", False))
+    
+    return jsonify({
+        "ok": True,
+        "show_border_lines": session["show_border_lines"]
+    })
+
+
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():

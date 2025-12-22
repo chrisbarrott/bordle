@@ -174,12 +174,27 @@
       const no = document.getElementById('hint-no');
 
       // Handle button clicks
-      yes.addEventListener('click', () => {
-        try { 
-          localStorage.setItem('bordersAccepted', 'true'); // persist
+      yes.addEventListener('click', async () => {
+        console.log("[Hint Modal] User accepted borders");
+
+        try {
+          localStorage.setItem('bordersAccepted', 'true');
         } catch (e) {}
 
-        window.showBorders = true; // current page
+        try {
+          const res = await fetch("/set_show_borders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: true })
+          });
+
+          console.log("[Hint Modal] Borders saved to session");
+        } catch (e) {
+          console.error("[Hint Modal] Failed to save borders", e);
+        }
+
+        window.showBorders = true;
+
         if (window.addBorderOutlines) {
           window.addBorderOutlines('/static/map_data/border_outlines.geojson');
         }
@@ -197,6 +212,11 @@
     }, 15000); // 15 seconds delay
   });
 
+</script>
+
+<script>
+  window.showBorders = {{ session.get("show_border_lines", False) | tojson }};
+  console.log("[Init] showBorders from session:", window.showBorders);
 </script>
 
 <!-- Required for how to play modal -->
