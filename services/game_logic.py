@@ -66,6 +66,7 @@ def initialize_game(session):
     
     # Set show border lines
     show_border_lines = session.get("show_border_lines", False),
+    session["show_border_lines"] = show_border_lines
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
