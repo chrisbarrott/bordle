@@ -34,7 +34,13 @@
 
 {% block content %}
 <header class="mb-8">
-  <img src="{{ url_for('static', filename='images/bordle_logo.png') }}" alt="BORDLE Logo" class="h-20 mx-auto">
+  <a href="/">
+    <img
+      src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+      alt="BORDLE Logo"
+      class="h-20 mx-auto cursor-pointer"
+    >
+  </a>
 </header>
 
 {% include 'components/game_stats_modal.html' %}
@@ -115,6 +121,7 @@
   const correctShapes = {{ correct_shapes | tojson }};
   const wrongShapes = {{ wrong_shapes | tojson }};
   const showBorders = {{ 'true' if show_border_lines else 'false' }};
+  const borders_hint_declined = {{ 'true' if borders_hint_declined else 'false' }};
 </script>
 
 <!-- Hint modal for turning on border outlines -->
@@ -147,15 +154,13 @@
       if (window.gameOver) {
         console.log("[Hint Modal] Skipping because the game has ended.");
         return;
-      } else {
-        console.log("[Hint Modal] Game is ongoing, showing modal now.");
-      }
+      } 
 
       // Check localStorage to see if already accepted/declined
       try {
         // If borders already enabled in session, skip modal
-        if (window.SHOW_BORDER_LINES === true) {
-          console.log("[Hint Modal] Borders already enabled in session, skipping modal.");
+        if (window.SHOW_BORDER_LINES === true || window.BORDERS_HINT_DECLINED === true) {
+          console.log("[Hint Modal] Hint already resolved for this session, skipping.");
           return;
         }
       } catch (e) {
@@ -176,25 +181,16 @@
 
       // Handle button clicks
       yes.addEventListener('click', async () => {
-        console.log("[Hint Modal] User accepted borders");
-
-        // try {
-        //   localStorage.setItem('bordersAccepted', 'true');
-        // } catch (e) {}
-
+        // User accepted to show borders
         try {
           const res = await fetch("/api/set_show_borders", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ enabled: true })
           });
-
-          console.log("[Hint Modal] Borders saved to session");
         } catch (e) {
           console.error("[Hint Modal] Failed to save borders", e);
         }
-
-        //window.showBorders = true;
 
         if (window.addBorderOutlines) {
           window.addBorderOutlines('/static/map_data/border_outlines.geojson');
@@ -206,7 +202,17 @@
       // Handle "No" click
       no.addEventListener('click', () => {
         console.log("[Hint Modal] User declined borders.");
-        // try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}
+
+        try {
+          const res = fetch("/api/borders_hint_declined", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          console.log("[Hint Modal] Decline saved to session.");
+        } catch (e) {
+          console.error("[Hint Modal] Failed to save decline", e);
+        }
+
         modal.classList.add('hidden');
       });
 
@@ -215,13 +221,9 @@
 
 </script>
 
-<!-- <script>
-  window.showBorders = {{ session.get("show_border_lines", False) | tojson }};
-  console.log("[Init] showBorders from session:", window.showBorders);
-</script> -->
-
 <script>
   window.SHOW_BORDER_LINES = {{ show_border_lines | tojson }};
+  window.BORDERS_HINT_DECLINED = {{ borders_hint_declined | tojson }};
 </script>
 
 <!-- Required for how to play modal -->

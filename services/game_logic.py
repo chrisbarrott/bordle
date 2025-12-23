@@ -66,6 +66,8 @@ def initialize_game(session):
     
     # Set show border lines
     session["show_border_lines"] = session.get("show_border_lines", False)
+    session["borders_hint_declined"] = False
+    logger.info(f"Borders hint declined: {session['borders_hint_declined']}")
 
     # Remove the main country from options if not in hard mode
     if not hard_mode:
@@ -202,6 +204,7 @@ def get_game_state(session):
     country_geojson = get_country_shape(country_name)
     hard_mode = session.get("hard_mode", False)
     show_border_lines = session.get("show_border_lines", False)
+    borders_hint_declined = session.get("borders_hint_declined", False)
     remaining_guesses = session.get("remaining_guesses", 0)
     wrong_guesses = session.get("wrong_guesses", [])
     guessed_main_country = session.get("guessed_main_country")
@@ -270,6 +273,7 @@ def get_game_state(session):
         "attempts_left": remaining_guesses,
         "border_count": border_count,
         "borders_remaining": borders_remaining,
+        "border_hint_declined": borders_hint_declined,
         "correct_count": len(correct_guesses),
         "correct_guesses": correct_guesses,
         "country_name": country_name,
@@ -304,6 +308,7 @@ def get_game_state(session):
         "border_count": border_count,
         "border_options": available_options,
         "borders_remaining": borders_remaining,
+        "border_hint_declined": borders_hint_declined,
         "correct_count": len(correct_guesses),
         "correct_guesses": correct_guesses,
         "correct_shapes": correct_shapes,

@@ -41,8 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Expose for external callers (e.g., hint prompt)
   window.addBorderOutlines = addBorderOutlines;
 
-  console.log("[MAP] Show border lines setting:", window.SHOW_BORDER_LINES);
-
   if (window.SHOW_BORDER_LINES) {
     if (window.addBorderOutlines) {
       console.log("[Map] Adding border outlines as per game state.");

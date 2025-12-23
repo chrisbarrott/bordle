@@ -98,6 +98,10 @@ def set_mode_and_play():
     session["show_border_lines"] = bool(request.form.get("show_border_lines"))
     logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
 
+    # show borders option
+    session["border_hint_declined"] = False
+    logger.info("Set border_hint_declined to False in session.")
+
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
         initialize_game(session)
@@ -128,6 +132,13 @@ def set_show_borders():
     return jsonify(success=True)
 
 
+@app.route("/api/borders_hint_declined", methods=["POST"])
+def borders_hint_declined():
+    logger.info("User declined borders hint.")
+    session["borders_hint_declined"] = True
+    return jsonify(ok=True)
+
+
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():
@@ -138,6 +149,11 @@ def game():
 
     # First time or GET
     if "country_name" not in session:
+        session["hard_mode"] = bool(request.form.get("hard_mode"))
+        
+        # show borders option
+        session["show_border_lines"] = bool(request.form.get("show_border_lines"))
+        logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
         initialize_game(session)
 
     # If form posted a guess
@@ -166,6 +182,7 @@ def game():
         games_today=games_today,
         total_games=total_games,
         today_success_rate=today_success_rate,
+        borders_hint_declined=session.get("borders_hint_declined", False),
     )
 
 
