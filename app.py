@@ -128,13 +128,14 @@ def check_played():
 @app.route("/api/set_show_borders", methods=["POST"])
 def set_show_borders():
     data = request.json
+    logger.info("User accepted borders hint")
     session["show_border_lines"] = bool(data["enabled"])
     return jsonify(success=True)
 
 
 @app.route("/api/borders_hint_declined", methods=["POST"])
 def borders_hint_declined():
-    logger.info("User declined borders hint.")
+    logger.info("User declined borders hint")
     session["borders_hint_declined"] = True
     return jsonify(ok=True)
 
