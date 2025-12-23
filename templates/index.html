@@ -153,12 +153,13 @@
 
       // Check localStorage to see if already accepted/declined
       try {
-        if (localStorage.getItem('bordersAccepted') === 'true' || localStorage.getItem('bordersDeclined') === 'true') {
-          console.log("[Hint Modal] Already accepted/declined, skipping modal.");
+        // If borders already enabled in session, skip modal
+        if (window.SHOW_BORDER_LINES === true) {
+          console.log("[Hint Modal] Borders already enabled in session, skipping modal.");
           return;
         }
       } catch (e) {
-        console.warn("[Hint Modal] Error accessing localStorage:", e);
+        console.warn("[Hint Modal] Error accessing Borders already enabled in session:", e);
       }
 
       // Show the modal
@@ -177,12 +178,12 @@
       yes.addEventListener('click', async () => {
         console.log("[Hint Modal] User accepted borders");
 
-        try {
-          localStorage.setItem('bordersAccepted', 'true');
-        } catch (e) {}
+        // try {
+        //   localStorage.setItem('bordersAccepted', 'true');
+        // } catch (e) {}
 
         try {
-          const res = await fetch("/api/enable-borders", {
+          const res = await fetch("/api/set_show_borders", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ enabled: true })
@@ -205,7 +206,7 @@
       // Handle "No" click
       no.addEventListener('click', () => {
         console.log("[Hint Modal] User declined borders.");
-        try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}
+        // try { localStorage.setItem('bordersDeclined', 'true'); } catch (e) {}
         modal.classList.add('hidden');
       });
 
@@ -214,9 +215,13 @@
 
 </script>
 
-<script>
+<!-- <script>
   window.showBorders = {{ session.get("show_border_lines", False) | tojson }};
   console.log("[Init] showBorders from session:", window.showBorders);
+</script> -->
+
+<script>
+  window.SHOW_BORDER_LINES = {{ show_border_lines | tojson }};
 </script>
 
 <!-- Required for how to play modal -->

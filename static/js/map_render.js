@@ -41,6 +41,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Expose for external callers (e.g., hint prompt)
   window.addBorderOutlines = addBorderOutlines;
 
+  console.log("[MAP] Show border lines setting:", window.SHOW_BORDER_LINES);
+
+  if (window.SHOW_BORDER_LINES) {
+    if (window.addBorderOutlines) {
+      console.log("[Map] Adding border outlines as per game state.");
+      window.addBorderOutlines('/static/map_data/border_outlines.geojson');
+    }
+  }
+  
   // Add main country in black
   addLayer(countryShape, "black");
 
@@ -49,26 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add incorrect guesses in red
   addLayer(wrongShapes, "red");
-
-  // Check localStorage for border preference
-  try {
-    // If previously accepted, show borders
-    if (localStorage.getItem('bordersAccepted') === 'true') {
-      // Set global flag
-      // window.showBorders = true;
-
-      // Load border outlines
-      if (window.addBorderOutlines) {
-        window.addBorderOutlines('/static/map_data/border_outlines.geojson');
-      }
-      console.log("[Borders] Restored from localStorage");
-    } else {
-      //window.showBorders = false;
-      console.log("[Borders] Not enabled");
-    }
-  } catch (e) {
-    console.error(e);
-  }
 
   // Wire up custom zoom buttons (if present)
   const zi = document.getElementById('zoom-in');

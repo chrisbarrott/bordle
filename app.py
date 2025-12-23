@@ -96,6 +96,7 @@ def set_mode_and_play():
     
     # show borders option
     session["show_border_lines"] = bool(request.form.get("show_border_lines"))
+    logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
 
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
@@ -120,20 +121,11 @@ def check_played():
     return jsonify({"blockPlay": False})
 
 
-@app.route("/api/enable-borders", methods=["POST"])
-def enable_borders():
-    data = request.get_json(silent=True) or {}
-    enabled = bool(data.get("enabled", True))
-
-    session["show_border_lines"] = {
-        "game_number": get_game_number(),
-        "enabled": enabled
-    }
-
-    return {
-        "ok": True, 
-        "enabled": enabled
-    }
+@app.route("/api/set_show_borders", methods=["POST"])
+def set_show_borders():
+    data = request.json
+    session["show_border_lines"] = bool(data["enabled"])
+    return jsonify(success=True)
 
 
 # Main game page

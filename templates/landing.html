@@ -212,24 +212,24 @@
 <!-- Leaderboard tooltip removed per user request -->
 
 <script>
-async function loadGameNumber() {
-  const display = document.getElementById("gameNumberDisplay");
-  if (!display) return;
+  async function loadGameNumber() {
+    const display = document.getElementById("gameNumberDisplay");
+    if (!display) return;
 
-  try {
-    const res = await fetch("/api/stats");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.game_number) {
-      display.textContent = `🌍 Game #${data.game_number}`;
-    } else {
+    try {
+      const res = await fetch("/api/stats");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.game_number) {
+        display.textContent = `🌍 Game #${data.game_number}`;
+      } else {
+        display.textContent = "🌍 Game info unavailable";
+      }
+    } catch (err) {
+      console.error("Error fetching game number:", err);
       display.textContent = "🌍 Game info unavailable";
     }
-  } catch (err) {
-    console.error("Error fetching game number:", err);
-    display.textContent = "🌍 Game info unavailable";
   }
-}
 
-window.addEventListener("DOMContentLoaded", loadGameNumber);
+  window.addEventListener("DOMContentLoaded", loadGameNumber);
 </script>
