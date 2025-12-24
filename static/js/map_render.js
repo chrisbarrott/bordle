@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     zoom: 2,
     minZoom: 1,
     maxZoom: 10,
-    zoomControl: true,
+    zoomControl: false, // use custom +/- controls
     attributionControl: false,
   });
 
@@ -24,6 +24,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
+  // Optionally load global border outlines (no fill)
+  function addBorderOutlines(url) {
+    // Fetch and render a single GeoJSON outlines file from the static folder
+    fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load border outlines');
+        return r.json();
+      })
+      .then((geo) => {
+        L.geoJSON(geo, { style: { color: '#888', weight: 1, fillOpacity: 0 } }).addTo(map);
+      })
+      .catch(() => {});
+  }
+
+  // Expose for external callers (e.g., hint prompt)
+  window.addBorderOutlines = addBorderOutlines;
+
+  if (window.SHOW_BORDER_LINES) {
+    if (window.addBorderOutlines) {
+      console.log("[Map] Adding border outlines as per game state.");
+      window.addBorderOutlines('/static/map_data/border_outlines.geojson');
+    }
+  }
+  
   // Add main country in black
   addLayer(countryShape, "black");
 
@@ -32,6 +56,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add incorrect guesses in red
   addLayer(wrongShapes, "red");
+
+  // Wire up custom zoom buttons (if present)
+  const zi = document.getElementById('zoom-in');
+  const zo = document.getElementById('zoom-out');
+  if (zi) zi.addEventListener('click', () => map.zoomIn());
+  if (zo) zo.addEventListener('click', () => map.zoomOut());
 
   // Fit bounds to all shapes
   const allLayers = [];

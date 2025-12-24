@@ -8,7 +8,6 @@ from datetime import date, datetime
 
 from services.game_get_data import get_all_drop_down_options, get_user_ip, get_user_location
 from services.game_logger import setup_logger
-# from services.game_observe import send_to_observe
 
 # Setup logger
 logger = setup_logger()
@@ -33,10 +32,33 @@ def get_db_connection():
     return sqlite3.connect(DB_PATH)
 
 
+def cleanup_old_player_results():
+    """Remove player_results entries older than 7 days."""
+    uk = pytz.timezone('Europe/London')
+    today = datetime.now(uk).date()
+    cutoff_date = today - __import__('datetime').timedelta(days=7)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        "DELETE FROM player_results WHERE game_date < ?",
+        (cutoff_date,)
+    )
+    
+    deleted_count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    
+    if deleted_count > 0:
+        logger.info(f"Cleaned up {deleted_count} old player result records (before {cutoff_date})")
+
+
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Create country stats table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS game_stats (
             game_date DATE PRIMARY KEY,
@@ -45,6 +67,7 @@ def init_db():
         )
     ''')
 
+    # Create daily country stats table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS daily_game (
             game_date DATE PRIMARY KEY,
@@ -52,21 +75,57 @@ def init_db():
         )
     ''')
 
+    # Create table to ensure player states are recorded only once per day
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS player_results (
+            game_number INTEGER,
+            game_date DATE,
+            player_uid TEXT,
+            PRIMARY KEY (game_date, game_number, player_uid)
+        )
+    ''')
+
     conn.commit()
     conn.close()
+    
+    # Clean up old records
+    cleanup_old_player_results()
 
 
-def record_game_result(success: bool, remaining_countries: str):
+def record_game_result(success: bool, remaining_countries: str, player_uid: str = None):
     # Get today's date in UK time
     uk = pytz.timezone('Europe/London')
     today = datetime.now(uk).date()
-    now = datetime.now(uk)
+    game_number = get_game_number()
 
-    # Set database environment
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Insert or update
+    # ----- Function to record the player session result -----
+
+    # If a player_uid is provided, ensure we only count once per player per day
+    if player_uid:
+        # Find is player already recorded for today
+        cursor.execute(
+            "SELECT 1 FROM player_results WHERE game_date = ? AND player_uid = ?",
+            (today, player_uid),
+        )
+
+        # If already recorded, skip
+        if cursor.fetchone():
+            logger.info(f"Skipping duplicate game result for player {player_uid} on {today}")
+            conn.close()
+            return
+        
+        # mark player as recorded
+        cursor.execute(
+            "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
+            (today, game_number, player_uid),
+        )
+
+    # ----- Update daily aggregated stats -----
+
+    # Insert or update aggregated daily stats
     if success:
         cursor.execute('''
             INSERT INTO game_stats (game_date, successes, failures)
@@ -82,45 +141,6 @@ def record_game_result(success: bool, remaining_countries: str):
 
     conn.commit()
     conn.close()
-
-    # Send enriched payload to Observe
-    # payload = {
-    #     "timestamp": now.isoformat(),
-    #     "game_date": str(today),
-    #     "result": "success" if success else "failure",
-    #     "environment": ENVIRONMENT,
-    #     "country_name": get_today_country(),
-    #     "game_number": get_game_number(),
-    #     "games_today": get_games_today()[0],
-    #     "total_games": get_total_games(),
-    #     "remaining_guesses": remaining_countries
-    # }
-    # send_to_observe(payload)
-
-
-def get_today_country_old():
-    # Get current date in UK time
-    uk = pytz.timezone('Europe/London')
-    today = datetime.now(uk).date()
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("CREATE TABLE IF NOT EXISTS daily_game (game_date DATE PRIMARY KEY, country TEXT)")
-
-    cursor.execute("SELECT country FROM daily_game WHERE game_date = ?", (today,))
-    row = cursor.fetchone()
-
-    if row:
-        country = row[0]
-    else:
-        all_countries = set(border_map.keys())
-        country = random.choice(list(all_countries))
-        cursor.execute("INSERT INTO daily_game (game_date, country) VALUES (?, ?)", (today, country))
-        conn.commit()
-
-    conn.close()
-    return country
 
 
 def get_game_number():
@@ -224,6 +244,8 @@ def get_today_country():
     conn.commit()
     conn.close()
 
+    logger.info(f"Assigned new daily country: {new_country} for date: {today}")
+
     return new_country
 
 
@@ -268,7 +290,7 @@ def get_leaderboard_data():
         GROUP BY country
         HAVING total_plays > 0
         ORDER BY success_rate DESC, total_plays DESC
-        LIMIT 50;
+        LIMIT 100;
     """)
     all_time = cursor.fetchall()
 
@@ -291,9 +313,23 @@ def get_leaderboard_data():
     }
 
 
-def record_world_leaderboard_result(success: bool):
+def record_world_leaderboard_result(success: bool, player_uid: str = None):
+    # Default values
+    country, region, city = "Unknown", "Unknown", "Unknown"
+
+    # If user IP available, get location
     user_ip = get_user_ip()  # Flask: get user's IP
-    country, region, city = get_user_location(user_ip)
+    if user_ip:
+        country, region, city = get_user_location(user_ip)
+
+    # Sometimes location can't be determined
+    if country == "Unknown":
+        logger.warning(f"Not updating country stats for IP: {user_ip} - could not determine location")
+        return {
+            "player_country": "Unknown", 
+            "player_region": "Unknown", 
+            "player_city": "Unknown"
+        }
 
     # Now you can store it in your database
     uk = pytz.timezone('Europe/London')
@@ -303,17 +339,29 @@ def record_world_leaderboard_result(success: bool):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Default values
-    country, region, city = "Unknown", "Unknown", "Unknown"
+    # If player_uid provided, skip if already recorded for this player/date
+    if player_uid:
+        cursor.execute(
+            "SELECT 1 FROM player_results WHERE game_date = ? AND player_uid = ?",
+            (game_date, player_uid),
+        )
 
-    if user_ip:
-        country, region, city = get_user_location(user_ip)
+        # If already recorded, skip
+        if cursor.fetchone():
+            logger.info(f"Skipping world leaderboard update for already-recorded player {player_uid} on {game_date}")
+            conn.close()
 
-    if country == "Unknown":
-        logger.warning(f"Not updating country stats for IP: {user_ip} - could not determine location")
+            # Default return values
+            return {
+                "player_country": country, 
+                "player_region": region, 
+                "player_city": city
+            }
 
-    else:
+    # ----- Update country stats -----
+    if country != "Unknown":
         logger.info(f"Updating country stats for user location: {country}, {region}, {city}")
+
         # Update or insert record for today + location
         cursor.execute('''
             INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)

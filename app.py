@@ -10,14 +10,14 @@ from flask import (
     send_file,
     send_from_directory,
     url_for,
-    session
+    session,
 )
 from services.game_database_connections import (
     get_db_connection,
     get_game_number,
     get_games_today,
     get_leaderboard_data,
-    get_total_games
+    get_total_games,
 )
 from services.game_logic import (
     initialize_game,
@@ -28,6 +28,7 @@ from services.game_logic import (
 import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
+import mimetypes
 
 
 # Setup logger
@@ -35,11 +36,16 @@ logger = setup_logger()
 
 # Setup Flask app
 app = Flask(__name__)
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 1 day
+
+# Ensure .geojson files are served with a geo+json MIME type
+mimetypes.add_type('application/geo+json', '.geojson')
+
+# Session configuration
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 1 day
 app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 
 # Secret key for session signing (keep this constant across deploys)
-app.secret_key = os.getenv('FLASK_SECRET_KEY')  # Set securely in production
+app.secret_key = os.getenv("FLASK_SECRET_KEY")  # Set securely in production
 
 load_dotenv()
 
@@ -78,7 +84,7 @@ def landing():
         game_number=game_number,
         games_today=games_today,
         total_games=total_games,
-        today_success_rate=today_success_rate
+        today_success_rate=today_success_rate,
     )
 
 
@@ -87,6 +93,14 @@ def landing():
 def set_mode_and_play():
     # hard_mode checkbox is only present if checked
     session["hard_mode"] = bool(request.form.get("hard_mode"))
+    
+    # show borders option
+    session["show_border_lines"] = bool(request.form.get("show_border_lines"))
+    logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
+
+    # show borders option
+    session["border_hint_declined"] = False
+    logger.info("Set border_hint_declined to False in session.")
 
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
@@ -95,20 +109,35 @@ def set_mode_and_play():
     return redirect(url_for("game"))
 
 
-@app.route('/check_played', methods=['POST'])
+@app.route("/check_played", methods=["POST"])
 def check_played():
     game_number = get_game_number()
 
     # You need to track session/game data on the server
-    played_games = session.get('played_games', [])
+    played_games = session.get("played_games", [])
 
     if game_number in played_games:
-        return jsonify({'blockPlay': True})
+        return jsonify({"blockPlay": True})
 
     # Optionally add it (but might want to do this on victory instead)
-    session['played_games'] = played_games + [game_number]
+    session["played_games"] = played_games + [game_number]
 
-    return jsonify({'blockPlay': False})
+    return jsonify({"blockPlay": False})
+
+
+@app.route("/api/set_show_borders", methods=["POST"])
+def set_show_borders():
+    data = request.json
+    logger.info("User accepted borders hint")
+    session["show_border_lines"] = bool(data["enabled"])
+    return jsonify(success=True)
+
+
+@app.route("/api/borders_hint_declined", methods=["POST"])
+def borders_hint_declined():
+    logger.info("User declined borders hint")
+    session["borders_hint_declined"] = True
+    return jsonify(ok=True)
 
 
 # Main game page
@@ -121,6 +150,11 @@ def game():
 
     # First time or GET
     if "country_name" not in session:
+        session["hard_mode"] = bool(request.form.get("hard_mode"))
+        
+        # show borders option
+        session["show_border_lines"] = bool(request.form.get("show_border_lines"))
+        logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
         initialize_game(session)
 
     # If form posted a guess
@@ -148,7 +182,8 @@ def game():
         bordle_stats=bordle_stats,
         games_today=games_today,
         total_games=total_games,
-        today_success_rate=today_success_rate
+        today_success_rate=today_success_rate,
+        borders_hint_declined=session.get("borders_hint_declined", False),
     )
 
 
@@ -167,7 +202,7 @@ def stats():
         games_today=games_today,
         total_games=total_games,
         today_success_rate=today_success_rate,
-        game_number=game_number
+        game_number=game_number,
     )
 
 
@@ -219,13 +254,22 @@ def robots():
     return send_from_directory("static", "robots.txt")
 
 
-@app.route('/static/<path:filename>')
+@app.route("/static/<path:filename>")
 def static_files(filename):
-    return send_from_directory('static', filename)
+    return send_from_directory("static", filename)
 
 
 @app.route("/download_db")
 def download_db():
+    # Basic auth to protect the database download
+    auth = request.authorization
+    download_user = os.getenv("DOWNLOAD_DB_USER")
+    download_pass = os.getenv("DOWNLOAD_DB_PASSWORD")
+    
+    # Validate credentials
+    if not download_user or not download_pass or not auth or auth.username != download_user or auth.password != download_pass:
+        return {"error": "Unauthorized"}, 401, {"WWW-Authenticate": 'Basic realm="Download DB"'}
+    
     return send_file("db/games.db", as_attachment=True)
 
 
@@ -240,12 +284,16 @@ def analytics():
     cursor = conn.cursor()
 
     # Get today's stats
-    cursor.execute("SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')")
+    cursor.execute(
+        "SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')"
+    )
     row = cursor.fetchone()
     successes_today, failures_today = row if row else (0, 0)
 
     games_today = successes_today + failures_today
-    success_rate = round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
+    success_rate = (
+        round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
+    )
 
     # Get total successes and failures across all time
     cursor.execute("SELECT SUM(successes), SUM(failures) FROM game_stats")
@@ -257,10 +305,10 @@ def analytics():
     conn.close()
 
     return {
-        'games_today': games_today,
-        'total_games': total_games,
-        'success_rate': success_rate,
-        'game_number': get_game_number()
+        "games_today": games_today,
+        "total_games": total_games,
+        "success_rate": success_rate,
+        "game_number": get_game_number(),
     }
 
 
@@ -294,7 +342,7 @@ def log_share_event():
         "player_country": session.get("player_country", "unknown"),
         "player_region": session.get("player_region", "unknown"),
         "player_city": session.get("player_city", "unknown"),
-        "hard_mode": session.get("hard_mode", False)
+        "hard_mode": session.get("hard_mode", False),
     }
     logger.info(json.dumps(whatsapp_share_event))
 

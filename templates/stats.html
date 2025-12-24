@@ -3,10 +3,12 @@
 
 <!-- Header with back link above logo -->
 <header class="mb-4 relative">
-  <!-- Centered Bordle logo -->
-  <img src="{{ url_for('static', filename='images/bordle_logo.png') }}"
-       alt="BORDLE Logo"
-       class="h-20 mx-auto mt-6">
+  <a href="/">
+    <img
+      src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+      alt="BORDLE Logo"
+      class="h-20 mx-auto mt-6 cursor-pointer">
+  </a>
 </header>
 
 {% include "components/game_how_to_play_modal.html" %}
@@ -112,7 +114,6 @@
 
 <script>
   async function loadLeaderboardData() {
-    // console.log("[Stats Page] Fetching leaderboard data...");
 
     const dailyBody = document.getElementById("dailyLeaderboardBody");
     const allTimeBody = document.getElementById("allTimeLeaderboardBody");
@@ -156,7 +157,7 @@
 
   function showLocalStats() {
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    // console.log("Loaded stats from localStorage:", stats);
+
     if (!stats) return;
     const userSuccessRate = stats.gamesPlayed > 0
       ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
