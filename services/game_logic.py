@@ -264,9 +264,11 @@ def get_game_state(session):
     wrong_shapes = get_shapes(wrong_guesses)
 
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
-    
+
     # Get player_uid from cookies if not provided
     player_uid = request.cookies.get("player_uid")
+    if game_over:
+        save_daily_game_state(player_uid)
 
     # Record result only once per session
     if game_over and game_result_recorded is False:
