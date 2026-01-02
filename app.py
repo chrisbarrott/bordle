@@ -1,9 +1,11 @@
 # app.py
 from datetime import date, timedelta
 import os
+import uuid
 from flask import (
     Flask,
     jsonify,
+    make_response,
     render_template,
     request,
     redirect,
@@ -20,6 +22,7 @@ from services.game_database_connections import (
     get_total_games,
 )
 from services.game_logic import (
+    get_or_create_player_uid,
     initialize_game,
     get_game_state,
     process_guess,
@@ -73,8 +76,6 @@ def landing():
     total_games = get_total_games()
 
     # Add the stats props
-    # stats = get_player_stats(session)
-    # game_state = get_game_state(session)
     bordle_stats = analytics()
 
     return render_template(
@@ -133,6 +134,7 @@ def set_show_borders():
     return jsonify(success=True)
 
 
+# API endpoint to record that user declined borders hint
 @app.route("/api/borders_hint_declined", methods=["POST"])
 def borders_hint_declined():
     logger.info("User declined borders hint")
@@ -143,16 +145,18 @@ def borders_hint_declined():
 # Main game page
 @app.route("/game", methods=["GET", "POST"])
 def game():
+    # Get or create player UID (cookie-based)
+    player_uid, is_new_player = get_or_create_player_uid()
+
     # init the game if a new day
     today = str(date.today())
+
     if "game_date" not in session or session["game_date"] != today:
-        initialize_game(session)
+        initialize_game(session, player_uid)
 
     # First time or GET
     if "country_name" not in session:
         session["hard_mode"] = bool(request.form.get("hard_mode"))
-        
-        # show borders option
         session["show_border_lines"] = bool(request.form.get("show_border_lines"))
         logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
         initialize_game(session)
@@ -163,29 +167,41 @@ def game():
         process_guess(guess, session)
         return redirect(url_for("game"))
 
-    # Set the game session
+    # Build game state
     game_state = get_game_state(session)
-
-    # Set game number for session handling and stats
     games_today, today_success_rate = get_games_today()
     total_games = get_total_games()
-
-    # Add the stats props
-    # stats = get_player_stats(session)
     bordle_stats = analytics()
 
-    return render_template(
-        "index.html",
-        **game_state,
-        # stats=stats,
-        iso_map=iso_map,
-        bordle_stats=bordle_stats,
-        games_today=games_today,
-        total_games=total_games,
-        today_success_rate=today_success_rate,
-        borders_hint_declined=session.get("borders_hint_declined", False),
+    # logger.info(f"game_state keys: {game_state.keys()}")
+
+    # Render template
+    resp = make_response(
+        render_template(
+            "index.html",
+            **game_state,
+            iso_map=iso_map,
+            player_uid=player_uid,
+            bordle_stats=bordle_stats,
+            games_today=games_today,
+            total_games=total_games,
+            today_success_rate=today_success_rate,
+            borders_hint_declined=session.get("borders_hint_declined", False),
+        )
     )
 
+    # Set cookie ONLY if new
+    if is_new_player:
+        resp.set_cookie(
+            "player_uid",
+            player_uid,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=True,
+            samesite="Lax"
+        )
+
+    return resp
 
 @app.route("/stats")
 def stats():
@@ -338,7 +354,7 @@ def log_share_event():
         "encoded_message": data.get("result"),
         "game_result": data.get("gameResult"),
         "country_name": session.get("country_name", "unknown"),
-        "player_uid": session.get("player_uid", "unknown"),
+        "player_uid": request.cookies.get("player_uid"),
         "player_country": session.get("player_country", "unknown"),
         "player_region": session.get("player_region", "unknown"),
         "player_city": session.get("player_city", "unknown"),

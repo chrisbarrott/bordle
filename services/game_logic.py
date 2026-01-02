@@ -3,6 +3,8 @@ import json
 import math
 import uuid
 
+from flask import request
+
 from services.game_database_connections import (
     get_game_number,
     get_today_country,
@@ -33,7 +35,7 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 
 
 # Game init
-def initialize_game(session):
+def initialize_game(session, player_uid=None):
     # Build database if required
     init_db()
 
@@ -42,11 +44,6 @@ def initialize_game(session):
 
     # Pull todays game from SQL
     session["country_name"] = get_today_country()
-
-    # Assign a temp UID for the player if not already set
-    if "player_uid" not in session:
-        session["player_uid"] = str(uuid.uuid4())
-        logger.info(f"Assigned new player UID: {session['player_uid']}")
 
     # Saved for testing
     # session["country_name"] = random.choice(list(border_map.keys()))
@@ -87,15 +84,27 @@ def initialize_game(session):
 
     # Set game number for session handling
     session["game_number"] = get_game_number()
+    player_uid = request.cookies.get("player_uid")
+
     logger.info(
-        f"Initialized game #{session['game_number']} for player {session['player_uid']}"
+        f"Initialized game #{session['game_number']} for player {player_uid}"
     )
 
     # Get the IP and lookup location
     session["user_ip"] = get_user_ip()
     session["player_data"] = get_user_location(session["user_ip"])
-    # logger.info(f"Player playing from location: {session['location']}")
-    # logger.info(json.dumps({"player_location": session["player_data"]}))
+
+
+# Cookie to track player UID
+def get_or_create_player_uid():
+    uid = request.cookies.get("player_uid")
+
+    if uid:
+        logger.info(f"[GAME LOGIC] Found existing player UID: {uid}")
+        return uid, False
+
+    logger.info("[GAME LOGIC] Creating new player UID")
+    return str(uuid.uuid4()), True
 
 
 # Game reset (hidden)
@@ -213,7 +222,6 @@ def get_game_state(session):
     game_over = session.get("game_over", False)
     game_result = session.get("game_result", "In progress")
     guess_country = session.get("guess_country", "")
-    player_uid = session.get("player_uid", "Unknown")
 
     # Unpack player_data tuple into session for easy access
     country, region, city = session.get(
@@ -228,6 +236,9 @@ def get_game_state(session):
     wrong_shapes = get_shapes(wrong_guesses)
 
     game_over = remaining_guesses <= 0 or set(correct_guesses) == set(border_names)
+    
+    # Get player_uid from cookies if not provided
+    player_uid = request.cookies.get("player_uid")
 
     # Record result only once per session
     if game_over and game_result_recorded is False:
@@ -236,10 +247,11 @@ def get_game_state(session):
         )
         if set(correct_guesses) == set(border_names):
             # Update world leaderboard first (idempotent check), then record aggregated game result
-            record_world_leaderboard_result(True, session.get("player_uid"))
+            
+            record_world_leaderboard_result(True, player_uid)
 
             # record game result second (to ensure accurate remaining guesses)
-            record_game_result(True, remaining_guesses, session.get("player_uid"))
+            record_game_result(True, remaining_guesses, player_uid)
 
             # Update session game result
             game_result = "Win"
@@ -247,10 +259,10 @@ def get_game_state(session):
 
         elif remaining_guesses <= 0:
             # Update world leaderboard first (idempotent check), then record aggregated game result
-            record_world_leaderboard_result(False, session.get("player_uid"))
+            record_world_leaderboard_result(False, player_uid)
 
             # record game result second (to ensure accurate remaining guesses)
-            record_game_result(False, remaining_guesses, session.get("player_uid"))
+            record_game_result(False, remaining_guesses, player_uid)
 
             # Update session game result
             game_result = "Loss"
@@ -288,7 +300,6 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
-        "player_uid": player_uid,
         "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
     }
@@ -329,5 +340,4 @@ def get_game_state(session):
         "player_country": session["player_country"],
         "player_region": session["player_region"],
         "player_city": session["player_city"],
-        "player_uid": player_uid,
     }
