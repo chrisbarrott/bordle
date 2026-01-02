@@ -63,12 +63,10 @@ def initialize_game(session, player_uid=None):
         # Guess history
         session["guess_history"] = in_progress["guess_history"]
         session["wrong_guesses"] = in_progress["wrong_guesses"]
-        session["game_over"] = in_progress["completed"]
-
-        # Main country for today
-        correct_borders = border_map[session["country_name"]]
+        session["game_over"] = in_progress["game_over"]
 
         # Recompute derived fields
+        correct_borders = border_map[session["country_name"]]
         session["correct_guesses"] = [
             guess for guess in session["guess_history"] if guess in correct_borders
         ]
@@ -82,7 +80,11 @@ def initialize_game(session, player_uid=None):
         session["guessed_main_country"] = in_progress.get("guessed_main_country", False)
 
     else:
-        # Guess tracking
+        # No in-progress game, start fresh
+        correct_borders = border_map[session["country_name"]]
+        session["correct_guesses"] = [
+            guess for guess in session["guess_history"] if guess in correct_borders
+        ]
         session["borders_remaining"] = len(correct_borders)
         session["remaining_guesses"] = 5
 
