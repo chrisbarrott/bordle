@@ -9,8 +9,10 @@ from services.game_database_connections import (
     get_game_number,
     get_today_country,
     init_db,
+    load_daily_game_state,
     record_game_result,
     record_world_leaderboard_result,
+    save_daily_game_state,
 )
 from services.game_get_data import (
     get_all_drop_down_options,
@@ -42,57 +44,80 @@ def initialize_game(session, player_uid=None):
     # Set today so we can run a new init each day
     session["game_date"] = str(date.today())
 
-    # Pull todays game from SQL
+    # Use cookie-based player UID if not passed in
+    if not player_uid:
+        player_uid = request.cookies.get("player_uid")
+
+    # Pull today's game data
     session["country_name"] = get_today_country()
+    session["game_number"] = get_game_number()
 
-    # Saved for testing
-    # session["country_name"] = random.choice(list(border_map.keys()))
+    today = str(date.today())
+    session["game_date"] = today
 
-    # Set the guesses
-    session["correct_guesses"] = []
-    session["wrong_guesses"] = []
+    # --- Check for in-progress game first ---
+    in_progress = load_daily_game_state(player_uid)
+    if in_progress:
+        logger.info(f"Resuming in-progress game for player {player_uid}")
 
-    # get all countries for drop down list
-    all_countries = get_all_drop_down_options()
+        # Guess history
+        session["guess_history"] = in_progress["guess_history"]
+        session["wrong_guesses"] = in_progress["wrong_guesses"]
+        session["game_over"] = in_progress["completed"]
 
-    session["available_options"] = sorted(all_countries)
-    session["all_countries"] = sorted(all_countries)
+        # Main country for today
+        correct_borders = border_map[session["country_name"]]
 
-    # Set hard_mode
-    hard_mode = session.get("hard_mode", False)
-    
-    # Set show border lines
+        # Recompute derived fields
+        session["correct_guesses"] = [
+            guess for guess in session["guess_history"] if guess in correct_borders
+        ]
+        session["borders_remaining"] = len(correct_borders) - len(session["correct_guesses"])
+        session["remaining_guesses"] = 5 - len(session["guess_history"])
+        session["game_result"] = (
+            "Won" if session["game_over"] and set(session["correct_guesses"]) == set(correct_borders)
+            else "Started"
+        )
+        session["game_result_recorded"] = session["game_over"]
+        session["guessed_main_country"] = in_progress.get("guessed_main_country", False)
+
+    else:
+        # Guess tracking
+        session["borders_remaining"] = len(correct_borders)
+        session["remaining_guesses"] = 5
+
+        # Game result tracking
+        session["game_result_recorded"] = False
+        session["game_result"] = "Started"
+        session["game_over"] = False
+
+        # Initialize guess lists
+        session["correct_guesses"] = []
+        session["wrong_guesses"] = []
+        session["guessed_main_country"] = False
+
+    # Default session values for a new game
+    session["available_options"] = sorted(get_all_drop_down_options())
+    session["all_countries"] = session["available_options"].copy()
     session["show_border_lines"] = session.get("show_border_lines", False)
     session["borders_hint_declined"] = False
-    logger.info(f"Borders hint declined: {session['borders_hint_declined']}")
+    correct_borders = border_map[session["country_name"]]
+    session["border_count"] = len(correct_borders)
 
-    # Remove the main country from options if not in hard mode
+    # Player IP info
+    session["user_ip"] = get_user_ip()
+    session["player_data"] = get_user_location(session["user_ip"])#
+
+    hard_mode = session.get("hard_mode", False)
     if not hard_mode:
         if session["country_name"] in session["available_options"]:
             session["available_options"].remove(session["country_name"])
+    else:
+        # Hard mode: remove main country if already guessed
+        if session.get("guessed_main_country") and session["country_name"] in session["available_options"]:
+            session["available_options"].remove(session["country_name"])
 
-    correct_borders = border_map[session["country_name"]]
-    session["border_count"] = len(correct_borders)  # Total borders
-    session["borders_remaining"] = len(
-        correct_borders
-    )  # Will decrement as user guesses
-
-    # Set the game attempts logic
-    session["remaining_guesses"] = 5
-    session["game_result_recorded"] = False
-    session["game_result"] = "Started"
-
-    # Set game number for session handling
-    session["game_number"] = get_game_number()
-    player_uid = request.cookies.get("player_uid")
-
-    logger.info(
-        f"Initialized game #{session['game_number']} for player {player_uid}"
-    )
-
-    # Get the IP and lookup location
-    session["user_ip"] = get_user_ip()
-    session["player_data"] = get_user_location(session["user_ip"])
+    logger.info(f"Game initialized for player {player_uid}")
 
 
 # Cookie to track player UID
@@ -158,6 +183,10 @@ def process_guess(guess, session):
     # Add guess in order for share functionality
     if guess not in session["guess_history"]:
         session["guess_history"].append(guess)
+
+    # Store result in the database
+    player_uid = request.cookies.get("player_uid")
+    save_daily_game_state(player_uid)
 
 
 def allowed_attempts_perc(n_borders):
