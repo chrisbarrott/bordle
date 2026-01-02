@@ -82,9 +82,6 @@ def initialize_game(session, player_uid=None):
     else:
         # No in-progress game, start fresh
         correct_borders = border_map[session["country_name"]]
-        session["correct_guesses"] = [
-            guess for guess in session["guess_history"] if guess in correct_borders
-        ]
         session["borders_remaining"] = len(correct_borders)
         session["remaining_guesses"] = 5
 
