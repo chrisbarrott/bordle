@@ -475,20 +475,17 @@ def load_daily_game_state(player_uid):
             "guessed_main_country": bool(row[2]),
             "game_over": bool(row[3]),
         }
-        logger.info(f"Response loaded: {resp}")
         return resp
     return None
 
 
 # Save daily game state for a player
-def save_daily_game_state(player_uid):
+def save_daily_game_state(player_uid, game_over=False):
     today = date.today().isoformat()
 
     # Lookup user location
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    logger.info(f"Saving daily game state for player {player_uid} on {today}")
 
     cursor.execute('''
         INSERT INTO player_daily_state (
@@ -510,10 +507,10 @@ def save_daily_game_state(player_uid):
             json.dumps(session["guess_history"] or []),
             json.dumps(session["wrong_guesses"] or []), 
             bool(session["guessed_main_country"]),
-            bool(session["game_over"]),
+            bool(game_over),
             json.dumps(session["guess_history"] or []),
             json.dumps(session["wrong_guesses"] or []),
-            bool(session["game_over"])
+            bool(game_over)
         )
     )
 

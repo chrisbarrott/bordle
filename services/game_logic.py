@@ -58,8 +58,6 @@ def initialize_game(session, player_uid=None):
     # --- Check for in-progress game first ---
     in_progress = load_daily_game_state(player_uid)
     if in_progress:
-        logger.info(f"Resuming in-progress game for player {player_uid}")
-
         # Guess history
         session["guess_history"] = in_progress["guess_history"]
         session["wrong_guesses"] = in_progress["wrong_guesses"]
@@ -124,10 +122,8 @@ def get_or_create_player_uid():
     uid = request.cookies.get("player_uid")
 
     if uid:
-        logger.info(f"[GAME LOGIC] Found existing player UID: {uid}")
         return uid, False
 
-    logger.info("[GAME LOGIC] Creating new player UID")
     return str(uuid.uuid4()), True
 
 
@@ -185,7 +181,7 @@ def process_guess(guess, session):
 
     # Store result in the database
     player_uid = request.cookies.get("player_uid")
-    save_daily_game_state(player_uid)
+    save_daily_game_state(player_uid, False)
 
 
 def allowed_attempts_perc(n_borders):
@@ -268,13 +264,10 @@ def get_game_state(session):
     # Get player_uid from cookies if not provided
     player_uid = request.cookies.get("player_uid")
     if game_over:
-        save_daily_game_state(player_uid)
+        save_daily_game_state(player_uid, game_over)
 
     # Record result only once per session
     if game_over and game_result_recorded is False:
-        logger.info(
-            f"Game over: {game_over} and result recorded: {game_result_recorded}"
-        )
         if set(correct_guesses) == set(border_names):
             # Update world leaderboard first (idempotent check), then record aggregated game result
             
@@ -300,8 +293,6 @@ def get_game_state(session):
 
         # Mark as recorded
         session["game_result_recorded"] = True
-        game_result_recorded = True
-        logger.debug("Setting game_result_recorded to True")
 
     else:
         logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")

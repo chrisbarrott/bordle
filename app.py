@@ -97,11 +97,9 @@ def set_mode_and_play():
     
     # show borders option
     session["show_border_lines"] = bool(request.form.get("show_border_lines"))
-    logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
 
     # show borders option
     session["border_hint_declined"] = False
-    logger.info("Set border_hint_declined to False in session.")
 
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
@@ -158,7 +156,6 @@ def game():
     if "country_name" not in session:
         session["hard_mode"] = bool(request.form.get("hard_mode"))
         session["show_border_lines"] = bool(request.form.get("show_border_lines"))
-        logger.info(f"Set show_border_lines to {session['show_border_lines']} in session.")
         initialize_game(session)
 
     # If form posted a guess
@@ -172,8 +169,6 @@ def game():
     games_today, today_success_rate = get_games_today()
     total_games = get_total_games()
     bordle_stats = analytics()
-
-    # logger.info(f"game_state keys: {game_state.keys()}")
 
     # Render template
     resp = make_response(
