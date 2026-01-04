@@ -36,12 +36,16 @@ def add_centroids(geojson_features):
 
 
 def get_country_shape(name):
-    features = [f for f in geojson_data["features"] if f["properties"].get("name") == name]
+    features = [
+        f for f in geojson_data["features"] if f["properties"].get("name") == name
+    ]
     return add_centroids(features)[0] if features else None
 
 
 def get_shapes(names):
-    features = [f for f in geojson_data["features"] if f["properties"].get("name") in names]
+    features = [
+        f for f in geojson_data["features"] if f["properties"].get("name") in names
+    ]
     return add_centroids(features)
 
 
@@ -60,12 +64,11 @@ def get_all_countries(border_map):
 
 
 def get_all_drop_down_options():
-    with open("static/map_data/country_drop_down.json", 'r', encoding='utf-8') as f:
+    with open("static/map_data/country_drop_down.json", "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def get_user_location(user_ip: str):
-
     # Default values
     country = "Unknown"
     region = "Unknown"
@@ -74,7 +77,10 @@ def get_user_location(user_ip: str):
 
     # IP geolocation lookup
     try:
-        response = requests.get(f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city", timeout=5)
+        response = requests.get(
+            f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city",
+            timeout=5,
+        )
         if response.status_code == 200:
             data = response.json()
 
@@ -84,7 +90,7 @@ def get_user_location(user_ip: str):
                 region = data.get("regionName", "Unknown")
                 city = data.get("city", "Unknown")
                 return country, region, city
-            
+
             # Log failure
             else:
                 logger.error(f"Geo lookup failed: {data}")
@@ -112,9 +118,9 @@ def get_user_ip():
     Works even if the app is behind a proxy (e.g., Render, Cloudflare).
     """
     # X-Forwarded-For may contain multiple IPs – client first, proxy last
-    forwarded_for = request.headers.get('X-Forwarded-For', None)
+    forwarded_for = request.headers.get("X-Forwarded-For", None)
     if forwarded_for:
-        ip = forwarded_for.split(',')[0].strip()
+        ip = forwarded_for.split(",")[0].strip()
     else:
         ip = request.remote_addr
     return ip

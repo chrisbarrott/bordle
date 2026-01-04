@@ -18,7 +18,6 @@ def setup_logger():
     logger.setLevel(logging.INFO)
 
     if not logger.handlers:
-
         # ---------- 1. Console handler (nice readable logs) ----------
         console_handler = logging.StreamHandler()
         console_formatter = jsonlogger.JsonFormatter(

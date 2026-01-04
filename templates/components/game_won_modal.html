@@ -76,6 +76,9 @@
 
 <script type="text/javascript">
   window.onload = function () {
+    // Indicate game over state
+    window.gameOver = true;
+
     // Update local stats display
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
     if (stats) updateUserStats(stats);
@@ -138,7 +141,6 @@
   }
 
   function generateResults() {
-    // console.log("Starting to generateResults")
     const country = "{{ country_name }}";
     const correct = {{ correct_count }};
     const total = {{ border_count }};
@@ -225,10 +227,9 @@
       body: JSON.stringify({ country, gameNumber, result, gameResult: "Win"})
     });
 
-    // console.log(encodedMessage);
     const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
-    // console.log('Shareing to whatsapp: ', encodedMessage);
+
   };
 </script>
 
