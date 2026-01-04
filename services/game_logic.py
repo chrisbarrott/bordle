@@ -74,7 +74,8 @@ def initialize_game(session, player_uid=None):
             "Won" if session["game_over"] and set(session["correct_guesses"]) == set(correct_borders)
             else "Started"
         )
-        session["game_result_recorded"] = session["game_over"]
+        session["hard_mode"] = in_progress.get("hard_mode", False)
+        session["game_result_recorded"] = in_progress.get("game_result_recorded", False)
         session["guessed_main_country"] = in_progress.get("guessed_main_country", False)
 
     else:
