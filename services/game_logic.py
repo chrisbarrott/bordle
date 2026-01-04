@@ -324,6 +324,7 @@ def get_game_state(session):
         "player_city": session["player_city"],
         "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
+        "player_uid": player_uid,
     }
 
     # Only log game state if not an invalid session
