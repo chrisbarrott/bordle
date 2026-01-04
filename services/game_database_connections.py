@@ -115,10 +115,10 @@ def init_db():
             game_date TEXT NOT NULL,
             guess_history TEXT,
             wrong_guesses TEXT,
-            hard_mode BOOLEAN,
-            guessed_main_country BOOLEAN,
-            game_over BOOLEAN,
-            game_result_recorded BOOLEAN,
+            hard_mode INTEGER,
+            guessed_main_country INTEGER,
+            game_over INTEGER,
+            game_result_recorded INTEGER,
             PRIMARY KEY (player_uid, game_date)
         )
     """)
@@ -499,7 +499,7 @@ def save_daily_game_state(player_uid, game_over=False):
             hard_mode,
             game_over,
             game_result_recorded
-        ) VALUES (?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(player_uid, game_date) DO UPDATE SET
             guess_history = ?,
             wrong_guesses = ?,
