@@ -11,12 +11,16 @@
   </a>
 </header>
 
-{% include "components/game_how_to_play_modal.html" %}
+{# Use a centered card layout similar to contact page #}
 
-<!-- USER STATS -->
-<h2 class="text-xl font-bold text-blue-800 mb-4 border-b border-gray-300 pb-2 text-center">
-  👤📈 Your Bordle Stats
-</h2>
+<div class="w-full max-w-2xl bg-white rounded-lg shadow-md p-8 mb-6 mx-auto">
+
+  {% include "components/game_how_to_play_modal.html" %}
+
+  <!-- USER STATS -->
+  <h2 class="text-xl font-bold text-blue-800 mb-4 text-center">
+    👤📈 Your Bordle Stats
+  </h2>
 
 <div id="statsContainer"
   class="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 shadow-md text-sm sm:text-base w-full sm:w-auto">
@@ -43,7 +47,7 @@
 <br>
 
 <!-- GLOBAL STATS OVERVIEW -->
-<h2 class="text-xl font-bold text-green-800 mb-4 border-b border-gray-300 pb-2 text-center">
+<h2 class="text-xl font-bold text-green-800 mb-4 text-center">
   🌍 Global Stats Overview
 </h2>
 
@@ -72,7 +76,7 @@
 <br>
 
 <!-- WORLD STATS (Today) -->
-<h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1 text-center">🌍 World Stats (Today)</h2>
+<h2 class="text-xl font-bold text-blue-700 mb-4 text-center">🌍 World Stats (Today)</h2>
 
 <div class="max-w-md mx-auto overflow-x-auto">
   <table id="dailyLeaderboardTable" class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
@@ -93,7 +97,7 @@
 <br>
 
 <!-- LEADERBOARD -->
-<h2 class="text-xl font-bold text-blue-700 mb-4 border-b border-gray-300 pb-1 text-center">🏆 All-Time Leaderboard</h2>
+<h2 class="text-xl font-bold text-blue-700 mb-4 text-center">🏆 All-Time Leaderboard</h2>
 
 <div class="max-w-md mx-auto overflow-x-auto">
   <table id="allTimeLeaderboardTable" class="min-w-full text-left border-collapse border border-gray-200 rounded-lg text-sm sm:text-base">
@@ -254,5 +258,7 @@
 
 
 </script>
+
+</div>
 
 {% endblock %}
