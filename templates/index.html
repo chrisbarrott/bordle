@@ -234,16 +234,6 @@
 </script>
 <!-- Required for how to play modal -->
 
-
-
-<!-- Required for loading leaderboard modal -->
-<script>
-  function toggleLeaderboard() {
-    window.location.href = "/stats";
-  }
-</script>
-<!-- Required for loading leaderboard modal -->
-
 <script>
   const defaultState = {
     gamesPlayed: 0,
@@ -272,11 +262,7 @@
     saveGameState(state);
   }
 
-  function toggleHardMode(value) {
-    const state = loadGameState();
-    state.hardMode = value;
-    saveGameState(state);
-  }
+
 
   const currentState = loadGameState();
 
