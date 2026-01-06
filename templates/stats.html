@@ -1,22 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+{# Use a centered card layout similar to contact page #}
+<div class="w-full max-w-2xl bg-white rounded-lg shadow-md p-8 mb-6 mx-auto">
 
-<!-- Header with back link above logo -->
-<header class="mb-4 relative">
-  <a href="/">
-    <img
-      src="{{ url_for('static', filename='images/bordle_logo.png') }}"
-      alt="BORDLE Logo"
-      class="h-20 mx-auto mt-6 cursor-pointer">
-  </a>
-</header>
+  <!-- Header with back link above logo -->
+  <header class="mb-4 relative">
+    <a href="/">
+      <img
+        src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+        alt="BORDLE Logo"
+        class="h-20 mx-auto mt-6 cursor-pointer">
+    </a>
+  </header>
 
-{% include "components/game_how_to_play_modal.html" %}
+  {% include "components/game_how_to_play_modal.html" %}
 
-<!-- USER STATS -->
-<h2 class="text-xl font-bold text-blue-800 mb-4 border-b border-gray-300 pb-2 text-center">
-  👤📈 Your Bordle Stats
-</h2>
+  <!-- USER STATS -->
+  <h2 class="text-xl font-bold text-blue-800 mb-4 border-b border-gray-300 pb-2 text-center">
+    👤📈 Your Bordle Stats
+  </h2>
 
 <div id="statsContainer"
   class="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 shadow-md text-sm sm:text-base w-full sm:w-auto">
@@ -254,5 +256,7 @@
 
 
 </script>
+
+</div>
 
 {% endblock %}
