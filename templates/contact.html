@@ -1,6 +1,17 @@
 {% extends 'base.html' %}
-
 {% block content %}
+
+<!-- Header with back link above logo -->
+<header class="mb-4 relative">
+  <a href="/">
+    <img
+      src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+      alt="BORDLE Logo"
+      class="h-20 mx-auto mt-6 cursor-pointer">
+  </a>
+</header>
+
+
 <div class="w-full max-w-2xl bg-white rounded-lg shadow-md p-8 mb-6">
   <h1 class="text-3xl font-bold text-center mb-2">Contact & Support</h1>
   <p class="text-center text-gray-600 mb-8">Have feedback, found a bug, or want to support Bordle?</p>

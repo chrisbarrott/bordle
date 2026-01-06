@@ -28,7 +28,7 @@
 
   <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
     <div class="absolute top-4 left-4 z-50">
-      {% if request.endpoint == 'stats' %}
+      {% if request.endpoint in ['stats', 'contact'] %}
         <a href="/game"
           class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
           <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
