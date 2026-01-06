@@ -1,9 +1,13 @@
 from datetime import date
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from flask import request, session
+
 import json
 import math
+import os
+import smtplib
 import uuid
-
-from flask import request
 
 from services.game_database_connections import (
     get_game_number,
@@ -219,6 +223,57 @@ def borders_enabled_for_today(session):
         borders.get("enabled") is True and
         borders.get("game_number") == get_game_number()
     )
+
+
+def send_contact_email(name, email, subject, message):
+    """Send contact form submission via email using SMTP"""
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = os.getenv("SMTP_PORT", "587")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    recipient_email = os.getenv("CONTACT_EMAIL")
+
+    # Skip if email config not set
+    if not all([smtp_server, smtp_user, smtp_password, recipient_email]):
+        logger.warning("Email configuration not set. Skipping email send.")
+        return
+
+    try:
+        # Create message
+        msg = MIMEMultipart()
+        msg["From"] = smtp_user
+        msg["To"] = recipient_email
+        msg["Subject"] = f"Bordle Contact: {subject}"
+
+        # Email body
+        body = f"""
+    New contact form submission from Bordle:
+
+    Name: {name}
+    Email: {email}
+    Subject: {subject}
+
+    Message:
+    {message}
+
+    ---
+    Player UID: {request.cookies.get('player_uid', 'anonymous')}
+    Player Country: {session.get('player_country', 'Unknown')}
+    Player City: {session.get('player_city', 'Unknown')}
+    """
+        msg.attach(MIMEText(body, "plain"))
+
+        # Send email
+        with smtplib.SMTP(smtp_server, int(smtp_port)) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+
+        logger.info(f"Contact email sent for subject: {subject}")
+
+    except Exception as e:
+        logger.error(f"Error sending contact email: {str(e)}")
+        raise
 
 
 def get_game_state(session):
