@@ -43,7 +43,6 @@
   </a>
 </header>
 
-{% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
 
 <div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
@@ -235,14 +234,7 @@
 </script>
 <!-- Required for how to play modal -->
 
-<!-- Required for loading stats modal -->
-<script>
-  function toggleStats() {
-    const modal = document.getElementById("gameStatsModal");
-    modal.classList.toggle("hidden");
-  }
-</script>
-<!-- Required for loading stats modal -->
+
 
 <!-- Required for loading leaderboard modal -->
 <script>

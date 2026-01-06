@@ -44,7 +44,6 @@
   </div>
 </head>
 
-{% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
 
 
@@ -94,10 +93,6 @@
 </style>
 
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
-
-    {% if stats is defined %}
-        {% include 'components/game_stats_modal.html' %}
-    {% endif %}
   <!-- Logo -->
   <img src="{{ url_for('static', filename='images/bordle_logo.png') }}"
        alt="BORDLE Logo" class="w-64 mb-8">
@@ -180,15 +175,6 @@
   }
 </script>
 <!-- Required for how to play modal -->
-
-<!-- Required for loading stats modal -->
-<script>
-  function toggleStats() {
-    const modal = document.getElementById("gameStatsModal");
-    modal.classList.toggle("hidden");
-  }
-</script>
-<!-- Required for loading stats modal -->
 
 <!-- Required for loading leaderboard modal -->
 <script>
