@@ -27,7 +27,7 @@
   </head>
 
   <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
-    <div class="absolute top-4 left-4 flex items-center space-x-2 z-50">
+    <div class="absolute top-4 left-4 z-50">
       {% if request.endpoint == 'stats' %}
         <a href="/game"
           class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
@@ -37,12 +37,25 @@
       {% endif %}
     </div>
 
-    <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
-      <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
-        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+    <div class="absolute top-4 right-4 z-50">
+      <button id="hamburger-right-btn" class="p-2 hover:bg-gray-200 rounded-lg transition-all duration-200">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
 
-      <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
-        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
+      <!-- Right Navigation Menu -->
+      <div id="nav-menu-right" class="hidden absolute top-12 right-0 bg-white rounded-lg shadow-lg p-2 w-48 z-50">
+        <button onclick="toggleHowToPlay()" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          ❓ How to Play
+        </button>
+        <a href="/stats" class="w-full block text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          📊 Stats
+        </a>
+        <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          ✉️ Contact
+        </a>
+      </div>
     </div>
 
     {% block content %}{% endblock %}
@@ -74,6 +87,26 @@
       function toggleLeaderboard() {
         window.location.href = "/stats";
       }
+
+      // Right hamburger menu toggle
+      document.addEventListener('DOMContentLoaded', function() {
+        const hamburgerRightBtn = document.getElementById('hamburger-right-btn');
+        const navMenuRight = document.getElementById('nav-menu-right');
+
+        if (hamburgerRightBtn && navMenuRight) {
+          hamburgerRightBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navMenuRight.classList.toggle('hidden');
+          });
+
+          // Close right menu when clicking outside
+          document.addEventListener('click', function(event) {
+            if (!event.target.closest('#hamburger-right-btn') && !event.target.closest('#nav-menu-right')) {
+              navMenuRight.classList.add('hidden');
+            }
+          });
+        }
+      });
     </script>
 
   </body>
