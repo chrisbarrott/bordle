@@ -75,53 +75,13 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="text/javascript">
-  // Update streak only when game is won (called once via flag)
-  function updateStreakOnWin() {
-    if (window.streakUpdatedForWin) return; // Prevent multiple calls
-    window.streakUpdatedForWin = true;
-
-    let stats = JSON.parse(localStorage.getItem("bordleStats")) || {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      currentStreak: 0,
-      maxStreak: 0
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-    const lastPlayed = localStorage.getItem("bordleLastPlayed");
-
-    // Reset streak if last played was not today or yesterday
-    if (lastPlayed && lastPlayed !== today) {
-      const lastDate = new Date(lastPlayed);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      if (lastPlayed !== yesterdayStr) {
-        stats.currentStreak = 0;
-      }
-    }
-
-    // Only update streak, not game counts
-    stats.currentStreak += 1;
-    if (stats.currentStreak > stats.maxStreak) {
-      stats.maxStreak = stats.currentStreak;
-    }
-
-    localStorage.setItem("bordleStats", JSON.stringify(stats));
-    localStorage.setItem("bordleLastPlayed", today);
-    return stats;
-  }
-
   window.onload = function () {
     // Indicate game over state
     window.gameOver = true;
 
     // Update local stats display
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    if (stats) {
-      updateStreakOnWin(); // Update only the streak
-      updateUserStats(stats);
-    }
+    if (stats) updateUserStats(stats);
 
     // Map rendering
     const map = L.map('victoryMap');
