@@ -70,31 +70,12 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="text/javascript">
-  // Update stats when game is lost
-  function recordLoss() {
-    let stats = JSON.parse(localStorage.getItem("bordleStats")) || {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      currentStreak: 0,
-      maxStreak: 0
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-
-    stats.gamesPlayed += 1;
-    stats.currentStreak = 0;
-
-    localStorage.setItem("bordleStats", JSON.stringify(stats));
-    localStorage.setItem("bordleLastPlayed", today);
-    return stats;
-  }
-
   window.onload = function () {
     // Indicate game over state
     window.gameOver = true;
 
-    // Update local stats display with new stats after recording loss
-    const stats = recordLoss();
+    // Update local stats display
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
     if (stats) updateUserStats(stats);
 
     // Map rendering

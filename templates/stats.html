@@ -190,18 +190,6 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname !== "/stats") return;
-    
-    // Initialize stats if they don't exist
-    const existing = localStorage.getItem("bordleStats");
-    if (!existing) {
-      localStorage.setItem("bordleStats", JSON.stringify({
-        gamesPlayed: 0,
-        gamesWon: 0,
-        currentStreak: 0,
-        maxStreak: 0
-      }));
-    }
-    
     showLocalStats();
     loadGlobalStats();
     loadLeaderboardData();
