@@ -262,7 +262,21 @@
     saveGameState(state);
   }
 
+  // Initialize stats on page load if they don't exist
+  function initializeStats() {
+    const existing = localStorage.getItem("bordleStats");
+    if (!existing) {
+      localStorage.setItem("bordleStats", JSON.stringify({
+        gamesPlayed: 0,
+        gamesWon: 0,
+        currentStreak: 0,
+        maxStreak: 0
+      }));
+    }
+  }
 
+  // Initialize stats when page loads
+  document.addEventListener('DOMContentLoaded', initializeStats);
 
   const currentState = loadGameState();
 
