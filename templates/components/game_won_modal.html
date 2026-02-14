@@ -75,8 +75,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="text/javascript">
-  // Update stats when game is won
-  function recordWin() {
+  // Update streak only when game is won (called once via flag)
+  function updateStreakOnWin() {
+    if (window.streakUpdatedForWin) return; // Prevent multiple calls
+    window.streakUpdatedForWin = true;
+
     let stats = JSON.parse(localStorage.getItem("bordleStats")) || {
       gamesPlayed: 0,
       gamesWon: 0,
@@ -98,8 +101,7 @@
       }
     }
 
-    stats.gamesPlayed += 1;
-    stats.gamesWon += 1;
+    // Only update streak, not game counts
     stats.currentStreak += 1;
     if (stats.currentStreak > stats.maxStreak) {
       stats.maxStreak = stats.currentStreak;
@@ -114,9 +116,12 @@
     // Indicate game over state
     window.gameOver = true;
 
-    // Update local stats display with new stats after recording win
-    const stats = recordWin();
-    if (stats) updateUserStats(stats);
+    // Update local stats display
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    if (stats) {
+      updateStreakOnWin(); // Update only the streak
+      updateUserStats(stats);
+    }
 
     // Map rendering
     const map = L.map('victoryMap');

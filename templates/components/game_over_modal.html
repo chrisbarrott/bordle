@@ -70,8 +70,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="text/javascript">
-  // Update stats when game is lost
-  function recordLoss() {
+  // Update streak only when game is lost (called once via flag)
+  function updateStreakOnLoss() {
+    if (window.streakUpdatedForLoss) return; // Prevent multiple calls
+    window.streakUpdatedForLoss = true;
+
     let stats = JSON.parse(localStorage.getItem("bordleStats")) || {
       gamesPlayed: 0,
       gamesWon: 0,
@@ -81,7 +84,7 @@
 
     const today = new Date().toISOString().split('T')[0];
 
-    stats.gamesPlayed += 1;
+    // Only update streak to 0, not game counts
     stats.currentStreak = 0;
 
     localStorage.setItem("bordleStats", JSON.stringify(stats));
@@ -93,9 +96,12 @@
     // Indicate game over state
     window.gameOver = true;
 
-    // Update local stats display with new stats after recording loss
-    const stats = recordLoss();
-    if (stats) updateUserStats(stats);
+    // Update local stats display
+    const stats = JSON.parse(localStorage.getItem("bordleStats"));
+    if (stats) {
+      updateStreakOnLoss(); // Update only the streak
+      updateUserStats(stats);
+    }
 
     // Map rendering
     const map = L.map('failureMap');
