@@ -266,6 +266,40 @@
 
   const currentState = loadGameState();
 
+  // Attempt one-time migration of client-local stats to server-side storage.
+  (function tryMigrateLocalStats() {
+    try {
+      const migratedFlag = localStorage.getItem('bordleStatsMigrated');
+      if (migratedFlag === '1') return; // already migrated
+
+      const stats = JSON.parse(localStorage.getItem('bordleStats'));
+      if (!stats) return;
+
+      // Read player_uid cookie
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const pw = cookies.find(c => c.startsWith('player_uid='));
+      const playerUid = pw ? pw.split('=')[1] : null;
+
+      // POST to server to migrate
+      fetch('/api/migrate_stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_uid: playerUid, stats })
+      })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp && resp.status === 'ok') {
+          localStorage.setItem('bordleStatsMigrated', '1');
+        } else if (resp && resp.status === 'skipped') {
+          localStorage.setItem('bordleStatsMigrated', '1');
+        }
+      })
+      .catch(() => {})
+    } catch(e) {
+      // be silent
+    }
+  })();
+
 </script>
 
 {% endblock %}

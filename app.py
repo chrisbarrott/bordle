@@ -33,6 +33,7 @@ import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
+from services.game_database_connections import migrate_player_stats
 
 
 # Setup logger
@@ -379,6 +380,31 @@ def analytics():
 def api_stats():
     stats = analytics()
     return jsonify(stats)
+
+
+@app.route('/api/migrate_stats', methods=['POST'])
+def api_migrate_stats():
+    try:
+        data = request.get_json(force=True)
+
+        # Prefer cookie value for player_uid; allow client to include it as fallback
+        player_uid = request.cookies.get('player_uid') or data.get('player_uid')
+
+        if not player_uid:
+            return jsonify({"status": "error", "message": "player_uid required in cookie or payload"}), 400
+
+        stats = data.get('stats') or {}
+
+        # Basic validation
+        if not isinstance(stats, dict):
+            return jsonify({"status": "error", "message": "invalid stats payload"}), 400
+
+        res = migrate_player_stats(player_uid, stats)
+
+        return jsonify(res)
+    except Exception as e:
+        logger.error(f"Error migrating stats: {e}")
+        return jsonify({"status": "error", "message": "internal error"}), 500
 
 
 # Added observability for WhatsApp share events
