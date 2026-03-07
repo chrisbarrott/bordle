@@ -10,10 +10,3 @@ scripts/gen_secret.py
 scripts/get_stats_queries.sql
 scripts/logging_test.py
 services/__pycache__/*
-services/__pycache__/game_database_connections.cpython-311.pyc
-services/__pycache__/game_database_connections.cpython-311.pyc
-services/__pycache__/game_get_data.cpython-311.pyc
-services/__pycache__/game_logic.cp
-
-services/__pycache__/game_observe.cpython-311.pyc
-services/__pycache__/game_database_connections.cpython-311.pyc
