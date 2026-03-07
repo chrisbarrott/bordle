@@ -214,13 +214,17 @@ def get_player_stats(player_uid: str):
     conn.close()
 
     if row:
-        return {
+        result = {
             "games_played": row[0] or 0,
             "games_won": row[1] or 0,
             "current_streak": row[2] or 0,
             "best_streak": row[3] or 0,
             "migrated": bool(row[4]),
         }
+        logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
+        return result
+    
+    logger.debug(f"[GET_PLAYER_STATS] No stats found for {player_uid}")
     return None
 
 
@@ -229,12 +233,17 @@ def migrate_player_stats(player_uid: str, stats: dict):
 
     This operation is idempotent per-player: if `migrated` is set, we skip to avoid double-counting.
     """
+    logger.info(f"[MIGRATION] Starting migration for player {player_uid}")
+    logger.info(f"[MIGRATION] Client-side stats received: {stats}")
+    
     existing = get_player_stats(player_uid)
+    logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     if existing and existing.get("migrated"):
+        logger.warning(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
         conn.close()
         return {"status": "skipped", "reason": "already_migrated"}
 
@@ -244,12 +253,16 @@ def migrate_player_stats(player_uid: str, stats: dict):
     current_streak = int(stats.get("currentStreak", 0))
     best_streak = int(stats.get("bestStreak", current_streak))
 
+    logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
+
     if existing:
         # Simple merge: take maxima for streaks, sum totals
         merged_played = (existing.get("games_played", 0) or 0) + games_played
         merged_won = (existing.get("games_won", 0) or 0) + games_won
         merged_current_streak = max(existing.get("current_streak", 0) or 0, current_streak)
         merged_best_streak = max(existing.get("best_streak", 0) or 0, best_streak)
+
+        logger.info(f"[MIGRATION] Merging existing and client stats: played {existing.get('games_played')} + {games_played} = {merged_played}, won {existing.get('games_won')} + {games_won} = {merged_won}")
 
         cursor.execute(
             """
@@ -270,7 +283,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
                 player_uid,
             ),
         )
+        logger.info(f"[MIGRATION] Updated existing player stats: {player_uid}")
     else:
+        logger.info(f"[MIGRATION] No existing stats found. Creating new record for {player_uid}")
         cursor.execute(
             """
             INSERT INTO player_stats (
@@ -279,10 +294,12 @@ def migrate_player_stats(player_uid: str, stats: dict):
             """,
             (player_uid, games_played, games_won, current_streak, best_streak),
         )
+        logger.info(f"[MIGRATION] Inserted new player stats: {player_uid}")
 
     conn.commit()
     conn.close()
 
+    logger.info(f"[MIGRATION] ✅ Migration complete for player {player_uid}")
     return {"status": "ok"}
 
 

@@ -65,6 +65,9 @@
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    
+    <!-- Player Persistence Manager (multi-tier fallback for player_uid) -->
+    <script src="{{ url_for('static', filename='js/player_persistence.js') }}"></script>
 
     {% block scripts %}{% endblock %}
 

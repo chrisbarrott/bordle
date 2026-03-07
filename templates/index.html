@@ -267,36 +267,64 @@
   const currentState = loadGameState();
 
   // Attempt one-time migration of client-local stats to server-side storage.
-  (function tryMigrateLocalStats() {
+  (async function tryMigrateLocalStats() {
     try {
       const migratedFlag = localStorage.getItem('bordleStatsMigrated');
-      if (migratedFlag === '1') return; // already migrated
+      if (migratedFlag === '1') {
+        console.log('[CLIENT_MIGRATION] ✅ Stats already migrated (flag set)');
+        return;
+      }
 
       const stats = JSON.parse(localStorage.getItem('bordleStats'));
-      if (!stats) return;
+      if (!stats) {
+        console.log('[CLIENT_MIGRATION] ⚠️ No local stats found in localStorage');
+        return;
+      }
 
-      // Read player_uid cookie
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const pw = cookies.find(c => c.startsWith('player_uid='));
-      const playerUid = pw ? pw.split('=')[1] : null;
+      console.log('[CLIENT_MIGRATION] Found local stats:', stats);
+
+      // Use player persistence manager to get reliable player_uid
+      const { playerId, source, recovered } = await window.PlayerPersistence.getOrCreatePlayerId();
+      
+      if (!playerId) {
+        console.warn('[CLIENT_MIGRATION] ❌ Could not determine player_uid');
+        return;
+      }
+
+      console.log(`[CLIENT_MIGRATION] Using player_uid from ${source}:`, playerId);
+      if (recovered) {
+        console.log('[CLIENT_MIGRATION] 🔄 Player ID was recovered (cookie was missing)');
+      }
+
+      console.log('[CLIENT_MIGRATION] Posting stats to server...');
 
       // POST to server to migrate
       fetch('/api/migrate_stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_uid: playerUid, stats })
+        body: JSON.stringify({ player_uid: playerId, stats })
       })
-      .then(r => r.json())
+      .then(r => {
+        console.log('[CLIENT_MIGRATION] Response status:', r.status);
+        return r.json();
+      })
       .then(resp => {
+        console.log('[CLIENT_MIGRATION] Response body:', resp);
         if (resp && resp.status === 'ok') {
+          console.log('[CLIENT_MIGRATION] ✅ Migration successful');
           localStorage.setItem('bordleStatsMigrated', '1');
         } else if (resp && resp.status === 'skipped') {
+          console.log('[CLIENT_MIGRATION] ⚠️ Migration skipped:', resp.reason);
           localStorage.setItem('bordleStatsMigrated', '1');
+        } else {
+          console.warn('[CLIENT_MIGRATION] ❌ Unexpected response:', resp);
         }
       })
-      .catch(() => {})
+      .catch(err => {
+        console.error('[CLIENT_MIGRATION] ❌ Fetch failed:', err);
+      })
     } catch(e) {
-      // be silent
+      console.error('[CLIENT_MIGRATION] ❌ Exception in migration:', e);
     }
   })();
 
