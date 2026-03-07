@@ -2,7 +2,7 @@ import json
 import os
 import random
 import sqlite3
-from flask import request, session
+from flask import session
 import pytz
 
 from datetime import date, datetime
