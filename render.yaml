@@ -3,18 +3,15 @@ services:
     name: bordle
     env: python
     pythonVersion: 3.11
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: FLASK_ENV
         value: production
       - key: DB_TYPE
         value: postgres
-      - key: PYTHON_VERSION
-        value: "3.11"
     # Increase build timeout from default 30 min to 60 min
     # Helps with heavy dependencies like geopandas that compile from source
     buildTimeout: 3600
     preDeployCommand: |
-      echo "Running migrations..."
-      python scripts/migrate_db_update.py || true
+      echo "Build complete"
