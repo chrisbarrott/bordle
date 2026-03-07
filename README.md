@@ -120,7 +120,18 @@ Inspired by Wordle.
 
 ---
 
-## 🗃️ Postgres Migration & Utilities
+## � Documentation
+
+For detailed setup and deployment information, see the [docs/](docs/) folder:
+
+- **[RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md)** — Complete guide for deploying to Render with PostgreSQL
+- **[ENV_SETUP.md](docs/ENV_SETUP.md)** — Environment configuration and local development setup
+- **[PLAYER_PERSISTENCE_OPTION1.md](docs/PLAYER_PERSISTENCE_OPTION1.md)** — Player persistence design options
+- **[TESTING_STATS_MIGRATION.md](docs/TESTING_STATS_MIGRATION.md)** — Stats migration testing notes
+
+---
+
+## �🗃️ Postgres Migration & Utilities
 
 The codebase now supports using PostgreSQL as an alternative to the embedded SQLite
 file. You can keep **dev**, **uat** and **prod** data in the *same* database by

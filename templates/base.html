@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <title>{% block title %}Bordle 🌍{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css">
+    {% block head %}{% endblock %}
+
+    <!-- Open Graph / WhatsApp Meta Tags -->
+    <meta property="og:title" content="Bordle – The Country Border Game!" />
+    <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
+    <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+    <meta property="og:url" content="https://www.bordle.world" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card (optional, improves previews on X/Twitter) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Bordle – The Country Border Game!" />
+    <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
+    <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+
+    <!--  Google friendly icon -->
+    <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+  </head>
+
+  <body class="bg-gray-50 text-gray-900 font-sans flex flex-col items-center overflow-y-auto py-6">
+    <div class="absolute top-4 left-4 z-50">
+      {% if request.endpoint in ['stats', 'contact'] %}
+        <a href="/game"
+          class="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-800 hover:underline transition-all duration-200">
+          <img src="/static/images/arrow_left.png" alt="Back" class="h-4 w-4 transform -translate-y-[1px]">
+          <span>Back to Game</span>
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="absolute top-4 right-4 z-50">
+      <button id="hamburger-right-btn" class="p-2 hover:bg-gray-200 rounded-lg transition-all duration-200">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <!-- Right Navigation Menu -->
+      <div id="nav-menu-right" class="hidden absolute top-12 right-0 bg-white rounded-lg shadow-lg p-2 w-48 z-50">
+        <button onclick="toggleHowToPlay()" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          ❓ How to Play
+        </button>
+        <a href="/stats" class="w-full block text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          📊 Stats
+        </a>
+        <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+          ✉️ Contact & Support
+        </a>
+      </div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <!-- Common JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+    {% block scripts %}{% endblock %}
+
+    <style>
+      input:checked + .block {
+        background-color: #4ade80; /* green for ON */
+      }
+
+      input:checked + .block + .dot {
+        transform: translateX(100%);
+      }
+
+      .dot {
+        transition: transform 0.3s ease-in-out;
+      }
+    </style>
+
+    <!-- Required for loading leaderboard modal -->
+    <script>
+      function toggleLeaderboard() {
+        window.location.href = "/stats";
+      }
+
+      // Right hamburger menu toggle
+      document.addEventListener('DOMContentLoaded', function() {
+        const hamburgerRightBtn = document.getElementById('hamburger-right-btn');
+        const navMenuRight = document.getElementById('nav-menu-right');
+
+        if (hamburgerRightBtn && navMenuRight) {
+          hamburgerRightBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navMenuRight.classList.toggle('hidden');
+          });
+
+          // Close right menu when clicking outside
+          document.addEventListener('click', function(event) {
+            if (!event.target.closest('#hamburger-right-btn') && !event.target.closest('#nav-menu-right')) {
+              navMenuRight.classList.add('hidden');
+            }
+          });
+        }
+      });
+    </script>
+
+  </body>
+</html>

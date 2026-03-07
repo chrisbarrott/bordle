@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+<head>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- To resolve the share emojis -->
+  <meta charset="UTF-8">
+
+  <title>Bordle – Daily Border Guessing Game</title>
+  <meta name="description" content="Play Bordle: a daily game where you guess the countries that border a mystery nation. Come back every day for a new challenge!">
+
+  <!-- Open Graph / WhatsApp Meta Tags -->
+  <meta property="og:title" content="Bordle – The Country Border Game!" />
+  <meta property="og:description" content="Guess the bordering countries or seas of the mystery nation. A new puzzle every day!" />
+  <meta property="og:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+  <meta property="og:url" content="https://www.bordle.world" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter Card (optional, improves previews on X/Twitter) -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Bordle – The Country Border Game!" />
+  <meta name="twitter:description" content="Guess the bordering countries or seas of the mystery nation." />
+  <meta name="twitter:image" content="https://www.bordle.world/static/images/bordle_logo.png" />
+
+  <!--  Google friendly icon -->
+  <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
+
+  <!--  Mobile friendly view -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ✅ Leaflet CSS (goes in <head> ideally) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+
+{% block content %}
+<header class="mb-8">
+  <a href="/">
+    <img
+      src="{{ url_for('static', filename='images/bordle_logo.png') }}"
+      alt="BORDLE Logo"
+      class="h-20 mx-auto cursor-pointer"
+    >
+  </a>
+</header>
+
+{% include "components/game_how_to_play_modal.html" %}
+
+<div class="w-full max-w-xl bg-white rounded-lg shadow-md p-6 mb-6">
+  <h2 class="text-xl font-semibold text-center mb-4">
+  {% if hard_mode %}
+    {% if guessed_main_country %}
+      Guess all the borders of {{ country_name }}
+    {% else %}
+      Guess all the borders of *****
+    {% endif %}
+  {% else %}
+    Guess all the borders of {{ country_name }}
+  {% endif %}
+  </h2>
+
+  <!-- Render the map OUTSIDE of the narrow card -->
+  <div class="w-full mb-6 px-4">
+    {% include 'components/map.html' %}
+  </div>
+
+  <div class="text-center mb-4">
+    <p class="text-center text-gray-700">
+      Borders Remaining: <strong>{{ borders_remaining }}</strong> of <strong>{{ border_count }}</strong>
+    </p>
+  </div>
+
+  {% if guessed_main_country %}
+  <div class="mt-4 text-green-600 text-center">
+    <strong>Correct country guess</strong>: {{ country_name }}
+  </div>
+  {% endif %}
+
+  {% if correct_guesses %}
+  <div class="mt-4 text-green-600 text-center">
+    <strong>Correct guesses:</strong> {{ correct_guesses | join(", ") }}
+  </div>
+  {% endif %}
+
+  {% if wrong_guesses %}
+  <div class="mt-4 text-red-600 text-center">
+    <strong>Incorrect guesses:</strong> {{ wrong_guesses | join(", ") }}
+  </div>
+  {% endif %}
+
+  {% if attempts_left > 0 %}
+    {% include 'components/guess_form.html' %}
+  {% endif %}
+
+  {% if correct_count == border_count %}
+    {% include 'components/game_won_modal.html' %}
+  {% endif %}
+  
+  {% if attempts_left == 0 %}
+    {% include 'components/game_over_modal.html' %}
+  {% endif %}
+
+  <div class="text-sm text-gray-700 mt-4 text-center">
+    {{ attempts_left }} lives remaining
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+
+<script src="{{ url_for('static', filename='js/game_stats_local.js') }}"></script>
+
+<!-- ✅ Leaflet JS (must be before map_render.js) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="{{ url_for('static', filename='js/map_render.js') }}"></script>
+
+<script>
+  const hardMode = {{ 'true' if hard_mode else 'false' }};
+  const countryShape = {{ country_geojson | tojson }};
+  const correctShapes = {{ correct_shapes | tojson }};
+  const wrongShapes = {{ wrong_shapes | tojson }};
+  const showBorders = {{ 'true' if show_border_lines else 'false' }};
+  const borders_hint_declined = {{ 'true' if borders_hint_declined else 'false' }};
+</script>
+
+<!-- Hint modal for turning on border outlines -->
+<div id="hint-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-4 text-center">
+    <h3 class="text-lg font-semibold mb-2">Want a hint?</h3>
+    <p class="text-sm text-gray-600 mb-4">Turn on border outlines to get a subtle hint for nearby countries.</p>
+    <div class="flex justify-center space-x-3">
+      <button id="hint-yes" class="bg-green-600 text-white px-4 py-2 rounded">Yes, show borders</button>
+      <button id="hint-no" class="bg-gray-200 text-gray-800 px-4 py-2 rounded">No, I'm good</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    setTimeout(() => {
+      // Check if game ended right before showing the modal
+      if (window.gameOver) {
+        console.log("[Hint Modal] Skipping because the game has ended.");
+        return;
+      } 
+
+      // Check localStorage to see if already accepted/declined
+      try {
+        // If borders already enabled in session, skip modal
+        if (window.SHOW_BORDER_LINES === true || window.BORDERS_HINT_DECLINED === true) {
+          console.log("[Hint Modal] Hint already resolved for this session, skipping.");
+          return;
+        }
+      } catch (e) {
+        console.warn("[Hint Modal] Error accessing Borders already enabled in session:", e);
+      }
+
+      // Show the modal
+      const modal = document.getElementById('hint-modal');
+      if (!modal) {
+        console.log("[Hint Modal] Modal element not found, skipping.");
+        return;
+      }
+
+      modal.classList.remove('hidden');
+
+      const yes = document.getElementById('hint-yes');
+      const no = document.getElementById('hint-no');
+
+      // Handle button clicks
+      yes.addEventListener('click', async () => {
+        // User accepted to show borders
+        try {
+          const res = await fetch("/api/set_show_borders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: true })
+          });
+        } catch (e) {
+          console.error("[Hint Modal] Failed to save borders", e);
+        }
+
+        if (window.addBorderOutlines) {
+          window.addBorderOutlines('/static/map_data/border_outlines.geojson');
+        }
+
+        modal.classList.add('hidden');
+      });
+
+      // Handle "No" click
+      no.addEventListener('click', () => {
+        console.log("[Hint Modal] User declined borders.");
+
+        try {
+          const res = fetch("/api/borders_hint_declined", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+          });
+          console.log("[Hint Modal] Decline saved to session.");
+        } catch (e) {
+          console.error("[Hint Modal] Failed to save decline", e);
+        }
+
+        modal.classList.add('hidden');
+      });
+
+    }, 30000); // 30 seconds delay
+  });
+
+</script>
+
+<script>
+  window.SHOW_BORDER_LINES = {{ show_border_lines | tojson }};
+  window.BORDERS_HINT_DECLINED = {{ borders_hint_declined | tojson }};
+</script>
+
+<!-- Required for how to play modal -->
+<script>
+  function toggleHowToPlay() {
+      const modal = document.getElementById("howToPlayModal");
+      modal.classList.toggle("hidden");
+  }
+</script>
+<!-- Required for how to play modal -->
+
+<script>
+  const defaultState = {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    hardMode: false,
+    currentGame: {
+      country: null,
+      guesses: [],
+      wrong: [],
+      remainingGuesses: 5,
+    }
+  };
+
+  function saveGameState(state) {
+    localStorage.setItem("bordleState", JSON.stringify(state));
+  }
+
+  function loadGameState() {
+    const saved = localStorage.getItem("bordleState");
+    return saved ? JSON.parse(saved) : defaultState;
+  }
+
+  function resetGameState() {
+    const state = loadGameState();
+    state.currentGame = defaultState.currentGame;
+    saveGameState(state);
+  }
+
+
+
+  const currentState = loadGameState();
+
+</script>
+
+{% endblock %}
