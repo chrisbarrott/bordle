@@ -79,7 +79,7 @@ def test_environment():
     print(f"DB_TYPE: {DB_TYPE}")
     
     if DB_TYPE == "postgres":
-        database_url = os.getenv("DATABASE_URL")
+        database_url = os.getenv("DATABASE_URL_EXTERNAL")
         postgres_dsn = os.getenv("POSTGRES_DSN")
         
         if database_url:

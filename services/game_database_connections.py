@@ -49,14 +49,25 @@ def table_name(base: str) -> str:
 def get_postgres_connection():
     """Return a new psycopg2 connection using environment variables.
 
-    Expects either POSTGRES_DSN or DATABASE_URL to be set. Raises if psycopg2 is
-    not installed or the DSN is missing.
+    Expects one of the following:
+    - POSTGRES_DSN (custom connection string)
+    - DATABASE_URL_EXTERNAL (for local testing against Render database)
+    - DATABASE_URL (internal Render URL, only works inside Render)
+    
+    Raises if psycopg2 is not installed or the DSN is missing.
     """
     if psycopg2 is None:
         raise RuntimeError("psycopg2 is not installed; cannot open postgres connection")
-    dsn = os.getenv("POSTGRES_DSN") or os.getenv("DATABASE_URL")
+    # Try external URL first (for local testing), then internal URL (for Render production)
+    dsn = (
+        os.getenv("POSTGRES_DSN") 
+        or os.getenv("DATABASE_URL_EXTERNAL") 
+        or os.getenv("DATABASE_URL")
+    )
     if not dsn:
-        raise RuntimeError("No Postgres DSN configured (set POSTGRES_DSN or DATABASE_URL)")
+        raise RuntimeError(
+            "No Postgres DSN configured. Set one of: POSTGRES_DSN, DATABASE_URL_EXTERNAL, or DATABASE_URL"
+        )
     return psycopg2.connect(dsn)
 
 
