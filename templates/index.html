@@ -262,7 +262,41 @@
     saveGameState(state);
   }
 
+  // ----- Local stats helper -----
+  function updateLocalStats(won) {
+    const statsKey = 'bordleStats';
+    let stats = JSON.parse(localStorage.getItem(statsKey)) || {
+      gamesPlayed: 0,
+      gamesWon: 0,
+      currentStreak: 0,
+      bestStreak: 0
+    };
 
+    stats.gamesPlayed = (stats.gamesPlayed || 0) + 1;
+    if (won) {
+      stats.gamesWon = (stats.gamesWon || 0) + 1;
+      stats.currentStreak = (stats.currentStreak || 0) + 1;
+      stats.bestStreak = Math.max(stats.bestStreak || 0, stats.currentStreak);
+    } else {
+      stats.currentStreak = 0;
+    }
+
+    localStorage.setItem(statsKey, JSON.stringify(stats));
+    console.log('[LOCAL_STATS] updated', stats);
+
+    // attempt migration after update - may trigger immediately or on next load
+    if (typeof window.PlayerPersistence !== 'undefined') {
+      window.PlayerPersistence.getOrCreatePlayerId().then(({playerId}) => {
+        if (playerId) {
+          fetch('/api/migrate_stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ player_uid: playerId, stats })
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
+  }
 
   const currentState = loadGameState();
 

@@ -116,7 +116,19 @@ Server logs from this call:
 ```javascript
 localStorage.setItem('bordleStats', JSON.stringify({gamesPlayed: 1, gamesWon: 1, currentStreak: 1, bestStreak: 1}));
 ```
+### Updating Stats on Game End
+Prior to March 7, 2026 the game did *not* update `localStorage` when a game finished, which meant the end-game modals showed stale numbers. That has been fixed: the `updateLocalStats(won)` function now runs automatically when a win or loss modal appears.
 
+**Expected flow:**
+1. Complete a game (win or lose).
+2. Open the browser console; you should see something like:
+```
+[LOCAL_STATS] updated {gamesPlayed: 7, gamesWon: 4, currentStreak: 2, bestStreak: 3}
+[CLIENT_MIGRATION] Posting stats to server...
+```
+3. The stats table in the modal will show updated numbers immediately.
+
+If the numbers still don't change, ensure no JavaScript errors appear and that `updateLocalStats` is defined (it lives in `index.html`).
 ### Scenario 4: Stats Not Found on Server
 **Debug Endpoint Response:**
 ```json
