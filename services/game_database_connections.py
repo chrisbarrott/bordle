@@ -2,7 +2,15 @@ import json
 import os
 import random
 import sqlite3
-from flask import session
+
+# Optional import for PostgreSQL support; installed on feature branch
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    psycopg2 = None
+
+from flask import request, session
 import pytz
 
 from datetime import date, datetime
@@ -23,18 +31,74 @@ DB_FOLDER = os.path.join(BASE_DIR, "..", "db")  # assumes this file is in servic
 os.makedirs(DB_FOLDER, exist_ok=True)
 DB_PATH = os.path.join(DB_FOLDER, "games.db")
 ENVIRONMENT = os.getenv("FLASK_ENV", "development")  # default if not set
+DB_TYPE = os.getenv("DB_TYPE", "sqlite").lower()  # can be 'sqlite' or 'postgres'
 
-# Load GeoJSON shapes once
-with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
-    border_map = json.load(f)
+
+def table_name(base: str) -> str:
+    """Return the correct table name for the current environment.
+
+    When using PostgreSQL we prefix tables with the environment name (dev/uat/prod)
+    so that a single database can host multiple environments. SQLite keeps its
+    existing names unchanged.
+    """
+    if DB_TYPE == "postgres" and ENVIRONMENT:
+        return f"{ENVIRONMENT}_{base}"
+    return base
+
+
+def get_postgres_connection():
+    """Return a new psycopg2 connection using environment variables.
+
+    Expects either POSTGRES_DSN or DATABASE_URL to be set. Raises if psycopg2 is
+    not installed or the DSN is missing.
+    """
+    if psycopg2 is None:
+        raise RuntimeError("psycopg2 is not installed; cannot open postgres connection")
+    dsn = os.getenv("POSTGRES_DSN") or os.getenv("DATABASE_URL")
+    if not dsn:
+        raise RuntimeError("No Postgres DSN configured (set POSTGRES_DSN or DATABASE_URL)")
+    return psycopg2.connect(dsn)
 
 
 def get_db_connection():
+    """Return a database connection for the configured DB_TYPE."""
+    if DB_TYPE == "postgres":
+        return get_postgres_connection()
+    # default to sqlite
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DB_FOLDER = os.path.join(BASE_DIR, "..", "db")  # assumes this file is in services/
     os.makedirs(DB_FOLDER, exist_ok=True)
     DB_PATH = os.path.join(DB_FOLDER, "games.db")
     return sqlite3.connect(DB_PATH)
+
+
+def run_query(sql: str, params: tuple = (), fetchone: bool = False, fetchall: bool = False):
+    """Helper that executes SQL against the configured backend.
+
+    - Converts ``%s`` placeholders to ``?`` for SQLite.
+    - Opens/closes the connection automatically.
+    - Commits after executing (Postgres requires this, SQLite is harmless).
+    - Optionally returns ``fetchone`` or ``fetchall`` results.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if DB_TYPE != "postgres":
+        sql = sql.replace("%s", "?")
+    cursor.execute(sql, params)
+    result = None
+    if fetchone:
+        result = cursor.fetchone()
+    elif fetchall:
+        result = cursor.fetchall()
+    conn.commit()
+    conn.close()
+    return result
+
+
+# Load GeoJSON shapes once
+with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
+    border_map = json.load(f)
+
 
 
 def cleanup_old_player_results():
@@ -43,16 +107,20 @@ def cleanup_old_player_results():
     today = datetime.now(uk).date()
     cutoff_date = today - __import__("datetime").timedelta(days=30)
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    sql = f"DELETE FROM {table_name('player_results')} WHERE game_date < %s"
+    run_query(sql, (cutoff_date,))
+    # sqlite rowcount isn't returned via run_query; open a connection if we need it
+    if DB_TYPE == 'sqlite':
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(sql.replace('%s', '?'), (cutoff_date,))
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+    else:
+        deleted_count = None
 
-    cursor.execute("DELETE FROM player_results WHERE game_date < ?", (cutoff_date,))
-
-    deleted_count = cursor.rowcount
-    conn.commit()
-    conn.close()
-
-    if deleted_count > 0:
+    if deleted_count and deleted_count > 0:
         logger.info(
             f"Cleaned up {deleted_count} old player result records (before {cutoff_date})"
         )
@@ -62,15 +130,17 @@ def cleanup_old_daily_games(days: int = 30):
     """
     Deletes in-progress daily game state older than N days.
     """
+    sql = f"""
+        DELETE FROM {table_name('player_daily_state')}
+        WHERE game_date < date('now', %s)
+    """
+    # run_query will convert %s to ? for sqlite
+    params = (f"-{days} days",)
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """
-        DELETE FROM player_daily_state
-        WHERE game_date < date('now', ?)
-        """,
-        (f"-{days} days",)
-    )
+    if DB_TYPE != 'postgres':
+        sql = sql.replace('%s', '?')
+    cursor.execute(sql, params)
     deleted = cursor.rowcount
     conn.commit()
     conn.close()
@@ -79,62 +149,62 @@ def cleanup_old_daily_games(days: int = 30):
 
 
 def init_db():
+    # create tables using environment-aware names
+    create_sql = {
+        'game_stats': """
+            CREATE TABLE IF NOT EXISTS %s (
+                game_date DATE PRIMARY KEY,
+                successes INTEGER DEFAULT 0,
+                failures INTEGER DEFAULT 0
+            )
+        """,
+        'daily_game': """
+            CREATE TABLE IF NOT EXISTS %s (
+                game_date DATE PRIMARY KEY,
+                country TEXT
+            )
+        """,
+        'player_results': """
+            CREATE TABLE IF NOT EXISTS %s (
+                game_number INTEGER,
+                game_date DATE,
+                player_uid TEXT,
+                PRIMARY KEY (game_date, game_number, player_uid)
+            )
+        """,
+        'player_daily_state': """
+            CREATE TABLE IF NOT EXISTS %s (
+                player_uid TEXT NOT NULL,
+                game_date TEXT NOT NULL,
+                guess_history TEXT,
+                wrong_guesses TEXT,
+                hard_mode INTEGER,
+                guessed_main_country INTEGER,
+                game_over INTEGER,
+                game_result_recorded INTEGER,
+                PRIMARY KEY (player_uid, game_date)
+            )
+        """,
+        'player_stats': """
+            CREATE TABLE IF NOT EXISTS %s (
+                player_uid TEXT PRIMARY KEY,
+                games_played INTEGER DEFAULT 0,
+                games_won INTEGER DEFAULT 0,
+                current_streak INTEGER DEFAULT 0,
+                best_streak INTEGER DEFAULT 0,
+                migrated INTEGER DEFAULT 0,
+                last_updated DATE
+            )
+        """,
+    }
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Create country stats table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS game_stats (
-            game_date DATE PRIMARY KEY,
-            successes INTEGER DEFAULT 0,
-            failures INTEGER DEFAULT 0
-        )
-    """)
-
-    # Create daily country stats table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_game (
-            game_date DATE PRIMARY KEY,
-            country TEXT
-        )
-    """)
-
-    # Create table to ensure player states are recorded only once per day
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS player_results (
-            game_number INTEGER,
-            game_date DATE,
-            player_uid TEXT,
-            PRIMARY KEY (game_date, game_number, player_uid)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS player_daily_state (
-            player_uid TEXT NOT NULL,
-            game_date TEXT NOT NULL,
-            guess_history TEXT,
-            wrong_guesses TEXT,
-            hard_mode INTEGER,
-            guessed_main_country INTEGER,
-            game_over INTEGER,
-            game_result_recorded INTEGER,
-            PRIMARY KEY (player_uid, game_date)
-        )
-    """)
-
-    # Per-player aggregated stats (migration target for client-side stats)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS player_stats (
-            player_uid TEXT PRIMARY KEY,
-            games_played INTEGER DEFAULT 0,
-            games_won INTEGER DEFAULT 0,
-            current_streak INTEGER DEFAULT 0,
-            best_streak INTEGER DEFAULT 0,
-            migrated INTEGER DEFAULT 0,
-            last_updated DATE
-        )
-    """)
+    for base, template in create_sql.items():
+        name = table_name(base)
+        sql = template % name
+        if DB_TYPE != 'postgres':
+            sql = sql.replace('%s', '?')  # should not occur in create but safe
+        cursor.execute(sql)
 
     conn.commit()
     conn.close()
@@ -150,68 +220,41 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
     today = datetime.now(uk).date()
     game_number = get_game_number()
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     # ----- Function to record the player session result -----
 
     # If a player_uid is provided, ensure we only count once per player per day
     if player_uid:
-        # Find is player already recorded for today
-        cursor.execute(
-            "SELECT 1 FROM player_results WHERE game_date = ? AND player_uid = ?",
-            (today, player_uid),
-        )
-
-        # If already recorded, skip
-        if cursor.fetchone():
-            logger.info(
-                f"Skipping duplicate game result for player {player_uid} on {today}"
-            )
-            conn.close()
+        sql_check = f"SELECT 1 FROM {table_name('player_results')} WHERE game_date = %s AND player_uid = %s"
+        existing = run_query(sql_check, (today, player_uid), fetchone=True)
+        if existing:
+            logger.info(f"Skipping duplicate game result for player {player_uid} on {today}")
             return
 
-        # mark player as recorded
-        cursor.execute(
-            "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
-            (today, game_number, player_uid),
-        )
+        sql_insert = f"INSERT INTO {table_name('player_results')} (game_date, game_number, player_uid) VALUES (%s, %s, %s)"
+        run_query(sql_insert, (today, game_number, player_uid))
 
     # ----- Update daily aggregated stats -----
-
-    # Insert or update aggregated daily stats
+    table_stats = table_name('game_stats')
     if success:
-        cursor.execute(
-            """
-            INSERT INTO game_stats (game_date, successes, failures)
-            VALUES (?, 1, 0)
+        sql = f"""
+            INSERT INTO {table_stats} (game_date, successes, failures)
+            VALUES (%s, 1, 0)
             ON CONFLICT(game_date) DO UPDATE SET successes = successes + 1
-        """,
-            (today,),
-        )
+        """
+        run_query(sql, (today,))
     else:
-        cursor.execute(
-            """
-            INSERT INTO game_stats (game_date, successes, failures)
-            VALUES (?, 0, 1)
+        sql = f"""
+            INSERT INTO {table_stats} (game_date, successes, failures)
+            VALUES (%s, 0, 1)
             ON CONFLICT(game_date) DO UPDATE SET failures = failures + 1
-        """,
-            (today,),
-        )
-
-    conn.commit()
-    conn.close()
+        """
+        run_query(sql, (today,))
 
 
 def get_player_stats(player_uid: str):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT games_played, games_won, current_streak, best_streak, migrated FROM player_stats WHERE player_uid = ?",
-        (player_uid,)
-    )
-    row = cursor.fetchone()
-    conn.close()
+    sql = f"SELECT games_played, games_won, current_streak, best_streak, migrated " \
+          f"FROM {table_name('player_stats')} WHERE player_uid = %s"
+    row = run_query(sql, (player_uid,), fetchone=True)
 
     if row:
         result = {
@@ -223,7 +266,7 @@ def get_player_stats(player_uid: str):
         }
         logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
         return result
-    
+
     logger.debug(f"[GET_PLAYER_STATS] No stats found for {player_uid}")
     return None
 
@@ -239,12 +282,8 @@ def migrate_player_stats(player_uid: str, stats: dict):
     existing = get_player_stats(player_uid)
     logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     if existing and existing.get("migrated"):
         logger.warning(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
-        conn.close()
         return {"status": "skipped", "reason": "already_migrated"}
 
     # Prepare merge values
@@ -256,7 +295,6 @@ def migrate_player_stats(player_uid: str, stats: dict):
     logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
 
     if existing:
-        # Simple merge: take maxima for streaks, sum totals
         merged_played = (existing.get("games_played", 0) or 0) + games_played
         merged_won = (existing.get("games_won", 0) or 0) + games_won
         merged_current_streak = max(existing.get("current_streak", 0) or 0, current_streak)
@@ -264,69 +302,45 @@ def migrate_player_stats(player_uid: str, stats: dict):
 
         logger.info(f"[MIGRATION] Merging existing and client stats: played {existing.get('games_played')} + {games_played} = {merged_played}, won {existing.get('games_won')} + {games_won} = {merged_won}")
 
-        cursor.execute(
-            """
-            UPDATE player_stats SET
-                games_played = ?,
-                games_won = ?,
-                current_streak = ?,
-                best_streak = ?,
+        sql = f"""
+            UPDATE {table_name('player_stats')} SET
+                games_played = %s,
+                games_won = %s,
+                current_streak = %s,
+                best_streak = %s,
                 migrated = 1,
-                last_updated = date('now', 'localtime')
-            WHERE player_uid = ?
-            """,
-            (
-                merged_played,
-                merged_won,
-                merged_current_streak,
-                merged_best_streak,
-                player_uid,
-            ),
-        )
+                last_updated = %s
+            WHERE player_uid = %s
+        """
+        run_query(sql, (merged_played, merged_won, merged_current_streak, merged_best_streak, datetime.now().date(), player_uid))
         logger.info(f"[MIGRATION] Updated existing player stats: {player_uid}")
     else:
         logger.info(f"[MIGRATION] No existing stats found. Creating new record for {player_uid}")
-        cursor.execute(
-            """
-            INSERT INTO player_stats (
+        sql = f"""
+            INSERT INTO {table_name('player_stats')} (
                 player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated
-            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'))
-            """,
-            (player_uid, games_played, games_won, current_streak, best_streak),
-        )
+            ) VALUES (%s, %s, %s, %s, %s, 1, %s)
+        """
+        run_query(sql, (player_uid, games_played, games_won, current_streak, best_streak, datetime.now().date()))
         logger.info(f"[MIGRATION] Inserted new player stats: {player_uid}")
-
-    conn.commit()
-    conn.close()
 
     logger.info(f"[MIGRATION] ✅ Migration complete for player {player_uid}")
     return {"status": "ok"}
 
 
 def get_game_number():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(DISTINCT game_date) FROM daily_game")
-    result = cur.fetchone()
-    conn.close()
-    # print("Game Number:", result[0] if result else 0)
+    sql = f"SELECT COUNT(DISTINCT game_date) FROM {table_name('daily_game')}"
+    result = run_query(sql, fetchone=True)
     return result[0] if result else 0
 
 
 def get_games_today():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        """
+    sql = f"""
         SELECT COALESCE(successes,0), COALESCE(failures,0)
-        FROM game_stats
-        WHERE game_date = ?
-    """,
-        (date.today().isoformat(),),
-    )
-
-    row = cursor.fetchone()
-    conn.close()
+        FROM {table_name('game_stats')}
+        WHERE game_date = %s
+    """
+    row = run_query(sql, (date.today().isoformat(),), fetchone=True)
 
     if row:
         successes_today, failures_today = row
@@ -342,59 +356,50 @@ def get_games_today():
 
 
 def get_total_games():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
+    sql = f"""
         SELECT SUM(successes + failures) AS total_games
-        FROM game_stats
-    """)
-
-    row = cursor.fetchone()
-    conn.close()
-
+        FROM {table_name('game_stats')}
+    """
+    row = run_query(sql, fetchone=True)
     total_games = row[0] if row and row[0] is not None else 0
-
     return total_games
 
 
-def get_current_rotation(cursor):
-    cursor.execute("SELECT MAX(rotation) FROM daily_game")
-    result = cursor.fetchone()[0]
-    return result if result is not None else 0
+def get_current_rotation():
+    sql = f"SELECT MAX(rotation) FROM {table_name('daily_game')}"
+    row = run_query(sql, fetchone=True)
+    result = row[0] if row and row[0] is not None else 0
+    return result
 
 
-def get_used_countries(cursor, rotation):
-    cursor.execute("SELECT country FROM daily_game WHERE rotation = ?", (rotation,))
-    return {row[0] for row in cursor.fetchall()}
+def get_used_countries(rotation):
+    sql = f"SELECT country FROM {table_name('daily_game')} WHERE rotation = %s"
+    rows = run_query(sql, (rotation,), fetchall=True)
+    return {r[0] for r in rows} if rows else set()
 
 
 def get_today_country():
-    conn = get_db_connection()
-    cursor = conn.cursor()
     today = date.today().isoformat()
 
     # Check if today's game is already assigned
-    cursor.execute("SELECT country FROM daily_game WHERE game_date = ?", (today,))
-    row = cursor.fetchone()
+    sql = f"SELECT country FROM {table_name('daily_game')} WHERE game_date = %s"
+    row = run_query(sql, (today,), fetchone=True)
     if row:
-        conn.close()
         return row[0]
 
-    # get all the counntries from the drop down json and compare it against the countries json
+    # get all the countries from the drop down json and compare it against the countries json
     all_countries = set(get_all_drop_down_options())
     borderable_countries = {
         country for country in all_countries if country in border_map
     }
-    # print(f"Borderable countries: {len(borderable_countries)}")
 
     # check the rotation
-    current_rotation = get_current_rotation(cursor)
+    current_rotation = get_current_rotation()
 
     # ensure its not been used
-    used = get_used_countries(cursor, current_rotation)
+    used = get_used_countries(current_rotation)
 
     remaining = list(borderable_countries - used)
-    # print(f"Games remaining : {len(remaining)}")
 
     if not remaining:
         # All valid countries used in this rotation
@@ -404,12 +409,8 @@ def get_today_country():
 
     new_country = random.choice(remaining)
 
-    cursor.execute(
-        "INSERT INTO daily_game (game_date, country, rotation) VALUES (?, ?, ?)",
-        (today, new_country, current_rotation),
-    )
-    conn.commit()
-    conn.close()
+    insert_sql = f"INSERT INTO {table_name('daily_game')} (game_date, country, rotation) VALUES (%s, %s, %s)"
+    run_query(insert_sql, (today, new_country, current_rotation))
 
     logger.info(f"Assigned new daily country: {new_country} for date: {today}")
 
@@ -417,13 +418,9 @@ def get_today_country():
 
 
 def get_leaderboard_data():
-    conn = get_db_connection()
-    conn.row_factory = sqlite3.Row  # ✅ Ensures we can use r["country"]
-
-    cursor = conn.cursor()
-
-    # ✅ Daily stats (for today)
-    cursor.execute("""
+    # build base SQL fragments using table_name
+    tbl = table_name('country_stats')
+    daily_sql = f"""
         SELECT
             country,
             SUM(successes) AS total_successes,
@@ -433,17 +430,16 @@ def get_leaderboard_data():
                 WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
                 ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
             END AS success_rate
-        FROM country_stats
+        FROM {tbl}
         WHERE game_date = DATE('now', 'localtime')
         GROUP BY country
         HAVING total_plays > 0
         ORDER BY success_rate DESC, total_plays DESC
         LIMIT 20;
-    """)
-    daily = cursor.fetchall()
+    """
+    daily = run_query(daily_sql, fetchall=True)
 
-    # ✅ All-time stats
-    cursor.execute("""
+    all_sql = f"""
         SELECT
             country,
             SUM(successes) AS total_successes,
@@ -453,23 +449,21 @@ def get_leaderboard_data():
                 WHEN (SUM(successes) + SUM(failures)) = 0 THEN 0
                 ELSE (CAST(SUM(successes) AS FLOAT) * 100.0 / (SUM(successes) + SUM(failures)))
             END AS success_rate
-        FROM country_stats
+        FROM {tbl}
         GROUP BY country
         HAVING total_plays > 0
         ORDER BY success_rate DESC, total_plays DESC
         LIMIT 100;
-    """)
-    all_time = cursor.fetchall()
+    """
+    all_time = run_query(all_sql, fetchall=True)
 
-    conn.close()
-
-    # ✅ Convert SQLite rows to JSON-safe dicts
+    # Convert rows (tuples) to dicts for compatibility
     def format_data(rows):
         return [
             {
-                "country": r["country"],
-                "success_rate": round(r["success_rate"], 1),
-                "total_guesses": int(r["total_plays"]),
+                "country": r[0],
+                "success_rate": round(r[4], 1),
+                "total_guesses": int(r[3]),
             }
             for r in rows
         ]
@@ -501,25 +495,14 @@ def record_world_leaderboard_result(success: bool, player_uid: str = None):
     uk = pytz.timezone("Europe/London")
     game_date = datetime.now(uk).date()
 
-    # Lookup user location
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     # If player_uid provided, skip if already recorded for this player/date
     if player_uid:
-        cursor.execute(
-            "SELECT 1 FROM player_results WHERE game_date = ? AND player_uid = ?",
-            (game_date, player_uid),
-        )
-
-        # If already recorded, skip
-        if cursor.fetchone():
+        sql = f"SELECT 1 FROM {table_name('player_results')} WHERE game_date = %s AND player_uid = %s"
+        existing = run_query(sql, (game_date, player_uid), fetchone=True)
+        if existing:
             logger.info(
                 f"Skipping world leaderboard update for already-recorded player {player_uid} on {game_date}"
             )
-            conn.close()
-
-            # Default return values
             return {
                 "player_country": country,
                 "player_region": region,
@@ -531,30 +514,23 @@ def record_world_leaderboard_result(success: bool, player_uid: str = None):
         logger.info(
             f"Updating country stats for user location: {country}, {region}, {city}"
         )
-
-        # Update or insert record for today + location
-        cursor.execute(
-            """
-            INSERT INTO country_stats (game_date, country, region, city, plays, successes, failures)
-            VALUES (?, ?, ?, ?, 1, ?, ?)
+        sql = f"""
+            INSERT INTO {table_name('country_stats')} (game_date, country, region, city, plays, successes, failures)
+            VALUES (%s, %s, %s, %s, 1, %s, %s)
             ON CONFLICT(game_date, country, region, city)
             DO UPDATE SET 
-                plays = plays + 1,
-                successes = successes + excluded.successes,
-                failures = failures + excluded.failures
-        """,
-            (
-                game_date,
-                country,
-                region,
-                city,
-                1 if success else 0,
-                0 if success else 1,
-            ),
-        )
-
-        conn.commit()
-        conn.close()
+                plays = {table_name('country_stats')}.plays + 1,
+                successes = {table_name('country_stats')}.successes + EXCLUDED.successes,
+                failures = {table_name('country_stats')}.failures + EXCLUDED.failures
+        """
+        run_query(sql, (
+            game_date,
+            country,
+            region,
+            city,
+            1 if success else 0,
+            0 if success else 1,
+        ))
 
     return {"player_country": country, "player_region": region, "player_city": city}
 
@@ -562,26 +538,18 @@ def record_world_leaderboard_result(success: bool, player_uid: str = None):
 # Load daily game state for a player
 def load_daily_game_state(player_uid):
     today = date.today().isoformat()
-
-    # Lookup user location
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    row = cursor.execute("""
+    sql = f"""
         SELECT
             guess_history, 
             wrong_guesses, 
             guessed_main_country,
             game_over 
         FROM 
-            player_daily_state 
+            {table_name('player_daily_state')} 
         WHERE 
-            player_uid=? AND game_date=?
-        """,
-        (player_uid, today))
-    
-    row = cursor.fetchone()
-    conn.close()
+            player_uid=%s AND game_date=%s
+    """
+    row = run_query(sql, (player_uid, today), fetchone=True)
 
     if row:
         resp = {
@@ -597,13 +565,8 @@ def load_daily_game_state(player_uid):
 # Save daily game state for a player
 def save_daily_game_state(player_uid, game_over=False):
     today = date.today().isoformat()
-
-    # Lookup user location
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        INSERT INTO player_daily_state (
+    sql = f'''
+        INSERT INTO {table_name('player_daily_state')} (
             player_uid, 
             game_date, 
             guess_history, 
@@ -612,26 +575,23 @@ def save_daily_game_state(player_uid, game_over=False):
             hard_mode,
             game_over,
             game_result_recorded
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT(player_uid, game_date) DO UPDATE SET
-            guess_history = ?,
-            wrong_guesses = ?,
-            game_over = ?
-        ''',
-        (
-            player_uid,
-            today,
-            json.dumps(session["guess_history"] or []),
-            json.dumps(session["wrong_guesses"] or []), 
-            bool(session["guessed_main_country"]),
-            bool(session.get("hard_mode", False)),
-            bool(game_over),
-            bool(session.get("game_result_recorded", False)),
-            json.dumps(session["guess_history"] or []),
-            json.dumps(session["wrong_guesses"] or []),
-            bool(game_over)
-        )
+            guess_history = %s,
+            wrong_guesses = %s,
+            game_over = %s
+        '''
+    params = (
+        player_uid,
+        today,
+        json.dumps(session.get("guess_history", []) or []),
+        json.dumps(session.get("wrong_guesses", []) or []),
+        bool(session.get("guessed_main_country", False)),
+        bool(session.get("hard_mode", False)),
+        bool(game_over),
+        bool(session.get("game_result_recorded", False)),
+        json.dumps(session.get("guess_history", []) or []),
+        json.dumps(session.get("wrong_guesses", []) or []),
+        bool(game_over),
     )
-
-    conn.commit()
-    conn.close()
+    run_query(sql, params)

@@ -118,4 +118,38 @@ Leaflet.js for interactive mapping.
 
 Inspired by Wordle.
 
+---
+
+## 🗃️ Postgres Migration & Utilities
+
+The codebase now supports using PostgreSQL as an alternative to the embedded SQLite
+file. You can keep **dev**, **uat** and **prod** data in the *same* database by
+prefixing table names with the `FLASK_ENV` value (e.g. `uat_player_stats`).
+
+**Configuration:**
+
+- Set `DB_TYPE=postgres` and provide a connection string in `POSTGRES_DSN` or
+  `DATABASE_URL`.
+- Tables are created automatically with the appropriate prefix; existing
+  SQLite-based functions will continue to work once the environment variables
+  are set.
+
+**Helper scripts (in `scripts/`):**
+
+| Script                             | Purpose |
+|------------------------------------|---------|
+| `validate_postgres_connection.py`  | Simple check that the Postgres server is reachable, prints version, time,
+|                                    | and any environment-specific `player_stats` row count. |
+| `migrate_sqlite_to_postgres.py`    | Copy all tables and data from `db/games.db` into Postgres, adding the
+|                                    | current environment prefix. Intended for one-off migrations. |
+
+Usage example::
+
+    DB_TYPE=postgres FLASK_ENV=uat POSTGRES_DSN="postgres://user:pass@host/db" python scripts/validate_postgres_connection.py
+    DB_TYPE=postgres FLASK_ENV=uat POSTGRES_DSN="..." python scripts/migrate_sqlite_to_postgres.py
+
+The `game_database_connections` module contains abstraction helpers (`run_query`,
+`table_name`) so much of the application logic works identically against both
+backends.
+
 
