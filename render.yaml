@@ -2,7 +2,7 @@ services:
   - type: web
     name: bordle
     env: python
-    pythonVersion: 3.13
+    pythonVersion: 3.13.0  # Explicitly pin to 3.13, not just "3.13"
     buildCommand: pip install --default-timeout=120 --retries 5 --prefer-binary -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
