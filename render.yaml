@@ -2,8 +2,8 @@ services:
   - type: web
     name: bordle
     env: python
-    pythonVersion: 3.11
-    buildCommand: pip install --default-timeout=120 --retries 5 --only-binary=greenlet -r requirements.txt
+    pythonVersion: 3.13
+    buildCommand: pip install --default-timeout=120 --retries 5 --prefer-binary -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: FLASK_ENV
@@ -12,8 +12,6 @@ services:
         value: postgres
       - key: PIP_DEFAULT_TIMEOUT
         value: "120"
-    # Increase build timeout from default 30 min to 60 min
-    # Helps with heavy dependencies like geopandas that compile from source
     buildTimeout: 3600
     preDeployCommand: |
       echo "Build complete"
