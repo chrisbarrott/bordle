@@ -26,6 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Optionally load global border outlines (no fill)
   function addBorderOutlines(url) {
+    // Blue background for ocean (always)
+    document.getElementById("map").style.background = "#67b1fc";
+  
     // Fetch and render a single GeoJSON outlines file from the static folder
     fetch(url)
       .then((r) => {
@@ -36,6 +39,24 @@ document.addEventListener("DOMContentLoaded", () => {
         L.geoJSON(geo, { style: { color: '#888', weight: 1, fillOpacity: 0 } }).addTo(map);
       })
       .catch(() => {});
+
+    // Load all countries in white as base layer
+    fetch('/data/countries.geojson')
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load countries');
+        return r.json();
+      })
+      .then((geo) => {
+        L.geoJSON(geo, {
+          style: {
+            color: "#999",        // Gray border
+            fillColor: "#ffffff", // White fill
+            weight: 1,
+            fillOpacity: 0.8,
+          },
+        }).addTo(map);
+      })
+      .catch(() => console.log("[Map] Could not load base countries layer"));  
   }
 
   // Expose for external callers (e.g., hint prompt)
