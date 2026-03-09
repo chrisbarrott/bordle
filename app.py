@@ -20,6 +20,7 @@ from services.game_database_connections import (
     get_games_today,
     get_leaderboard_data,
     get_total_games,
+    init_db,
 )
 from services.game_logic import (
     get_or_create_player_uid,
@@ -41,6 +42,9 @@ logger = setup_logger()
 
 # Setup Flask app
 app = Flask(__name__)
+
+# Initialize database tables on startup
+init_db()
 
 # Ensure .geojson files are served with a geo+json MIME type
 mimetypes.add_type('application/geo+json', '.geojson')
