@@ -36,12 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return r.json();
       })
       .then((geo) => {
-        L.geoJSON(geo, { style: { color: '#888', weight: 1, fillOpacity: 0 } }).addTo(map);
+        L.geoJSON(geo, { style: { color: '#777', weight: 1, fillOpacity: 0 } }).addTo(map);
       })
       .catch(() => {});
 
     // Load all countries in white as base layer
-    fetch('/data/countries.geojson')
+    fetch('/static/map_data/border_outlines.geojson')
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load countries');
         return r.json();
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((geo) => {
         L.geoJSON(geo, {
           style: {
-            color: "#999",        // Gray border
+            color: "#5f5f5f",     // Gray border
             fillColor: "#ffffff", // White fill
             weight: 1,
             fillOpacity: 0.8,
