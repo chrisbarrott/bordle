@@ -141,17 +141,24 @@ def cleanup_old_daily_games(days: int = 30):
     """
     Deletes in-progress daily game state older than N days.
     """
-    sql = f"""
-        DELETE FROM {table_name('player_daily_state')}
-        WHERE game_date < date('now', %s)
-    """
-    # run_query will convert %s to ? for sqlite
-    params = (f"-{days} days",)
     conn = get_db_connection()
     cursor = conn.cursor()
-    if DB_TYPE != 'postgres':
-        sql = sql.replace('%s', '?')
-    cursor.execute(sql, params)
+    
+    if DB_TYPE == 'postgres':
+        # PostgreSQL: CURRENT_DATE - INTERVAL
+        sql = f"""
+            DELETE FROM {table_name('player_daily_state')}
+            WHERE game_date < CURRENT_DATE - INTERVAL '{days} days'
+        """
+        cursor.execute(sql)
+    else:
+        # SQLite: date('now', ...)
+        sql = f"""
+            DELETE FROM {table_name('player_daily_state')}
+            WHERE game_date < date('now', ?)
+        """
+        cursor.execute(sql, (f"-{days} days",))
+    
     deleted = cursor.rowcount
     conn.commit()
     conn.close()
