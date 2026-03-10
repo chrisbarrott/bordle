@@ -222,3 +222,23 @@ html, body {
   font-size: 22px;
   cursor: pointer;
 }
+
+.stats-fix-popup {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  font-size: 0.875rem;
+  font-weight: 500;
+  z-index: 9999;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

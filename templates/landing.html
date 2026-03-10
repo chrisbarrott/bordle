@@ -166,7 +166,11 @@
       </ul>
     </div>
   </div>
-    
+
+  <div id="stats-fix-popup" class="stats-fix-popup" style="display: none;">
+    🛠️ Stats & streaks are now more reliable!
+    <span id="close-stats-fix" style="cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</span>
+  </div>
 </body>
 </html>
 
@@ -179,7 +183,21 @@
 </script>
 <!-- Required for how to play modal -->
 
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const popup = document.getElementById('stats-fix-popup');
+    const closeBtn = document.getElementById('close-stats-fix');
 
+    if (!localStorage.getItem('statsFixDismissed')) {
+      popup.style.display = 'flex';
+    }
+
+    closeBtn.addEventListener('click', function() {
+      popup.style.display = 'none';
+      localStorage.setItem('statsFixDismissed', 'true');
+    });
+  });
+</script>
 
 <script>
   // Setup right hamburger menu on landing page
