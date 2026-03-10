@@ -2,7 +2,7 @@ import json
 import os
 import random
 import sqlite3
-from flask import request, session
+from flask import session
 import pytz
 
 from datetime import date, datetime
@@ -123,6 +123,19 @@ def init_db():
         )
     """)
 
+    # Per-player aggregated stats (migration target for client-side stats)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player_stats (
+            player_uid TEXT PRIMARY KEY,
+            games_played INTEGER DEFAULT 0,
+            games_won INTEGER DEFAULT 0,
+            current_streak INTEGER DEFAULT 0,
+            best_streak INTEGER DEFAULT 0,
+            migrated INTEGER DEFAULT 0,
+            last_updated DATE
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -188,6 +201,106 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
 
     conn.commit()
     conn.close()
+
+
+def get_player_stats(player_uid: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT games_played, games_won, current_streak, best_streak, migrated FROM player_stats WHERE player_uid = ?",
+        (player_uid,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        result = {
+            "games_played": row[0] or 0,
+            "games_won": row[1] or 0,
+            "current_streak": row[2] or 0,
+            "best_streak": row[3] or 0,
+            "migrated": bool(row[4]),
+        }
+        logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
+        return result
+    
+    logger.debug(f"[GET_PLAYER_STATS] No stats found for {player_uid}")
+    return None
+
+
+def migrate_player_stats(player_uid: str, stats: dict):
+    """Merge client-side stats into server-side `player_stats` table.
+
+    This operation is idempotent per-player: if `migrated` is set, we skip to avoid double-counting.
+    """
+    logger.info(f"[MIGRATION] Starting migration for player {player_uid}")
+    logger.info(f"[MIGRATION] Client-side stats received: {stats}")
+    
+    existing = get_player_stats(player_uid)
+    logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if existing and existing.get("migrated"):
+        logger.warning(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
+        conn.close()
+        return {"status": "skipped", "reason": "already_migrated"}
+
+    # Prepare merge values
+    games_played = int(stats.get("gamesPlayed", 0))
+    games_won = int(stats.get("gamesWon", 0))
+    current_streak = int(stats.get("currentStreak", 0))
+    best_streak = int(stats.get("bestStreak", current_streak))
+
+    logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
+
+    if existing:
+        # Simple merge: take maxima for streaks, sum totals
+        merged_played = (existing.get("games_played", 0) or 0) + games_played
+        merged_won = (existing.get("games_won", 0) or 0) + games_won
+        merged_current_streak = max(existing.get("current_streak", 0) or 0, current_streak)
+        merged_best_streak = max(existing.get("best_streak", 0) or 0, best_streak)
+
+        logger.info(f"[MIGRATION] Merging existing and client stats: played {existing.get('games_played')} + {games_played} = {merged_played}, won {existing.get('games_won')} + {games_won} = {merged_won}")
+
+        cursor.execute(
+            """
+            UPDATE player_stats SET
+                games_played = ?,
+                games_won = ?,
+                current_streak = ?,
+                best_streak = ?,
+                migrated = 1,
+                last_updated = date('now', 'localtime')
+            WHERE player_uid = ?
+            """,
+            (
+                merged_played,
+                merged_won,
+                merged_current_streak,
+                merged_best_streak,
+                player_uid,
+            ),
+        )
+        logger.info(f"[MIGRATION] Updated existing player stats: {player_uid}")
+    else:
+        logger.info(f"[MIGRATION] No existing stats found. Creating new record for {player_uid}")
+        cursor.execute(
+            """
+            INSERT INTO player_stats (
+                player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated
+            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'))
+            """,
+            (player_uid, games_played, games_won, current_streak, best_streak),
+        )
+        logger.info(f"[MIGRATION] Inserted new player stats: {player_uid}")
+
+    conn.commit()
+    conn.close()
+
+    logger.info(f"[MIGRATION] ✅ Migration complete for player {player_uid}")
+    return {"status": "ok"}
 
 
 def get_game_number():

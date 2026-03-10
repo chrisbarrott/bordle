@@ -33,6 +33,7 @@ import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
+from services.game_database_connections import migrate_player_stats, get_player_stats
 
 
 # Setup logger
@@ -381,6 +382,60 @@ def api_stats():
     return jsonify(stats)
 
 
+@app.route('/api/migrate_stats', methods=['POST'])
+def api_migrate_stats():
+    try:
+        data = request.get_json(force=True)
+
+        # Prefer cookie value for player_uid; allow client to include it as fallback
+        player_uid = request.cookies.get('player_uid') or data.get('player_uid')
+
+        logger.info(f"[API_MIGRATE] Request received from IP: {request.remote_addr}")
+        logger.info(f"[API_MIGRATE] Player UID from cookie: {request.cookies.get('player_uid')}")
+        logger.info(f"[API_MIGRATE] Final player_uid: {player_uid}")
+
+        if not player_uid:
+            logger.warning("[API_MIGRATE] ❌ No player_uid found in cookie or payload")
+            return jsonify({"status": "error", "message": "player_uid required in cookie or payload"}), 400
+
+        stats = data.get('stats') or {}
+        logger.info(f"[API_MIGRATE] Stats payload: {stats}")
+
+        # Basic validation
+        if not isinstance(stats, dict):
+            logger.error(f"[API_MIGRATE] ❌ Invalid stats payload type: {type(stats)}")
+            return jsonify({"status": "error", "message": "invalid stats payload"}), 400
+
+        logger.info(f"[API_MIGRATE] Starting migration for {player_uid}")
+        res = migrate_player_stats(player_uid, stats)
+        logger.info(f"[API_MIGRATE] ✅ Migration result: {res}")
+
+        return jsonify(res)
+    except Exception as e:
+        logger.error(f"[API_MIGRATE] ❌ Error migrating stats: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": "internal error"}), 500
+
+
+@app.route('/api/player_stats_debug', methods=['GET'])
+def debug_player_stats():
+    """Debug endpoint to check current player stats and migration status."""
+    player_uid = request.cookies.get('player_uid')
+    
+    if not player_uid:
+        return jsonify({"status": "error", "message": "no player_uid cookie found"}), 400
+    
+    logger.info(f"[DEBUG_STATS] Checking stats for player {player_uid}")
+    
+    stats = get_player_stats(player_uid)
+    
+    if stats:
+        logger.info(f"[DEBUG_STATS] ✅ Found stats: {stats}")
+        return jsonify({"player_uid": player_uid, "stats": stats, "status": "found"})
+    else:
+        logger.info(f"[DEBUG_STATS] ⚠️ No stats found for {player_uid}")
+        return jsonify({"player_uid": player_uid, "stats": None, "status": "not_found"})
+
+
 # Added observability for WhatsApp share events
 @app.route("/api/observability/share", methods=["POST"])
 def log_share_event():
@@ -402,6 +457,27 @@ def log_share_event():
     logger.info(json.dumps(whatsapp_share_event))
 
     return jsonify({"status": "ok"}), 200
+
+
+@app.route("/api/observability/player_recovery", methods=["POST"])
+def log_player_recovery():
+    """Log when a player_uid is recovered from localStorage/IndexedDB instead of cookie."""
+    try:
+        data = request.get_json(force=True)
+        
+        recovery_event = {
+            "event": "PLAYER_UID_RECOVERY",
+            "player_uid": data.get("player_uid"),
+            "source": data.get("source"),  # 'localStorage', 'indexeddb', 'generated'
+            "timestamp": data.get("timestamp"),
+            "ip_address": request.remote_addr,
+        }
+        logger.warning(f"[PLAYER_RECOVERY] {json.dumps(recovery_event)}")
+        
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        logger.error(f"[PLAYER_RECOVERY] Error logging recovery: {e}")
+        return jsonify({"status": "ok"}), 200  # Always return 200 (non-critical)
 
 
 if __name__ == "__main__":
