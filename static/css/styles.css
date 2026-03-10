@@ -155,6 +155,7 @@ input:checked + .slider:before {
   position: relative;
   overflow: hidden;
   z-index: 0;
+  box-sizing: border-box;
 }
 
 html, body {

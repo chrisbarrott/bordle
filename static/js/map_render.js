@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // White background instead of tiles
-  document.getElementById("map").style.background = "#ffffff";
+  // document.getElementById("map").style.background = "#ffffff";
 
   // Helper function to add GeoJSON layers with a specific color
   function addLayer(shape, color) {
@@ -26,8 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Optionally load global border outlines (no fill)
   function addBorderOutlines(url) {
+    // Creates a full-world blue rectangle
+    const worldBounds = [[-85, -180], [85, 180]];
+    L.rectangle(worldBounds, {
+      fillColor: '#67b1fc',
+      fillOpacity: 1,
+      weight: 0
+    }).addTo(map).bringToBack();
+
     // Blue background for ocean (always)
-    document.getElementById("map").style.background = "#67b1fc";
+    // document.getElementById("map").style.background = "#67b1fc";
   
     // Fetch and render a single GeoJSON outlines file from the static folder
     fetch(url)
