@@ -23,20 +23,27 @@
   <!--  Google friendly icon -->
   <link rel="icon" href="/static/images/bordle_logo.png" type="image/x-icon">
   
-  <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
-    <img src="{{ url_for('static', filename='images/how_to_play_icon.png') }}" alt="howToPlay" 
-        style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleHowToPlay()">
+  <div class="absolute top-4 right-4 z-50">
+    <button id="hamburger-right-btn" class="p-2 hover:bg-gray-200 rounded-lg transition-all duration-200">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
 
-    <!-- Stats Icon Button -->
-    <!-- <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="Stats" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleStats()"> -->
-    
-    <img src="{{ url_for('static', filename='images/stats_icon.png') }}" alt="leaderboard" 
-      style="width: 30px; height: 30px; cursor: pointer;" onclick="toggleLeaderboard()">
+    <div id="nav-menu-right" class="hidden absolute top-12 right-0 bg-white rounded-lg shadow-lg p-2 w-48 z-50">
+      <button onclick="toggleHowToPlay()" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+        ❓ How to Play
+      </button>
+      <a href="/stats" class="w-full block text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+        📊 Stats
+      </a>
+      <a href="/contact" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-all duration-200">
+        ✉️ Contact & Support
+      </a>
+    </div>
   </div>
 </head>
 
-{% include 'components/game_stats_modal.html' %}
 {% include "components/game_how_to_play_modal.html" %}
 
 
@@ -86,10 +93,6 @@
 </style>
 
 <body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-6">
-
-    {% if stats is defined %}
-        {% include 'components/game_stats_modal.html' %}
-    {% endif %}
   <!-- Logo -->
   <img src="{{ url_for('static', filename='images/bordle_logo.png') }}"
        alt="BORDLE Logo" class="w-64 mb-8">
@@ -131,7 +134,7 @@
 
   <!-- Version Badge -->
   <div id="version-badge">
-    🚀 v3.2.2
+    🚀 v3.2.4
   </div>
 
   <!-- Release Notes Modal -->
@@ -140,6 +143,8 @@
       <span id="close-release-notes">&times;</span>
       <h2>🧾 Release Notes</h2>
       <ul>
+        <li><strong>v3.2.4</strong> – Fixed a bug with user streaks 14/02/2026</li>
+        <li><strong>v3.2.3</strong> – Added contact page and buy me a coffee 06/01/2026</li>
         <li><strong>v3.2.2</strong> – Fixing game session into cookies to make games persistent. 04/01/2026</li>
         <li><strong>v3.2.1</strong> – Added feature where border lines are displayed in an easy mode. 24/12/2025</li>
         <li><strong>v3.1.2</strong> – Added backend observability update. 16/12/2025</li> 
@@ -173,22 +178,28 @@
 </script>
 <!-- Required for how to play modal -->
 
-<!-- Required for loading stats modal -->
-<script>
-  function toggleStats() {
-    const modal = document.getElementById("gameStatsModal");
-    modal.classList.toggle("hidden");
-  }
-</script>
-<!-- Required for loading stats modal -->
 
-<!-- Required for loading leaderboard modal -->
+
 <script>
-  function toggleLeaderboard() {
-    window.location.href = "/stats";
-  }
+  // Setup right hamburger menu on landing page
+  document.addEventListener('DOMContentLoaded', function() {
+    const hamburgerRightBtn = document.getElementById('hamburger-right-btn');
+    const navMenuRight = document.getElementById('nav-menu-right');
+
+    if (hamburgerRightBtn && navMenuRight) {
+      hamburgerRightBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navMenuRight.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('#hamburger-right-btn') && !event.target.closest('#nav-menu-right')) {
+          navMenuRight.classList.add('hidden');
+        }
+      });
+    }
+  });
 </script>
-<!-- Required for loading leaderboard modal -->
 
 <script>
   const badge = document.getElementById('version-badge');

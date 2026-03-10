@@ -1,7 +1,7 @@
 # app.py
 from datetime import date, timedelta
 import os
-import uuid
+
 from flask import (
     Flask,
     jsonify,
@@ -27,6 +27,7 @@ from services.game_logic import (
     get_game_state,
     process_guess,
     reset_game,
+    send_contact_email,
 )
 import json
 from dotenv import load_dotenv
@@ -215,6 +216,49 @@ def stats():
         today_success_rate=today_success_rate,
         game_number=game_number,
     )
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
+
+
+@app.route("/contact/submit", methods=["POST"])
+def contact_submit():
+    try:
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        subject = request.form.get("subject", "").strip()
+        message = request.form.get("message", "").strip()
+
+        # Validate form data
+        if not all([name, email, subject, message]):
+            return jsonify({"status": "error", "message": "All fields are required"}), 400
+
+        # Log the contact form submission
+        contact_event = {
+            "event": "CONTACT_FORM_SUBMISSION",
+            "name": name,
+            "email": email,
+            "subject": subject,
+            "message": message,
+            "timestamp": date.today().isoformat(),
+            "player_uid": request.cookies.get("player_uid", "anonymous"),
+        }
+        logger.info(json.dumps(contact_event))
+
+        # Send email if configured
+        try:
+            send_contact_email(name, email, subject, message)
+        except Exception as e:
+            logger.error(f"Failed to send contact email: {str(e)}")
+            # Continue anyway - email is optional
+
+        return jsonify({"status": "success", "message": "Message received! Thank you for your feedback."}), 200
+
+    except Exception as e:
+        logger.error(f"Error processing contact form: {str(e)}")
+        return jsonify({"status": "error", "message": "An error occurred. Please try again."}), 500
 
 
 @app.route("/submit", methods=["POST"])
