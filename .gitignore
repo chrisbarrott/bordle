@@ -10,3 +10,5 @@ scripts/gen_secret.py
 scripts/get_stats_queries.sql
 scripts/logging_test.py
 services/__pycache__/*
+db/games_backup.db
+db/games_pre_stats.db
