@@ -296,10 +296,10 @@ def migrate_player_stats(player_uid: str, stats: dict):
         cursor.execute(
             """
             INSERT INTO player_stats (
-                player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated
-            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'))
+                player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated, player_country, player_city
+            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'), ?, ?)
             """,
-            (player_uid, games_played, games_won, current_streak, best_streak),
+            (player_uid, games_played, games_won, current_streak, best_streak, player_country, player_city),
         )
 
     conn.commit()
