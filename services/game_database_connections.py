@@ -232,18 +232,21 @@ def migrate_player_stats(player_uid: str, stats: dict):
     """Merge client-side stats into server-side `player_stats` table.
 
     This operation is idempotent per-player: if `migrated` is set, we skip to avoid double-counting.
-    """
-    logger.info(f"[MIGRATION] Starting migration for player {player_uid}")
-    logger.info(f"[MIGRATION] Client-side stats received: {stats}")
-    
+    """    
     existing = get_player_stats(player_uid)
     logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Grab location from IP
+    player_country, player_city = "Unknown", "Unknown"
+    user_ip = get_user_ip()
+    if user_ip:
+        player_country, region, player_city = get_user_location(user_ip)
+
     if existing and existing.get("migrated"):
-        logger.warning(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
+        logger.info(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
         conn.close()
         return {"status": "skipped", "reason": "already_migrated"}
 
@@ -272,7 +275,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
                 current_streak = ?,
                 best_streak = ?,
                 migrated = 1,
-                last_updated = date('now', 'localtime')
+                last_updated = date('now', 'localtime'),
+                player_country = ?,
+                player_city = ?
             WHERE player_uid = ?
             """,
             (
@@ -281,6 +286,8 @@ def migrate_player_stats(player_uid: str, stats: dict):
                 merged_current_streak,
                 merged_best_streak,
                 player_uid,
+                player_country,
+                player_city,
             ),
         )
         logger.info(f"[MIGRATION] Updated existing player stats: {player_uid}")
@@ -294,7 +301,6 @@ def migrate_player_stats(player_uid: str, stats: dict):
             """,
             (player_uid, games_played, games_won, current_streak, best_streak),
         )
-        logger.info(f"[MIGRATION] Inserted new player stats: {player_uid}")
 
     conn.commit()
     conn.close()

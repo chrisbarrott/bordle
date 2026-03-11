@@ -390,10 +390,6 @@ def api_migrate_stats():
         # Prefer cookie value for player_uid; allow client to include it as fallback
         player_uid = request.cookies.get('player_uid') or data.get('player_uid')
 
-        logger.info(f"[API_MIGRATE] Request received from IP: {request.remote_addr}")
-        logger.info(f"[API_MIGRATE] Player UID from cookie: {request.cookies.get('player_uid')}")
-        logger.info(f"[API_MIGRATE] Final player_uid: {player_uid}")
-
         if not player_uid:
             logger.warning("[API_MIGRATE] ❌ No player_uid found in cookie or payload")
             return jsonify({"status": "error", "message": "player_uid required in cookie or payload"}), 400
@@ -406,9 +402,7 @@ def api_migrate_stats():
             logger.error(f"[API_MIGRATE] ❌ Invalid stats payload type: {type(stats)}")
             return jsonify({"status": "error", "message": "invalid stats payload"}), 400
 
-        logger.info(f"[API_MIGRATE] Starting migration for {player_uid}")
         res = migrate_player_stats(player_uid, stats)
-        logger.info(f"[API_MIGRATE] ✅ Migration result: {res}")
 
         return jsonify(res)
     except Exception as e:
