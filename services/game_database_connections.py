@@ -660,7 +660,8 @@ def load_daily_game_state(player_uid):
             guess_history, 
             wrong_guesses, 
             guessed_main_country,
-            game_over 
+            game_over,
+            game_result_recorded
         FROM 
             player_daily_state 
         WHERE 
@@ -677,6 +678,7 @@ def load_daily_game_state(player_uid):
             "wrong_guesses": json.loads(row[1]),
             "guessed_main_country": bool(row[2]),
             "game_over": bool(row[3]),
+            "game_result_recorded": bool(row[4]),
         }
         return resp
     return None
