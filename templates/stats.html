@@ -173,6 +173,26 @@
     document.getElementById("userSuccessRate").innerText = `${userSuccessRate}%`;
   }
 
+  async function loadPlayerStats() {
+    try {
+      const res = await fetch("/api/player_stats");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "found") {
+          document.getElementById("gamesPlayed").innerText = data.games_played;
+          document.getElementById("gamesWon").innerText = data.games_won;
+          document.getElementById("currentStreak").innerText = data.current_streak;
+          document.getElementById("userSuccessRate").innerText = `${data.success_rate}%`;
+          return; // DB data loaded — skip localStorage fallback
+        }
+      }
+    } catch (err) {
+      console.warn("[Stats] Could not load player stats from DB, falling back to localStorage:", err);
+    }
+    // Fallback to localStorage if DB has no record yet
+    showLocalStats();
+  }
+
   async function loadGlobalStats() {
     try {
       const res = await fetch("/api/stats");
@@ -190,7 +210,7 @@
 
   window.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname !== "/stats") return;
-    showLocalStats();
+    loadPlayerStats();
     loadGlobalStats();
     loadLeaderboardData();
   });

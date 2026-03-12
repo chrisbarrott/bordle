@@ -410,6 +410,28 @@ def api_migrate_stats():
         return jsonify({"status": "error", "message": "internal error"}), 500
 
 
+@app.route('/api/player_stats', methods=['GET'])
+def api_player_stats():
+    """Return the current player's stats from the database."""
+    player_uid = request.cookies.get('player_uid')
+    if not player_uid:
+        return jsonify({"status": "not_found"}), 404
+    stats = get_player_stats(player_uid)
+    if stats:
+        success_rate = round((stats["games_won"] / stats["games_played"]) * 100) if stats["games_played"] > 0 else 0
+        return jsonify({
+            "status": "found",
+            "games_played": stats["games_played"],
+            "games_won": stats["games_won"],
+            "current_streak": stats["current_streak"],
+            "best_streak": stats["best_streak"],
+            "success_rate": success_rate,
+            "player_country": stats.get("player_country", "Unknown"),
+            "player_city": stats.get("player_city", "Unknown"),
+        })
+    return jsonify({"status": "not_found"}), 404
+
+
 @app.route('/api/player_stats_debug', methods=['GET'])
 def debug_player_stats():
     """Debug endpoint to check current player stats and migration status."""
