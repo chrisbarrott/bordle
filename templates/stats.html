@@ -213,12 +213,10 @@
       if (localStorage.getItem('bordleStatsMigrated') === '1') return;
       const stats = JSON.parse(localStorage.getItem('bordleStats'));
       if (!stats) return;
-      const { playerId } = await window.PlayerPersistence.getOrCreatePlayerId();
-      if (!playerId) return;
       const res = await fetch('/api/migrate_stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_uid: playerId, stats })
+        body: JSON.stringify({ stats })
       });
       const resp = await res.json();
       if (resp.status === 'ok' || resp.status === 'skipped') {

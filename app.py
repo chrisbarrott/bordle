@@ -387,20 +387,11 @@ def api_migrate_stats():
     try:
         data = request.get_json(force=True)
 
-        cookie_player_uid = request.cookies.get('player_uid')
-        payload_player_uid = data.get('player_uid')
-
-        # Prefer payload value (from PlayerPersistence recovery) over cookie fallback
-        player_uid = payload_player_uid or cookie_player_uid
-
-        if cookie_player_uid and payload_player_uid and cookie_player_uid != payload_player_uid:
-            logger.warning(
-                f"[API_MIGRATE] player_uid mismatch cookie={cookie_player_uid} payload={payload_player_uid}; using payload"
-            )
-
+        # Cookie-only identity source
+        player_uid = request.cookies.get('player_uid')
         if not player_uid:
-            logger.warning("[API_MIGRATE] ❌ No player_uid found in cookie or payload")
-            return jsonify({"status": "error", "message": "player_uid required in cookie or payload"}), 400
+            logger.warning("[API_MIGRATE] ❌ No player_uid cookie found")
+            return jsonify({"status": "error", "message": "player_uid cookie required"}), 400
 
         stats = data.get('stats') or {}
         logger.info(f"[API_MIGRATE] Stats payload: {stats}")
@@ -436,6 +427,7 @@ def api_player_stats():
             "success_rate": success_rate,
             "player_country": stats.get("player_country", "Unknown"),
             "player_city": stats.get("player_city", "Unknown"),
+            "last_updated": stats.get("last_updated"),
         })
     return jsonify({"status": "not_found"}), 404
 

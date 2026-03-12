@@ -284,18 +284,12 @@
     localStorage.setItem(statsKey, JSON.stringify(stats));
     console.log('[LOCAL_STATS] updated', stats);
 
-    // attempt migration after update - may trigger immediately or on next load
-    if (typeof window.PlayerPersistence !== 'undefined') {
-      window.PlayerPersistence.getOrCreatePlayerId().then(({playerId}) => {
-        if (playerId) {
-          fetch('/api/migrate_stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ player_uid: playerId, stats })
-          }).catch(() => {});
-        }
-      }).catch(() => {});
-    }
+    // attempt migration after update - cookie-based identity on server
+    fetch('/api/migrate_stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stats })
+    }).catch(() => {});
   }
 
   const currentState = loadGameState();
@@ -317,26 +311,13 @@
 
       console.log('[CLIENT_MIGRATION] Found local stats:', stats);
 
-      // Use player persistence manager to get reliable player_uid
-      const { playerId, source, recovered } = await window.PlayerPersistence.getOrCreatePlayerId();
-      
-      if (!playerId) {
-        console.warn('[CLIENT_MIGRATION] ❌ Could not determine player_uid');
-        return;
-      }
-
-      console.log(`[CLIENT_MIGRATION] Using player_uid from ${source}:`, playerId);
-      if (recovered) {
-        console.log('[CLIENT_MIGRATION] 🔄 Player ID was recovered (cookie was missing)');
-      }
-
       console.log('[CLIENT_MIGRATION] Posting stats to server...');
 
       // POST to server to migrate
       fetch('/api/migrate_stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player_uid: playerId, stats })
+        body: JSON.stringify({ stats })
       })
       .then(r => {
         console.log('[CLIENT_MIGRATION] Response status:', r.status);

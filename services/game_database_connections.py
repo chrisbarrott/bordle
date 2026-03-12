@@ -268,7 +268,7 @@ def get_player_stats(player_uid: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT games_played, games_won, current_streak, best_streak, migrated, player_country, player_city FROM player_stats WHERE player_uid = ?",
+        "SELECT games_played, games_won, current_streak, best_streak, migrated, player_country, player_city, last_updated FROM player_stats WHERE player_uid = ?",
         (player_uid,)
     )
     row = cursor.fetchone()
@@ -283,6 +283,7 @@ def get_player_stats(player_uid: str):
             "migrated": bool(row[4]),
             "player_country": row[5] or "Unknown",
             "player_city": row[6] or "Unknown",
+            "last_updated": row[7],
         }
         logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
         return result
