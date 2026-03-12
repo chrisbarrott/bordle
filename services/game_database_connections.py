@@ -155,6 +155,9 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
 
     # ----- Function to record the player session result -----
 
+    # Track if this is a new result (for deduplication of stats updates)
+    is_new_result = True
+
     # If a player_uid is provided, ensure we only count once per player per day
     if player_uid:
         # Find is player already recorded for today
@@ -163,19 +166,18 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
             (today, player_uid),
         )
 
-        # If already recorded, skip
+        # If already recorded, skip stats update
         if cursor.fetchone():
             logger.info(
                 f"Skipping duplicate game result for player {player_uid} on {today}"
             )
-            conn.close()
-            return
-
-        # mark player as recorded
-        cursor.execute(
-            "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
-            (today, game_number, player_uid),
-        )
+            is_new_result = False
+        else:
+            # mark player as recorded
+            cursor.execute(
+                "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
+                (today, game_number, player_uid),
+            )
 
     # ----- Update daily aggregated stats -----
 
@@ -199,8 +201,8 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
             (today,),
         )
 
-    # ----- Update per-player stats -----
-    if player_uid:
+    # ----- Update per-player stats (only on first result of the day) -----
+    if player_uid and is_new_result:
         player_country, player_city = "Unknown", "Unknown"
         user_ip = get_user_ip()
         if user_ip:

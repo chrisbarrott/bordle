@@ -208,8 +208,33 @@
     }
   }
 
+  async function tryMigrateLocalStats() {
+    try {
+      if (localStorage.getItem('bordleStatsMigrated') === '1') return;
+      const stats = JSON.parse(localStorage.getItem('bordleStats'));
+      if (!stats) return;
+      const { playerId } = await window.PlayerPersistence.getOrCreatePlayerId();
+      if (!playerId) return;
+      const res = await fetch('/api/migrate_stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_uid: playerId, stats })
+      });
+      const resp = await res.json();
+      if (resp.status === 'ok' || resp.status === 'skipped') {
+        localStorage.setItem('bordleStatsMigrated', '1');
+        console.log('[MIGRATION] Stats migrated from stats page:', resp.status);
+        // Reload player stats from DB now that migration is done
+        loadPlayerStats();
+      }
+    } catch (e) {
+      console.warn('[MIGRATION] Stats page migration failed silently:', e);
+    }
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname !== "/stats") return;
+    tryMigrateLocalStats();
     loadPlayerStats();
     loadGlobalStats();
     loadLeaderboardData();
