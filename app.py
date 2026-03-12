@@ -387,8 +387,16 @@ def api_migrate_stats():
     try:
         data = request.get_json(force=True)
 
-        # Prefer cookie value for player_uid; allow client to include it as fallback
-        player_uid = request.cookies.get('player_uid') or data.get('player_uid')
+        cookie_player_uid = request.cookies.get('player_uid')
+        payload_player_uid = data.get('player_uid')
+
+        # Prefer payload value (from PlayerPersistence recovery) over cookie fallback
+        player_uid = payload_player_uid or cookie_player_uid
+
+        if cookie_player_uid and payload_player_uid and cookie_player_uid != payload_player_uid:
+            logger.warning(
+                f"[API_MIGRATE] player_uid mismatch cookie={cookie_player_uid} payload={payload_player_uid}; using payload"
+            )
 
         if not player_uid:
             logger.warning("[API_MIGRATE] ❌ No player_uid found in cookie or payload")

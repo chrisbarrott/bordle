@@ -79,8 +79,17 @@
     // Indicate game over state
     window.gameOver = true;
 
-    // update local stats for win
-    try { updateLocalStats(true); } catch (e) { console.warn('[LOCAL_STATS] failed to update win', e); }
+    // update local stats for win only once per game/result (prevents refresh double-count)
+    try {
+      const gameNumber = {{ game_number | tojson }};
+      const resultKey = 'bordleResultApplied:' + gameNumber + ':win';
+      if (localStorage.getItem(resultKey) !== '1') {
+        updateLocalStats(true);
+        localStorage.setItem(resultKey, '1');
+      } else {
+        console.log('[LOCAL_STATS] win result already applied for this game; skipping');
+      }
+    } catch (e) { console.warn('[LOCAL_STATS] failed to update win', e); }
 
     // Update local stats display
     const stats = JSON.parse(localStorage.getItem("bordleStats"));

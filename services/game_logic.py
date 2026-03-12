@@ -326,7 +326,6 @@ def get_game_state(session):
     if game_over and game_result_recorded is False:
         if set(correct_guesses) == set(border_names):
             # Update world leaderboard first (idempotent check), then record aggregated game result
-            
             record_world_leaderboard_result(True, player_uid)
 
             # record game result second (to ensure accurate remaining guesses)
