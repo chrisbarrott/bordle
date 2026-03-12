@@ -302,6 +302,18 @@ def migrate_player_stats(player_uid: str, stats: dict):
             (player_uid, games_played, games_won, current_streak, best_streak, player_country, player_city),
         )
 
+    # Log the final merged stats for dashboard visibility
+    player_stats = {
+        "player_uid": player_uid,
+        "games_played": games_played,
+        "games_won": games_won,
+        "current_streak": current_streak,
+        "best_streak": best_streak,
+        "player_country": player_country,
+        "player_city": player_city,
+    }
+    logger.info(json.dumps(player_stats))
+
     conn.commit()
     conn.close()
 
