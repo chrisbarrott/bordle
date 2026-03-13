@@ -741,6 +741,15 @@ def invalidate_landing_stats_cache() -> None:
         _LANDING_STATS_CACHE_TS = 0.0
 
 
+def apply_result_to_landing_stats_cache(success: bool) -> None:
+    """Keep current cache warm after a just-recorded result (no forced DB re-read)."""
+    global _LANDING_STATS_CACHE_TS
+    with _LANDING_STATS_LOCK:
+        if _LANDING_STATS_CACHE is None:
+            return
+        _LANDING_STATS_CACHE_TS = time.monotonic()
+
+
 def warm_caches() -> None:
     """Pre-populate all in-process caches.
 
@@ -832,10 +841,8 @@ def record_game_result(
 
         # Per-player stats — only on first result of the day
         if player_uid and is_new_result:
-            player_country, player_city = "Unknown", "Unknown"
-            user_ip = get_user_ip()
-            if user_ip:
-                player_country, _region, player_city = get_user_location(user_ip)
+            player_country = session.get("player_country", "Unknown")
+            player_city = session.get("player_city", "Unknown")
 
             cursor.execute(
                 f"""
@@ -873,35 +880,20 @@ def record_game_result(
                     player_city,
                 ),
             )
-
-            # Read back for logging
-            cursor.execute(
-                f"SELECT games_played, games_won, current_streak, best_streak FROM {table_name('player_stats')} WHERE player_uid = %s",
-                (player_uid,),
-            )
-            row = cursor.fetchone()
-            if row:
-                gp, gw, cs, bs = row
-                rate = round((gw / gp) * 100) if gp else 0
-                logger.info(
-                    json.dumps(
-                        {
-                            "event": "player_stats_updated",
-                            "player_uid": player_uid,
-                            "result": "win" if success else "loss",
-                            "games_played": gp,
-                            "games_won": gw,
-                            "current_streak": cs,
-                            "best_streak": bs,
-                            "success_rate": rate,
-                            "player_country": player_country,
-                            "player_city": player_city,
-                        }
-                    )
+            logger.info(
+                json.dumps(
+                    {
+                        "event": "player_stats_updated",
+                        "player_uid": player_uid,
+                        "result": "win" if success else "loss",
+                        "player_country": player_country,
+                        "player_city": player_city,
+                    }
                 )
+            )
 
         conn.commit()
-        invalidate_landing_stats_cache()
+        apply_result_to_landing_stats_cache(success)
     finally:
         conn.close()
 
