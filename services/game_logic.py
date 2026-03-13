@@ -348,6 +348,7 @@ def get_game_state(session):
 
         # Mark as recorded
         session["game_result_recorded"] = True
+        save_daily_game_state(player_uid, game_over)
 
     else:
         logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")

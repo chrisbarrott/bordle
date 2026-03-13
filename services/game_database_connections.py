@@ -323,13 +323,24 @@ def migrate_player_stats(player_uid: str, stats: dict):
     logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
 
     if existing:
-        # Simple merge: sum totals; use client streak directly (it reflects latest loss/win)
-        merged_played = (existing.get("games_played", 0) or 0) + games_played
-        merged_won = (existing.get("games_won", 0) or 0) + games_won
-        merged_current_streak = current_streak  # client is source of truth for current streak
-        merged_best_streak = max(existing.get("best_streak", 0) or 0, best_streak)
+        # Deduping merge: use highest observed totals to avoid double-counting
+        # when server already recorded today's result and client submits local stats.
+        existing_played = existing.get("games_played", 0) or 0
+        existing_won = existing.get("games_won", 0) or 0
+        existing_streak = existing.get("current_streak", 0) or 0
+        existing_best = existing.get("best_streak", 0) or 0
 
-        logger.info(f"[MIGRATION] Merging existing and client stats: played {existing.get('games_played')} + {games_played} = {merged_played}, won {existing.get('games_won')} + {games_won} = {merged_won}")
+        merged_played = max(existing_played, games_played)
+        merged_won = max(existing_won, games_won)
+        merged_current_streak = max(existing_streak, current_streak)
+        merged_best_streak = max(existing_best, best_streak)
+
+        logger.info(
+            f"[MIGRATION] Deduping merge: played max({existing_played}, {games_played})={merged_played}, "
+            f"won max({existing_won}, {games_won})={merged_won}, "
+            f"streak max({existing_streak}, {current_streak})={merged_current_streak}, "
+            f"best max({existing_best}, {best_streak})={merged_best_streak}"
+        )
 
         cursor.execute(
             """
@@ -707,7 +718,10 @@ def save_daily_game_state(player_uid, game_over=False):
         ON CONFLICT(player_uid, game_date) DO UPDATE SET
             guess_history = ?,
             wrong_guesses = ?,
-            game_over = ?
+            guessed_main_country = ?,
+            hard_mode = ?,
+            game_over = ?,
+            game_result_recorded = ?
         ''',
         (
             player_uid,
@@ -720,7 +734,10 @@ def save_daily_game_state(player_uid, game_over=False):
             bool(session.get("game_result_recorded", False)),
             json.dumps(session["guess_history"] or []),
             json.dumps(session["wrong_guesses"] or []),
-            bool(game_over)
+            bool(session["guessed_main_country"]),
+            bool(session.get("hard_mode", False)),
+            bool(game_over),
+            bool(session.get("game_result_recorded", False))
         )
     )
 
