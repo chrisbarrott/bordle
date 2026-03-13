@@ -145,9 +145,10 @@ class PostgresLoggingConnection(psycopg2.extensions.connection):
 
 
 def _get_dsn() -> str:
-    env = (ENVIRONMENT or "development").lower()
+    env = (ENVIRONMENT or "local").lower()
 
     if env in {"production", "prod"}:
+        # Deployed on Render production — prefer internal URL
         candidates = [
             "DATABASE_URL",
             "POSTGRES_DSN_PROD",
@@ -156,6 +157,7 @@ def _get_dsn() -> str:
             "DATABASE_URL_EXTERNAL",
         ]
     elif env in {"uat", "staging"}:
+        # Deployed on Render UAT — prefer internal URL
         candidates = [
             "DATABASE_URL",
             "POSTGRES_DSN_UAT",
@@ -163,7 +165,17 @@ def _get_dsn() -> str:
             "POSTGRES_DSN",
             "DATABASE_URL_EXTERNAL",
         ]
+    elif env == "development":
+        # Deployed on Render development — prefer internal URL
+        candidates = [
+            "DATABASE_URL",
+            "POSTGRES_DSN_DEV",
+            "DATABASE_URL_DEV",
+            "POSTGRES_DSN",
+            "DATABASE_URL_EXTERNAL",
+        ]
     else:
+        # local (or anything else) — running on this machine, use external URL
         candidates = [
             "DATABASE_URL_EXTERNAL",
             "POSTGRES_DSN_DEV",
@@ -265,7 +277,10 @@ class _PooledConn:
 
 
 def _env_prefixed_table_name(base: str) -> str:
-    env = (ENVIRONMENT or "").strip()
+    env = (ENVIRONMENT or "").strip().lower()
+    # "local" runs against the development Render DB, which uses "development_" prefixed tables
+    if env == "local":
+        env = "development"
     return f"{env}_{base}" if env else base
 
 
