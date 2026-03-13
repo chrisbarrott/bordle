@@ -1,4 +1,5 @@
 import json
+import ipaddress
 
 from flask import request
 import requests
@@ -77,9 +78,16 @@ def get_user_location(user_ip: str):
 
     # IP geolocation lookup
     try:
+        # Local/private IPs are not geolocatable via public API; return fast.
+        if not user_ip:
+            return country, region, city
+        ip_obj = ipaddress.ip_address(user_ip)
+        if ip_obj.is_loopback or ip_obj.is_private:
+            return country, region, city
+
         response = requests.get(
             f"http://ip-api.com/json/{user_ip}?fields=status,country,regionName,city",
-            timeout=5,
+            timeout=1,
         )
         if response.status_code == 200:
             data = response.json()

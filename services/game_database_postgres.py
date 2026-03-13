@@ -65,6 +65,10 @@ _LANDING_STATS_CACHE_TTL = 30  # seconds
 _LANDING_STATS_CACHE_TS: float = 0.0
 _LANDING_STATS_LOCK = Lock()
 
+# Daily game cache — country + game_number are fixed for the whole day
+_DAILY_GAME_CACHE: dict | None = None  # {"date": str, "country": str, "game_number": int}
+_DAILY_GAME_LOCK = Lock()
+
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as _f:
     border_map = json.load(_f)
 
@@ -564,17 +568,68 @@ def cleanup_old_daily_games(days: int = 30) -> None:
 # ---------------------------------------------------------------------------
 
 
-def get_game_number() -> int:
+def _get_daily_game_cached() -> dict:
+    """Return {'date', 'country', 'game_number'} cached for the calendar day."""
+    global _DAILY_GAME_CACHE
+
+    today = date.today().isoformat()
+
+    with _DAILY_GAME_LOCK:
+        if _DAILY_GAME_CACHE and _DAILY_GAME_CACHE["date"] == today:
+            return _DAILY_GAME_CACHE
+
+    # Cache miss — fetch both values in a single connection
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # 1. Today's country
+        cursor.execute(
+            f"SELECT country FROM {table_name('daily_game')} WHERE game_date = %s",
+            (today,),
+        )
+        row = cursor.fetchone()
+
+        if row:
+            country = row[0]
+        else:
+            # Assign a new country for today
+            all_countries = set(get_all_drop_down_options())
+            borderable = {c for c in all_countries if c in border_map}
+            current_rotation = _get_current_rotation(cursor)
+            used = _get_used_countries(cursor, current_rotation)
+            remaining = list(borderable - used)
+            if not remaining:
+                current_rotation += 1
+                remaining = list(borderable)
+            country = random.choice(remaining)
+            cursor.execute(
+                f"INSERT INTO {table_name('daily_game')} (game_date, country, rotation) VALUES (%s, %s, %s)",
+                (today, country, current_rotation),
+            )
+            conn.commit()
+            logger.info(f"Assigned new daily country: {country} for date: {today}")
+
+        # 2. Game number (same table — reuse connection)
         cursor.execute(
             f"SELECT COUNT(DISTINCT game_date) FROM {table_name('daily_game')}"
         )
-        row = cursor.fetchone()
-        return row[0] if row else 0
+        count_row = cursor.fetchone()
+        game_number = count_row[0] if count_row else 0
     finally:
         conn.close()
+
+    result = {"date": today, "country": country, "game_number": int(game_number)}
+    with _DAILY_GAME_LOCK:
+        _DAILY_GAME_CACHE = result
+    return result
+
+
+def get_game_number() -> int:
+    return _get_daily_game_cached()["game_number"]
+
+
+def get_today_country() -> str:
+    return _get_daily_game_cached()["country"]
 
 
 def _get_current_rotation(cursor) -> int:
@@ -589,42 +644,6 @@ def _get_used_countries(cursor, rotation: int) -> set:
         (rotation,),
     )
     return {row[0] for row in cursor.fetchall()}
-
-
-def get_today_country() -> str:
-    today = date.today().isoformat()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            f"SELECT country FROM {table_name('daily_game')} WHERE game_date = %s",
-            (today,),
-        )
-        row = cursor.fetchone()
-        if row:
-            return row[0]
-
-        all_countries = set(get_all_drop_down_options())
-        borderable = {c for c in all_countries if c in border_map}
-
-        current_rotation = _get_current_rotation(cursor)
-        used = _get_used_countries(cursor, current_rotation)
-        remaining = list(borderable - used)
-
-        if not remaining:
-            current_rotation += 1
-            remaining = list(borderable)
-
-        new_country = random.choice(remaining)
-        cursor.execute(
-            f"INSERT INTO {table_name('daily_game')} (game_date, country, rotation) VALUES (%s, %s, %s)",
-            (today, new_country, current_rotation),
-        )
-        conn.commit()
-        logger.info(f"Assigned new daily country: {new_country} for date: {today}")
-        return new_country
-    finally:
-        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -681,15 +700,12 @@ def get_landing_stats() -> tuple[int, int, int, int]:
         if _LANDING_STATS_CACHE is not None and (now - _LANDING_STATS_CACHE_TS) < _LANDING_STATS_CACHE_TTL:
             return _LANDING_STATS_CACHE
 
+    # game_number comes from the daily cache (shares the same connection if cold)
+    game_number = _get_daily_game_cached()["game_number"]
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            f"SELECT COUNT(DISTINCT game_date) FROM {table_name('daily_game')}"
-        )
-        row = cursor.fetchone()
-        game_number = row[0] if row else 0
-
         cursor.execute(
             f"""
             SELECT
@@ -723,6 +739,25 @@ def invalidate_landing_stats_cache() -> None:
     global _LANDING_STATS_CACHE_TS
     with _LANDING_STATS_LOCK:
         _LANDING_STATS_CACHE_TS = 0.0
+
+
+def warm_caches() -> None:
+    """Pre-populate all in-process caches.
+
+    Called at startup and at midnight so the first user of each day
+    never pays the cold-start DB cost.
+    """
+    global _LANDING_STATS_CACHE_TS
+    try:
+        ensure_schema()
+        _get_daily_game_cached()
+        # Force a fresh landing-stats fetch regardless of TTL
+        with _LANDING_STATS_LOCK:
+            _LANDING_STATS_CACHE_TS = 0.0
+        get_landing_stats()
+        logger.info("[CACHE_WARMER] caches warmed successfully")
+    except Exception as exc:
+        logger.warning(f"[CACHE_WARMER] warm_caches failed: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -1160,6 +1195,8 @@ def get_leaderboard_data() -> dict:
 
 
 def load_daily_game_state(player_uid: str) -> dict | None:
+    if not player_uid:
+        return None
     today = date.today().isoformat()
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1212,10 +1249,10 @@ def save_daily_game_state(player_uid: str, game_over: bool = False) -> None:
                 today,
                 json.dumps(session.get("guess_history") or []),
                 json.dumps(session.get("wrong_guesses") or []),
-                bool(session.get("guessed_main_country", False)),
-                bool(session.get("hard_mode", False)),
-                bool(game_over),
-                bool(session.get("game_result_recorded", False)),
+                int(bool(session.get("guessed_main_country", False))),
+                int(bool(session.get("hard_mode", False))),
+                int(bool(game_over)),
+                int(bool(session.get("game_result_recorded", False))),
                 session.get("game_number"),
             ),
         )

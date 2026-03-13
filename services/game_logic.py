@@ -191,9 +191,15 @@ def process_guess(guess, session):
     if guess not in session["guess_history"]:
         session["guess_history"].append(guess)
 
-    # Store result in the database
-    player_uid = request.cookies.get("player_uid")
-    save_daily_game_state(player_uid, False)
+    # Persist in-progress state, but skip this write if the guess ended the game.
+    # End-of-game persistence is handled in get_game_state() where result flags are set.
+    border_names = border_map.get(country_name, [])
+    game_over = session.get("remaining_guesses", 0) <= 0 or set(
+        session.get("correct_guesses", [])
+    ) == set(border_names)
+    if not game_over:
+        player_uid = request.cookies.get("player_uid")
+        save_daily_game_state(player_uid, False)
 
 
 def allowed_attempts_perc(n_borders):
@@ -326,8 +332,6 @@ def get_game_state(session):
 
     # Get player_uid from cookies if not provided
     player_uid = request.cookies.get("player_uid")
-    if game_over:
-        save_daily_game_state(player_uid, game_over)
 
     # Record result only once per session
     if game_over and game_result_recorded is False:

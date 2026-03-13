@@ -25,6 +25,7 @@ from services.game_database_postgres import (
     get_player_stats,
     load_daily_game_state,
 )
+from services.game_database_postgres import warm_caches
 from services.game_logic import (
     get_or_create_player_uid,
     initialize_game,
@@ -37,10 +38,40 @@ import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
+import threading
 
 
 # Setup logger
 logger = setup_logger()
+
+
+def _start_cache_warmer() -> None:
+    """Spawn a daemon thread: warm caches at startup, then again each UK midnight."""
+    import time
+    import pytz
+    from datetime import datetime, timedelta
+
+    def _run():
+        warm_caches()  # immediate warm-up on startup
+        while True:
+            uk = pytz.timezone("Europe/London")
+            now_uk = datetime.now(uk)
+            next_midnight = (now_uk + timedelta(days=1)).replace(
+                hour=0, minute=0, second=10, microsecond=0
+            )
+            sleep_secs = max((next_midnight - now_uk).total_seconds(), 1)
+            logger.info(f"[CACHE_WARMER] next refresh in {int(sleep_secs)}s")
+            time.sleep(sleep_secs)
+            warm_caches()
+
+    # Guard against Flask debug-mode double-reload spawning two threads
+    if not any(t.name == "cache_warmer" for t in threading.enumerate()):
+        t = threading.Thread(target=_run, name="cache_warmer", daemon=True)
+        t.start()
+        logger.info("[CACHE_WARMER] background thread started")
+
+
+_start_cache_warmer()
 
 # Setup Flask app
 app = Flask(__name__)
@@ -485,5 +516,6 @@ def log_player_recovery():
 
 
 if __name__ == "__main__":
-    if os.getenv("FLASK_ENV") == "development":
+    env = (os.getenv("FLASK_ENV") or "local").lower()
+    if env in {"local", "development"}:
         app.run(debug=True)
