@@ -1,4 +1,4 @@
-from services.game_database_connections import get_db_connection, init_db
+from services.game_database_postgres import get_db_connection, init_db
 
 
 def get_world_stats():

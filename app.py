@@ -14,12 +14,16 @@ from flask import (
     url_for,
     session,
 )
-from services.game_database_connections import (
-    get_db_connection,
+from services.game_database_postgres import (
+    ensure_schema,
     get_game_number,
     get_games_today,
+    get_landing_stats,
     get_leaderboard_data,
     get_total_games,
+    migrate_player_stats,
+    get_player_stats,
+    load_daily_game_state,
 )
 from services.game_logic import (
     get_or_create_player_uid,
@@ -33,7 +37,6 @@ import json
 from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
-from services.game_database_connections import migrate_player_stats, get_player_stats
 
 
 # Setup logger
@@ -65,6 +68,8 @@ with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
 # Landing page
 @app.route("/", methods=["GET"])
 def landing():
+    ensure_schema()
+
     if "country_name" in session:
         # Session already initialized; just show the landing page
         pass
@@ -72,13 +77,15 @@ def landing():
         # No session/game in progress
         reset_game(session)  # Optional: ensure clean start if not present
 
-    # Set game number for session handling and stats
-    game_number = get_game_number()
-    games_today, today_success_rate = get_games_today()
-    total_games = get_total_games()
+    # Fetch all landing stats in a single DB connection
+    game_number, games_today, today_success_rate, total_games = get_landing_stats()
 
-    # Add the stats props
-    bordle_stats = analytics()
+    bordle_stats = {
+        "games_today": games_today,
+        "total_games": total_games,
+        "success_rate": today_success_rate,
+        "game_number": game_number,
+    }
 
     return render_template(
         "landing.html",
@@ -112,16 +119,13 @@ def set_mode_and_play():
 
 @app.route("/check_played", methods=["POST"])
 def check_played():
-    game_number = get_game_number()
+    player_uid = request.cookies.get("player_uid")
+    if not player_uid:
+        return jsonify({"blockPlay": False})
 
-    # You need to track session/game data on the server
-    played_games = session.get("played_games", [])
-
-    if game_number in played_games:
+    state = load_daily_game_state(player_uid)
+    if state and (state.get("game_over") or state.get("game_result_recorded")):
         return jsonify({"blockPlay": True})
-
-    # Optionally add it (but might want to do this on victory instead)
-    session["played_games"] = played_games + [game_number]
 
     return jsonify({"blockPlay": False})
 
@@ -168,9 +172,13 @@ def game():
 
     # Build game state
     game_state = get_game_state(session)
-    games_today, today_success_rate = get_games_today()
-    total_games = get_total_games()
-    bordle_stats = analytics()
+    game_number, games_today, today_success_rate, total_games = get_landing_stats()
+    bordle_stats = {
+        "games_today": games_today,
+        "total_games": total_games,
+        "success_rate": today_success_rate,
+        "game_number": game_number,
+    }
 
     # Render template
     resp = make_response(
@@ -326,6 +334,9 @@ def download_db():
     if not download_user or not download_pass or not auth or auth.username != download_user or auth.password != download_pass:
         return {"error": "Unauthorized"}, 401, {"WWW-Authenticate": 'Basic realm="Download DB"'}
     
+    if os.getenv("DB_TYPE", "sqlite").lower() == "postgres":
+        return jsonify({"error": "download_db is only available for sqlite deployments"}), 400
+
     return send_file("db/games.db", as_attachment=True)
 
 
@@ -336,35 +347,12 @@ def download_csv():
 
 @app.route("/analytics")
 def analytics():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Get today's stats
-    cursor.execute(
-        "SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')"
-    )
-    row = cursor.fetchone()
-    successes_today, failures_today = row if row else (0, 0)
-
-    games_today = successes_today + failures_today
-    success_rate = (
-        round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
-    )
-
-    # Get total successes and failures across all time
-    cursor.execute("SELECT SUM(successes), SUM(failures) FROM game_stats")
-    row = cursor.fetchone()
-    total_successes, total_failures = row if row else (0, 0)
-
-    total_games = (total_successes or 0) + (total_failures or 0)
-
-    conn.close()
-
+    game_number, games_today, success_rate, total_games = get_landing_stats()
     return {
         "games_today": games_today,
         "total_games": total_games,
         "success_rate": success_rate,
-        "game_number": get_game_number(),
+        "game_number": game_number,
     }
 
 

@@ -9,7 +9,7 @@ import os
 import smtplib
 import uuid
 
-from services.game_database_connections import (
+from services.game_database_postgres import (
     get_game_number,
     get_today_country,
     init_db,
@@ -72,10 +72,14 @@ def initialize_game(session, player_uid=None):
         session["correct_guesses"] = [
             guess for guess in session["guess_history"] if guess in correct_borders
         ]
-        session["borders_remaining"] = len(correct_borders) - len(session["correct_guesses"])
+        session["borders_remaining"] = len(correct_borders) - len(
+            session["correct_guesses"]
+        )
         session["remaining_guesses"] = 5 - len(session["guess_history"])
         session["game_result"] = (
-            "Won" if session["game_over"] and set(session["correct_guesses"]) == set(correct_borders)
+            "Won"
+            if session["game_over"]
+            and set(session["correct_guesses"]) == set(correct_borders)
             else "Started"
         )
         session["hard_mode"] = in_progress.get("hard_mode", False)
@@ -108,7 +112,7 @@ def initialize_game(session, player_uid=None):
 
     # Player IP info
     session["user_ip"] = get_user_ip()
-    session["player_data"] = get_user_location(session["user_ip"])#
+    session["player_data"] = get_user_location(session["user_ip"])  #
 
     hard_mode = session.get("hard_mode", False)
     if not hard_mode:
@@ -116,7 +120,10 @@ def initialize_game(session, player_uid=None):
             session["available_options"].remove(session["country_name"])
     else:
         # Hard mode: remove main country if already guessed
-        if session.get("guessed_main_country") and session["country_name"] in session["available_options"]:
+        if (
+            session.get("guessed_main_country")
+            and session["country_name"] in session["available_options"]
+        ):
             session["available_options"].remove(session["country_name"])
 
     logger.info(f"Game initialized for player {player_uid}")
@@ -220,8 +227,8 @@ def borders_enabled_for_today(session):
         return False
 
     return (
-        borders.get("enabled") is True and
-        borders.get("game_number") == get_game_number()
+        borders.get("enabled") is True
+        and borders.get("game_number") == get_game_number()
     )
 
 
@@ -257,9 +264,9 @@ def send_contact_email(name, email, subject, message):
     {message}
 
     ---
-    Player UID: {request.cookies.get('player_uid', 'anonymous')}
-    Player Country: {session.get('player_country', 'Unknown')}
-    Player City: {session.get('player_city', 'Unknown')}
+    Player UID: {request.cookies.get("player_uid", "anonymous")}
+    Player Country: {session.get("player_country", "Unknown")}
+    Player City: {session.get("player_city", "Unknown")}
     """
         msg.attach(MIMEText(body, "plain"))
 
@@ -351,7 +358,9 @@ def get_game_state(session):
         save_daily_game_state(player_uid, game_over)
 
     else:
-        logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")
+        logger.info(
+            f"Game over: {game_over} or result recorded: {game_result_recorded}"
+        )
         game_result = session.get("game_result", "In progress")
 
     # If game is over, show all correct answers in the final map

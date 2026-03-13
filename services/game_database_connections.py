@@ -69,13 +69,15 @@ def cleanup_old_daily_games(days: int = 30):
         DELETE FROM player_daily_state
         WHERE game_date < date('now', ?)
         """,
-        (f"-{days} days",)
+        (f"-{days} days",),
     )
     deleted = cursor.rowcount
     conn.commit()
     conn.close()
 
-    logger.info(f"Cleanup: deleted {deleted} player_daily_state rows older than {days} days")
+    logger.info(
+        f"Cleanup: deleted {deleted} player_daily_state rows older than {days} days"
+    )
 
 
 def init_db():
@@ -231,8 +233,8 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
                 player_city,
                 # UPDATE values
                 1 if success else 0,  # games_won increment
-                success,              # current_streak CASE
-                success,              # best_streak CASE
+                success,  # current_streak CASE
+                success,  # best_streak CASE
                 player_country,
                 player_city,
             ),
@@ -246,19 +248,25 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
         row = cursor.fetchone()
         if row:
             games_played, games_won, current_streak, best_streak = row
-            success_rate = round((games_won / games_played) * 100) if games_played > 0 else 0
-            logger.info(json.dumps({
-                "event": "player_stats_updated",
-                "player_uid": player_uid,
-                "result": "win" if success else "loss",
-                "games_played": games_played,
-                "games_won": games_won,
-                "current_streak": current_streak,
-                "best_streak": best_streak,
-                "success_rate": success_rate,
-                "player_country": player_country,
-                "player_city": player_city,
-            }))
+            success_rate = (
+                round((games_won / games_played) * 100) if games_played > 0 else 0
+            )
+            logger.info(
+                json.dumps(
+                    {
+                        "event": "player_stats_updated",
+                        "player_uid": player_uid,
+                        "result": "win" if success else "loss",
+                        "games_played": games_played,
+                        "games_won": games_won,
+                        "current_streak": current_streak,
+                        "best_streak": best_streak,
+                        "success_rate": success_rate,
+                        "player_country": player_country,
+                        "player_city": player_city,
+                    }
+                )
+            )
 
     conn.commit()
     conn.close()
@@ -269,7 +277,7 @@ def get_player_stats(player_uid: str):
     cursor = conn.cursor()
     cursor.execute(
         "SELECT games_played, games_won, current_streak, best_streak, migrated, player_country, player_city, last_updated FROM player_stats WHERE player_uid = ?",
-        (player_uid,)
+        (player_uid,),
     )
     row = cursor.fetchone()
     conn.close()
@@ -287,7 +295,7 @@ def get_player_stats(player_uid: str):
         }
         logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
         return result
-    
+
     logger.debug(f"[GET_PLAYER_STATS] No stats found for {player_uid}")
     return None
 
@@ -296,7 +304,7 @@ def migrate_player_stats(player_uid: str, stats: dict):
     """Merge client-side stats into server-side `player_stats` table.
 
     This operation is idempotent per-player: if `migrated` is set, we skip to avoid double-counting.
-    """    
+    """
     existing = get_player_stats(player_uid)
     logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
 
@@ -310,7 +318,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
         player_country, region, player_city = get_user_location(user_ip)
 
     if existing and existing.get("migrated"):
-        logger.info(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
+        logger.info(
+            f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count."
+        )
         conn.close()
         return {"status": "skipped", "reason": "already_migrated"}
 
@@ -320,7 +330,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
     current_streak = int(stats.get("currentStreak", 0))
     best_streak = int(stats.get("bestStreak", current_streak))
 
-    logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
+    logger.info(
+        f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}"
+    )
 
     if existing:
         # Deduping merge: use highest observed totals to avoid double-counting
@@ -367,14 +379,24 @@ def migrate_player_stats(player_uid: str, stats: dict):
         )
         logger.info(f"[MIGRATION] Updated existing player stats: {player_uid}")
     else:
-        logger.info(f"[MIGRATION] No existing stats found. Creating new record for {player_uid}")
+        logger.info(
+            f"[MIGRATION] No existing stats found. Creating new record for {player_uid}"
+        )
         cursor.execute(
             """
             INSERT INTO player_stats (
                 player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated, player_country, player_city
             ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'), ?, ?)
             """,
-            (player_uid, games_played, games_won, current_streak, best_streak, player_country, player_city),
+            (
+                player_uid,
+                games_played,
+                games_won,
+                current_streak,
+                best_streak,
+                player_country,
+                player_city,
+            ),
         )
 
     # Log the final committed row for dashboard visibility
@@ -389,7 +411,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
         "games_won": final_won,
         "current_streak": final_streak,
         "best_streak": final_best,
-        "success_rate": round((final_won / final_played) * 100) if final_played > 0 else 0,
+        "success_rate": round((final_won / final_played) * 100)
+        if final_played > 0
+        else 0,
         "player_country": player_country,
         "player_city": player_city,
         "action": "update" if existing else "insert",
@@ -667,7 +691,8 @@ def load_daily_game_state(player_uid):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    row = cursor.execute("""
+    row = cursor.execute(
+        """
         SELECT
             guess_history, 
             wrong_guesses, 
@@ -679,8 +704,9 @@ def load_daily_game_state(player_uid):
         WHERE 
             player_uid=? AND game_date=?
         """,
-        (player_uid, today))
-    
+        (player_uid, today),
+    )
+
     row = cursor.fetchone()
     conn.close()
 
@@ -704,7 +730,8 @@ def save_daily_game_state(player_uid, game_over=False):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute('''
+    cursor.execute(
+        """
         INSERT INTO player_daily_state (
             player_uid, 
             game_date, 
@@ -722,12 +749,12 @@ def save_daily_game_state(player_uid, game_over=False):
             hard_mode = ?,
             game_over = ?,
             game_result_recorded = ?
-        ''',
+        """,
         (
             player_uid,
             today,
             json.dumps(session["guess_history"] or []),
-            json.dumps(session["wrong_guesses"] or []), 
+            json.dumps(session["wrong_guesses"] or []),
             bool(session["guessed_main_country"]),
             bool(session.get("hard_mode", False)),
             bool(game_over),
@@ -737,8 +764,8 @@ def save_daily_game_state(player_uid, game_over=False):
             bool(session["guessed_main_country"]),
             bool(session.get("hard_mode", False)),
             bool(game_over),
-            bool(session.get("game_result_recorded", False))
-        )
+            bool(session.get("game_result_recorded", False)),
+        ),
     )
 
     conn.commit()
