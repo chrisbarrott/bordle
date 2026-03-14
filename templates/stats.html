@@ -173,6 +173,26 @@
     document.getElementById("userSuccessRate").innerText = `${userSuccessRate}%`;
   }
 
+  async function loadPlayerStats() {
+    try {
+      const res = await fetch("/api/player_stats");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "found") {
+          document.getElementById("gamesPlayed").innerText = data.games_played;
+          document.getElementById("gamesWon").innerText = data.games_won;
+          document.getElementById("currentStreak").innerText = data.current_streak;
+          document.getElementById("userSuccessRate").innerText = `${data.success_rate}%`;
+          return; // DB data loaded — skip localStorage fallback
+        }
+      }
+    } catch (err) {
+      console.warn("[Stats] Could not load player stats from DB, falling back to localStorage:", err);
+    }
+    // Fallback to localStorage if DB has no record yet
+    showLocalStats();
+  }
+
   async function loadGlobalStats() {
     try {
       const res = await fetch("/api/stats");
@@ -188,9 +208,32 @@
     }
   }
 
+  async function tryMigrateLocalStats() {
+    try {
+      if (localStorage.getItem('bordleStatsMigrated') === '1') return;
+      const stats = JSON.parse(localStorage.getItem('bordleStats'));
+      if (!stats) return;
+      const res = await fetch('/api/migrate_stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stats })
+      });
+      const resp = await res.json();
+      if (resp.status === 'ok' || resp.status === 'skipped') {
+        localStorage.setItem('bordleStatsMigrated', '1');
+        console.log('[MIGRATION] Stats migrated from stats page:', resp.status);
+        // Reload player stats from DB now that migration is done
+        loadPlayerStats();
+      }
+    } catch (e) {
+      console.warn('[MIGRATION] Stats page migration failed silently:', e);
+    }
+  }
+
   window.addEventListener("DOMContentLoaded", () => {
     if (window.location.pathname !== "/stats") return;
-    showLocalStats();
+    tryMigrateLocalStats();
+    loadPlayerStats();
     loadGlobalStats();
     loadLeaderboardData();
   });

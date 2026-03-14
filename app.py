@@ -387,16 +387,11 @@ def api_migrate_stats():
     try:
         data = request.get_json(force=True)
 
-        # Prefer cookie value for player_uid; allow client to include it as fallback
-        player_uid = request.cookies.get('player_uid') or data.get('player_uid')
-
-        logger.info(f"[API_MIGRATE] Request received from IP: {request.remote_addr}")
-        logger.info(f"[API_MIGRATE] Player UID from cookie: {request.cookies.get('player_uid')}")
-        logger.info(f"[API_MIGRATE] Final player_uid: {player_uid}")
-
+        # Cookie-only identity source
+        player_uid = request.cookies.get('player_uid')
         if not player_uid:
-            logger.warning("[API_MIGRATE] ❌ No player_uid found in cookie or payload")
-            return jsonify({"status": "error", "message": "player_uid required in cookie or payload"}), 400
+            logger.warning("[API_MIGRATE] ❌ No player_uid cookie found")
+            return jsonify({"status": "error", "message": "player_uid cookie required"}), 400
 
         stats = data.get('stats') or {}
         logger.info(f"[API_MIGRATE] Stats payload: {stats}")
@@ -406,14 +401,35 @@ def api_migrate_stats():
             logger.error(f"[API_MIGRATE] ❌ Invalid stats payload type: {type(stats)}")
             return jsonify({"status": "error", "message": "invalid stats payload"}), 400
 
-        logger.info(f"[API_MIGRATE] Starting migration for {player_uid}")
         res = migrate_player_stats(player_uid, stats)
-        logger.info(f"[API_MIGRATE] ✅ Migration result: {res}")
 
         return jsonify(res)
     except Exception as e:
         logger.error(f"[API_MIGRATE] ❌ Error migrating stats: {e}", exc_info=True)
         return jsonify({"status": "error", "message": "internal error"}), 500
+
+
+@app.route('/api/player_stats', methods=['GET'])
+def api_player_stats():
+    """Return the current player's stats from the database."""
+    player_uid = request.cookies.get('player_uid')
+    if not player_uid:
+        return jsonify({"status": "not_found"}), 404
+    stats = get_player_stats(player_uid)
+    if stats:
+        success_rate = round((stats["games_won"] / stats["games_played"]) * 100) if stats["games_played"] > 0 else 0
+        return jsonify({
+            "status": "found",
+            "games_played": stats["games_played"],
+            "games_won": stats["games_won"],
+            "current_streak": stats["current_streak"],
+            "best_streak": stats["best_streak"],
+            "success_rate": success_rate,
+            "player_country": stats.get("player_country", "Unknown"),
+            "player_city": stats.get("player_city", "Unknown"),
+            "last_updated": stats.get("last_updated"),
+        })
+    return jsonify({"status": "not_found"}), 404
 
 
 @app.route('/api/player_stats_debug', methods=['GET'])

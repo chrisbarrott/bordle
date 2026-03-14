@@ -155,6 +155,9 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
 
     # ----- Function to record the player session result -----
 
+    # Track if this is a new result (for deduplication of stats updates)
+    is_new_result = True
+
     # If a player_uid is provided, ensure we only count once per player per day
     if player_uid:
         # Find is player already recorded for today
@@ -163,19 +166,18 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
             (today, player_uid),
         )
 
-        # If already recorded, skip
+        # If already recorded, skip stats update
         if cursor.fetchone():
             logger.info(
                 f"Skipping duplicate game result for player {player_uid} on {today}"
             )
-            conn.close()
-            return
-
-        # mark player as recorded
-        cursor.execute(
-            "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
-            (today, game_number, player_uid),
-        )
+            is_new_result = False
+        else:
+            # mark player as recorded
+            cursor.execute(
+                "INSERT INTO player_results (game_date, game_number, player_uid) VALUES (?, ?, ?)",
+                (today, game_number, player_uid),
+            )
 
     # ----- Update daily aggregated stats -----
 
@@ -199,6 +201,65 @@ def record_game_result(success: bool, remaining_countries: str, player_uid: str 
             (today,),
         )
 
+    # ----- Update per-player stats (only on first result of the day) -----
+    if player_uid and is_new_result:
+        player_country, player_city = "Unknown", "Unknown"
+        user_ip = get_user_ip()
+        if user_ip:
+            player_country, _region, player_city = get_user_location(user_ip)
+
+        cursor.execute(
+            """
+            INSERT INTO player_stats (player_uid, games_played, games_won, current_streak, best_streak, last_updated, player_country, player_city)
+            VALUES (?, 1, ?, ?, ?, date('now', 'localtime'), ?, ?)
+            ON CONFLICT(player_uid) DO UPDATE SET
+                games_played = games_played + 1,
+                games_won = games_won + ?,
+                current_streak = CASE WHEN ? THEN current_streak + 1 ELSE 0 END,
+                best_streak = CASE WHEN ? THEN MAX(best_streak, current_streak + 1) ELSE best_streak END,
+                last_updated = date('now', 'localtime'),
+                player_country = ?,
+                player_city = ?
+            """,
+            (
+                # INSERT values
+                player_uid,
+                1 if success else 0,  # games_won
+                1 if success else 0,  # current_streak (1 on first win, 0 on first loss)
+                1 if success else 0,  # best_streak
+                player_country,
+                player_city,
+                # UPDATE values
+                1 if success else 0,  # games_won increment
+                success,              # current_streak CASE
+                success,              # best_streak CASE
+                player_country,
+                player_city,
+            ),
+        )
+
+        # Read back the updated row for logging
+        cursor.execute(
+            "SELECT games_played, games_won, current_streak, best_streak FROM player_stats WHERE player_uid = ?",
+            (player_uid,),
+        )
+        row = cursor.fetchone()
+        if row:
+            games_played, games_won, current_streak, best_streak = row
+            success_rate = round((games_won / games_played) * 100) if games_played > 0 else 0
+            logger.info(json.dumps({
+                "event": "player_stats_updated",
+                "player_uid": player_uid,
+                "result": "win" if success else "loss",
+                "games_played": games_played,
+                "games_won": games_won,
+                "current_streak": current_streak,
+                "best_streak": best_streak,
+                "success_rate": success_rate,
+                "player_country": player_country,
+                "player_city": player_city,
+            }))
+
     conn.commit()
     conn.close()
 
@@ -207,7 +268,7 @@ def get_player_stats(player_uid: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT games_played, games_won, current_streak, best_streak, migrated FROM player_stats WHERE player_uid = ?",
+        "SELECT games_played, games_won, current_streak, best_streak, migrated, player_country, player_city, last_updated FROM player_stats WHERE player_uid = ?",
         (player_uid,)
     )
     row = cursor.fetchone()
@@ -220,6 +281,9 @@ def get_player_stats(player_uid: str):
             "current_streak": row[2] or 0,
             "best_streak": row[3] or 0,
             "migrated": bool(row[4]),
+            "player_country": row[5] or "Unknown",
+            "player_city": row[6] or "Unknown",
+            "last_updated": row[7],
         }
         logger.debug(f"[GET_PLAYER_STATS] Found stats for {player_uid}: {result}")
         return result
@@ -232,18 +296,21 @@ def migrate_player_stats(player_uid: str, stats: dict):
     """Merge client-side stats into server-side `player_stats` table.
 
     This operation is idempotent per-player: if `migrated` is set, we skip to avoid double-counting.
-    """
-    logger.info(f"[MIGRATION] Starting migration for player {player_uid}")
-    logger.info(f"[MIGRATION] Client-side stats received: {stats}")
-    
+    """    
     existing = get_player_stats(player_uid)
     logger.info(f"[MIGRATION] Existing server stats for {player_uid}: {existing}")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Grab location from IP
+    player_country, player_city = "Unknown", "Unknown"
+    user_ip = get_user_ip()
+    if user_ip:
+        player_country, region, player_city = get_user_location(user_ip)
+
     if existing and existing.get("migrated"):
-        logger.warning(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
+        logger.info(f"[MIGRATION] Player {player_uid} already migrated. Skipping to prevent double-count.")
         conn.close()
         return {"status": "skipped", "reason": "already_migrated"}
 
@@ -256,13 +323,24 @@ def migrate_player_stats(player_uid: str, stats: dict):
     logger.info(f"[MIGRATION] Parsed client stats: played={games_played}, won={games_won}, streak={current_streak}, best={best_streak}")
 
     if existing:
-        # Simple merge: take maxima for streaks, sum totals
-        merged_played = (existing.get("games_played", 0) or 0) + games_played
-        merged_won = (existing.get("games_won", 0) or 0) + games_won
-        merged_current_streak = max(existing.get("current_streak", 0) or 0, current_streak)
-        merged_best_streak = max(existing.get("best_streak", 0) or 0, best_streak)
+        # Deduping merge: use highest observed totals to avoid double-counting
+        # when server already recorded today's result and client submits local stats.
+        existing_played = existing.get("games_played", 0) or 0
+        existing_won = existing.get("games_won", 0) or 0
+        existing_streak = existing.get("current_streak", 0) or 0
+        existing_best = existing.get("best_streak", 0) or 0
 
-        logger.info(f"[MIGRATION] Merging existing and client stats: played {existing.get('games_played')} + {games_played} = {merged_played}, won {existing.get('games_won')} + {games_won} = {merged_won}")
+        merged_played = max(existing_played, games_played)
+        merged_won = max(existing_won, games_won)
+        merged_current_streak = max(existing_streak, current_streak)
+        merged_best_streak = max(existing_best, best_streak)
+
+        logger.info(
+            f"[MIGRATION] Deduping merge: played max({existing_played}, {games_played})={merged_played}, "
+            f"won max({existing_won}, {games_won})={merged_won}, "
+            f"streak max({existing_streak}, {current_streak})={merged_current_streak}, "
+            f"best max({existing_best}, {best_streak})={merged_best_streak}"
+        )
 
         cursor.execute(
             """
@@ -272,7 +350,9 @@ def migrate_player_stats(player_uid: str, stats: dict):
                 current_streak = ?,
                 best_streak = ?,
                 migrated = 1,
-                last_updated = date('now', 'localtime')
+                last_updated = date('now', 'localtime'),
+                player_country = ?,
+                player_city = ?
             WHERE player_uid = ?
             """,
             (
@@ -280,6 +360,8 @@ def migrate_player_stats(player_uid: str, stats: dict):
                 merged_won,
                 merged_current_streak,
                 merged_best_streak,
+                player_country,
+                player_city,
                 player_uid,
             ),
         )
@@ -289,12 +371,30 @@ def migrate_player_stats(player_uid: str, stats: dict):
         cursor.execute(
             """
             INSERT INTO player_stats (
-                player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated
-            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'))
+                player_uid, games_played, games_won, current_streak, best_streak, migrated, last_updated, player_country, player_city
+            ) VALUES (?, ?, ?, ?, ?, 1, date('now', 'localtime'), ?, ?)
             """,
-            (player_uid, games_played, games_won, current_streak, best_streak),
+            (player_uid, games_played, games_won, current_streak, best_streak, player_country, player_city),
         )
-        logger.info(f"[MIGRATION] Inserted new player stats: {player_uid}")
+
+    # Log the final committed row for dashboard visibility
+    final_played = merged_played if existing else games_played
+    final_won = merged_won if existing else games_won
+    final_streak = merged_current_streak if existing else current_streak
+    final_best = merged_best_streak if existing else best_streak
+    final_row = {
+        "event": "player_stats_migrated",
+        "player_uid": player_uid,
+        "games_played": final_played,
+        "games_won": final_won,
+        "current_streak": final_streak,
+        "best_streak": final_best,
+        "success_rate": round((final_won / final_played) * 100) if final_played > 0 else 0,
+        "player_country": player_country,
+        "player_city": player_city,
+        "action": "update" if existing else "insert",
+    }
+    logger.info(json.dumps(final_row))
 
     conn.commit()
     conn.close()
@@ -572,7 +672,8 @@ def load_daily_game_state(player_uid):
             guess_history, 
             wrong_guesses, 
             guessed_main_country,
-            game_over 
+            game_over,
+            game_result_recorded
         FROM 
             player_daily_state 
         WHERE 
@@ -589,6 +690,7 @@ def load_daily_game_state(player_uid):
             "wrong_guesses": json.loads(row[1]),
             "guessed_main_country": bool(row[2]),
             "game_over": bool(row[3]),
+            "game_result_recorded": bool(row[4]),
         }
         return resp
     return None
@@ -616,7 +718,10 @@ def save_daily_game_state(player_uid, game_over=False):
         ON CONFLICT(player_uid, game_date) DO UPDATE SET
             guess_history = ?,
             wrong_guesses = ?,
-            game_over = ?
+            guessed_main_country = ?,
+            hard_mode = ?,
+            game_over = ?,
+            game_result_recorded = ?
         ''',
         (
             player_uid,
@@ -629,7 +734,10 @@ def save_daily_game_state(player_uid, game_over=False):
             bool(session.get("game_result_recorded", False)),
             json.dumps(session["guess_history"] or []),
             json.dumps(session["wrong_guesses"] or []),
-            bool(game_over)
+            bool(session["guessed_main_country"]),
+            bool(session.get("hard_mode", False)),
+            bool(game_over),
+            bool(session.get("game_result_recorded", False))
         )
     )
 

@@ -74,8 +74,17 @@
     // Indicate game over state
     window.gameOver = true;
 
-    // update local stats for loss
-    try { updateLocalStats(false); } catch (e) { console.warn('[LOCAL_STATS] failed to update loss', e); }
+    // update local stats for loss only once per game/result (prevents refresh double-count)
+    try {
+      const gameNumber = {{ game_number | tojson }};
+      const resultKey = `bordleResultApplied:${gameNumber}:loss`;
+      if (localStorage.getItem(resultKey) !== '1') {
+        updateLocalStats(false);
+        localStorage.setItem(resultKey, '1');
+      } else {
+        console.log('[LOCAL_STATS] loss result already applied for this game; skipping');
+      }
+    } catch (e) { console.warn('[LOCAL_STATS] failed to update loss', e); }
 
     // Update local stats display
     const stats = JSON.parse(localStorage.getItem("bordleStats"));
