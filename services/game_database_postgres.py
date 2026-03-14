@@ -204,6 +204,13 @@ def _get_dsn() -> str:
     # Render uses postgres:// but psycopg2 prefers postgresql://
     if dsn.startswith("postgres://"):
         dsn = dsn.replace("postgres://", "postgresql://", 1)
+    # Ensure we have a small connect timeout to avoid long blocking on network hangs
+    # If DSN is a URL with query params, append; otherwise add a query string.
+    if "connect_timeout" not in dsn:
+        if "?" in dsn:
+            dsn = dsn + "&connect_timeout=5"
+        else:
+            dsn = dsn + "?connect_timeout=5"
     return dsn
 
 
@@ -418,11 +425,18 @@ def _backfill_legacy_play_tables(cursor) -> None:
 def ensure_schema() -> None:
     """Create all application tables once per process."""
     global _SCHEMA_READY
-
     if _SCHEMA_READY:
         return
 
-    with _SCHEMA_LOCK:
+    # Try to acquire the schema lock but do not block indefinitely —
+    # if another thread is already creating the schema, skip to avoid
+    # blocking the request handler and triggering a gunicorn worker timeout.
+    acquired = _SCHEMA_LOCK.acquire(timeout=5)
+    if not acquired:
+        logger.warning("[POSTGRES_DB] ensure_schema: lock busy, skipping schema ensure to avoid blocking")
+        return
+
+    try:
         if _SCHEMA_READY:
             return
 
@@ -500,7 +514,15 @@ def ensure_schema() -> None:
             conn.commit()
             _SCHEMA_READY = True
         finally:
-            conn.close()
+            try:
+                conn.close()
+            except Exception:
+                pass
+    finally:
+        try:
+            _SCHEMA_LOCK.release()
+        except Exception:
+            pass
 
 
 def init_db() -> None:
