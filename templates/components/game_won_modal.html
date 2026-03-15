@@ -91,9 +91,33 @@
       }
     } catch (e) { console.warn('[LOCAL_STATS] failed to update win', e); }
 
-    // Update local stats display
-    const stats = JSON.parse(localStorage.getItem("bordleStats"));
-    if (stats) updateUserStats(stats);
+    // Try to load authoritative stats from the server (DB), fall back to localStorage
+    async function loadAndUpdateUserStats() {
+      try {
+        const res = await fetch('/api/player_stats', { cache: 'no-cache' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.status === 'found') {
+            const stats = {
+              gamesPlayed: data.games_played,
+              gamesWon: data.games_won,
+              currentStreak: data.current_streak,
+              bestStreak: data.best_streak
+            };
+            updateUserStats(stats);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('[STATS] Could not load player stats from DB', e);
+      }
+
+      // Fallback to localStorage for offline / pre-migration users
+      const statsLocal = JSON.parse(localStorage.getItem("bordleStats"));
+      if (statsLocal) updateUserStats(statsLocal);
+    }
+
+    loadAndUpdateUserStats();
 
     // Map rendering
     const map = L.map('victoryMap');
