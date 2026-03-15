@@ -39,6 +39,9 @@ from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
 import threading
+import time
+
+import services.game_database_postgres as pgdb
 
 
 # Setup logger
@@ -99,17 +102,37 @@ with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
 # Landing page
 @app.route("/", methods=["GET"])
 def landing():
-    ensure_schema()
+    # Render landing immediately using in-process caches when available.
+    # Avoid any blocking schema or cleanup work on the request path.
+    if "country_name" not in session:
+        reset_game(session)
 
-    if "country_name" in session:
-        # Session already initialized; just show the landing page
-        pass
-    else:
-        # No session/game in progress
-        reset_game(session)  # Optional: ensure clean start if not present
+    # Try to use cached landing stats (fast-path). If cache missing, show
+    # minimal page and warm caches asynchronously.
+    try:
+        now = time.monotonic()
+        with pgdb._LANDING_STATS_LOCK:
+            cache = pgdb._LANDING_STATS_CACHE
+            ts = pgdb._LANDING_STATS_CACHE_TS
+            ttl = pgdb._LANDING_STATS_CACHE_TTL
+            if cache is not None and (now - ts) < ttl:
+                game_number, games_today, today_success_rate, total_games = cache
+            else:
+                # Fall back to daily-game cache if available (no DB round-trip)
+                daily = pgdb._DAILY_GAME_CACHE
+                if daily and daily.get("game_number") is not None:
+                    game_number = int(daily["game_number"])
+                else:
+                    game_number = 0
+                games_today = total_games = today_success_rate = 0
 
-    # Fetch all landing stats in a single DB connection
-    game_number, games_today, today_success_rate, total_games = get_landing_stats()
+                # Warm caches in background so subsequent requests are fast
+                if not any(t.name == "landing_cache_warmer" for t in threading.enumerate()):
+                    t = threading.Thread(target=pgdb.warm_caches, name="landing_cache_warmer", daemon=True)
+                    t.start()
+    except Exception:
+        game_number = 0
+        games_today = total_games = today_success_rate = 0
 
     bordle_stats = {
         "games_today": games_today,
@@ -120,7 +143,6 @@ def landing():
 
     return render_template(
         "landing.html",
-        # stats=stats,
         bordle_stats=bordle_stats,
         game_number=game_number,
         games_today=games_today,
@@ -187,7 +209,11 @@ def game():
     today = str(date.today())
 
     if "game_date" not in session or session["game_date"] != today:
-        initialize_game(session, player_uid)
+        # Avoid DB lookup for brand-new players (no cookie yet)
+        if is_new_player:
+            initialize_game(session)
+        else:
+            initialize_game(session, player_uid)
 
     # First time or GET
     if "country_name" not in session:
@@ -203,7 +229,13 @@ def game():
 
     # Build game state
     game_state = get_game_state(session)
-    game_number, games_today, today_success_rate, total_games = get_landing_stats()
+    try:
+        game_number, games_today, today_success_rate, total_games = get_landing_stats()
+    except Exception as e:
+        logger.warning(f"[GAME] could not fetch landing stats: {e}")
+        game_number, games_today, today_success_rate, total_games = (
+            session.get("game_number", 0), 0, 0, 0
+        )
     bordle_stats = {
         "games_today": games_today,
         "total_games": total_games,
@@ -241,12 +273,19 @@ def game():
 
 @app.route("/stats")
 def stats():
-    # Fetch or reuse the same data
-    bordle_stats = analytics()
-    games_today = get_games_today()
-    total_games = get_total_games()
-    games_today, today_success_rate = get_games_today()
-    game_number = get_game_number()
+    # Fetch all landing/stats values in a single DB call (cached)
+    try:
+        game_number, games_today, today_success_rate, total_games = get_landing_stats()
+    except Exception as e:
+        logger.warning(f"[STATS] could not fetch landing stats: {e}")
+        game_number, games_today, today_success_rate, total_games = 0, 0, 0, 0
+
+    bordle_stats = {
+        "games_today": games_today,
+        "total_games": total_games,
+        "success_rate": today_success_rate,
+        "game_number": game_number,
+    }
 
     return render_template(
         "stats.html",

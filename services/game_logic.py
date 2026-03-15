@@ -12,7 +12,7 @@ import uuid
 from services.game_database_postgres import (
     get_game_number,
     get_today_country,
-    init_db,
+    ensure_schema,
     load_daily_game_state,
     record_game_result,
     record_world_leaderboard_result,
@@ -43,7 +43,8 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 # Game init
 def initialize_game(session, player_uid=None):
     # Build database if required
-    init_db()
+    # Ensure schema exists without running housekeeping cleanup on every request
+    ensure_schema()
 
     # Set today so we can run a new init each day
     session["game_date"] = str(date.today())

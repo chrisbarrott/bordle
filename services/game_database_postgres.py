@@ -227,21 +227,42 @@ def get_db_connection() -> "_PooledConn":
                     connection_factory=PostgresLoggingConnection,
                 )
                 logger.info(f"[POSTGRES_DB] pool_created minconn=1 maxconn=10 env={ENVIRONMENT}")
-
     raw = _POOL.getconn()
-    # Ensure the connection is still alive; replace if not
+    # Ensure the connection is still alive; replace if not. Do a lightweight
+    # health-check (SELECT 1) and attempt one retry to transparently recover
+    # from broken pooled sockets.
     try:
-        raw.isolation_level  # lightweight attribute access that raises if closed
-        if raw.closed:
-            raise psycopg2.OperationalError("connection closed")
+        for attempt in range(2):
+            try:
+                # quick attribute access may not detect a severed TCP socket,
+                # run a minimal query to validate the connection.
+                cur = raw.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchone()
+                break
+            except Exception as exc:
+                logger.warning(f"[POSTGRES_DB] health_check failed (attempt {attempt + 1}): {exc}")
+                try:
+                    _POOL.putconn(raw, close=True)
+                except Exception:
+                    pass
+                # create a new connection and add it to the pool so subsequent
+                # getconn() calls can succeed
+                try:
+                    fresh = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
+                    _POOL.putconn(fresh)
+                except Exception as e2:
+                    logger.warning(f"[POSTGRES_DB] could not create fresh connection: {e2}")
+                raw = _POOL.getconn()
+        else:
+            logger.warning("[POSTGRES_DB] connection_health_check: all attempts failed, proceeding with raw connection")
     except Exception:
+        # Last-resort: if pool operations throw, try to construct a direct
+        # connection to avoid returning a broken pooled connection.
         try:
-            _POOL.putconn(raw, close=True)
+            raw = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
         except Exception:
             pass
-        raw = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
-        _POOL.putconn(raw)  # add back
-        raw = _POOL.getconn()
 
     logger.info(f"[POSTGRES_DB] connection_from_pool env={ENVIRONMENT}")
     return _PooledConn(raw, _POOL)
