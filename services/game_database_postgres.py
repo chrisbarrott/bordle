@@ -204,13 +204,28 @@ def _get_dsn() -> str:
     # Render uses postgres:// but psycopg2 prefers postgresql://
     if dsn.startswith("postgres://"):
         dsn = dsn.replace("postgres://", "postgresql://", 1)
-    # Ensure we have a small connect timeout to avoid long blocking on network hangs
-    # If DSN is a URL with query params, append; otherwise add a query string.
+    # Ensure we have connection parameters to improve stability over flaky
+    # networks: small connect timeout, enforce SSL, and enable TCP keepalives.
+    params = []
     if "connect_timeout" not in dsn:
+        params.append("connect_timeout=5")
+    if "sslmode" not in dsn:
+        params.append("sslmode=require")
+    # TCP keepalive knobs (libpq accepts these in the connection string)
+    if "keepalives" not in dsn:
+        params.append("keepalives=1")
+    if "keepalives_idle" not in dsn:
+        params.append("keepalives_idle=30")
+    if "keepalives_interval" not in dsn:
+        params.append("keepalives_interval=10")
+    if "keepalives_count" not in dsn:
+        params.append("keepalives_count=5")
+
+    if params:
         if "?" in dsn:
-            dsn = dsn + "&connect_timeout=5"
+            dsn = dsn + "&" + "&".join(params)
         else:
-            dsn = dsn + "?connect_timeout=5"
+            dsn = dsn + "?" + "&".join(params)
     return dsn
 
 
@@ -220,49 +235,51 @@ def get_db_connection() -> "_PooledConn":
     if _POOL is None:
         with _POOL_LOCK:
             if _POOL is None:
+                minconn = int(os.getenv("POSTGRES_POOL_MINCONN", "1"))
+                maxconn = int(os.getenv("POSTGRES_POOL_MAXCONN", "10"))
                 _POOL = psycopg2.pool.ThreadedConnectionPool(
-                    minconn=1,
-                    maxconn=10,
+                    minconn=minconn,
+                    maxconn=maxconn,
                     dsn=_get_dsn(),
                     connection_factory=PostgresLoggingConnection,
                 )
-                logger.info(f"[POSTGRES_DB] pool_created minconn=1 maxconn=10 env={ENVIRONMENT}")
+                logger.info(f"[POSTGRES_DB] pool_created minconn={minconn} maxconn={maxconn} env={ENVIRONMENT}")
     raw = _POOL.getconn()
-    # Ensure the connection is still alive; replace if not. Do a lightweight
-    # health-check (SELECT 1) and attempt one retry to transparently recover
-    # from broken pooled sockets.
+    # Ensure the connection is still alive; replace if not. Run a minimal
+    # query to validate the connection and retry getting a pooled connection
+    # if the check fails. Do NOT attempt to put external connections into
+    # the pool (that caused 'trying to put unkeyed connection' errors).
     try:
         for attempt in range(2):
             try:
-                # quick attribute access may not detect a severed TCP socket,
-                # run a minimal query to validate the connection.
                 cur = raw.cursor()
                 cur.execute("SELECT 1")
                 cur.fetchone()
+                # healthy
                 break
             except Exception as exc:
                 logger.warning(f"[POSTGRES_DB] health_check failed (attempt {attempt + 1}): {exc}")
+                # Close and remove the bad connection from the pool, then
+                # try to borrow another one.
                 try:
                     _POOL.putconn(raw, close=True)
                 except Exception:
                     pass
-                # create a new connection and add it to the pool so subsequent
-                # getconn() calls can succeed
-                try:
-                    fresh = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
-                    _POOL.putconn(fresh)
-                except Exception as e2:
-                    logger.warning(f"[POSTGRES_DB] could not create fresh connection: {e2}")
                 raw = _POOL.getconn()
         else:
-            logger.warning("[POSTGRES_DB] connection_health_check: all attempts failed, proceeding with raw connection")
-    except Exception:
-        # Last-resort: if pool operations throw, try to construct a direct
-        # connection to avoid returning a broken pooled connection.
+            logger.warning("[POSTGRES_DB] connection_health_check: all attempts failed; returning pooled connection anyway")
+    except Exception as exc:
+        logger.warning(f"[POSTGRES_DB] pool health-check error: {exc}")
+        # Last resort: try to fall back to a direct connection (won't be
+        # returned to pool). Wrap in _PooledConn only if we can ensure the
+        # pool will accept it; safer to raise and let caller handle.
         try:
-            raw = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
+            direct = psycopg2.connect(_get_dsn(), connection_factory=PostgresLoggingConnection)
+            logger.info("[POSTGRES_DB] using direct connection fallback")
+            return _PooledConn(direct, _POOL)
         except Exception:
-            pass
+            # give up — re-raise to surface the error to caller
+            raise
 
     logger.info(f"[POSTGRES_DB] connection_from_pool env={ENVIRONMENT}")
     return _PooledConn(raw, _POOL)

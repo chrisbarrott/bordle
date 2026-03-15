@@ -67,11 +67,17 @@ def _start_cache_warmer() -> None:
             time.sleep(sleep_secs)
             warm_caches()
 
-    # Guard against Flask debug-mode double-reload spawning two threads
-    if not any(t.name == "cache_warmer" for t in threading.enumerate()):
-        t = threading.Thread(target=_run, name="cache_warmer", daemon=True)
-        t.start()
-        logger.info("[CACHE_WARMER] background thread started")
+    # Only start the background cache warmer when explicitly enabled to
+    # avoid multiple Gunicorn workers all hammering the DB at startup.
+    # Set the environment variable `CACHE_WARMER=1` for a single instance.
+    if os.getenv("CACHE_WARMER", "0") == "1":
+        # Guard against Flask debug-mode double-reload spawning two threads
+        if not any(t.name == "cache_warmer" for t in threading.enumerate()):
+            t = threading.Thread(target=_run, name="cache_warmer", daemon=True)
+            t.start()
+            logger.info("[CACHE_WARMER] background thread started")
+    else:
+        logger.info("[CACHE_WARMER] disabled (set CACHE_WARMER=1 to enable)")
 
 
 _start_cache_warmer()
