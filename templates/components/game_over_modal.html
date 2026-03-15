@@ -89,7 +89,7 @@
     // Try to load authoritative stats from the server (DB), fall back to localStorage
     async function loadAndUpdateUserStats() {
       try {
-        const res = await fetch('/api/player_stats', { cache: 'no-cache' });
+        const res = await fetch('/api/player_stats?player_uid=' + encodeURIComponent({{ player_uid | tojson }}), { cache: 'no-cache' });
         if (res.ok) {
           const data = await res.json();
           if (data && data.status === 'found') {

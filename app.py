@@ -412,7 +412,8 @@ def api_migrate_stats():
 @app.route('/api/player_stats', methods=['GET'])
 def api_player_stats():
     """Return the current player's stats from the database."""
-    player_uid = request.cookies.get('player_uid')
+    # Allow explicit player_uid via query param (helpful when cookie may not be present)
+    player_uid = request.args.get('player_uid') or request.cookies.get('player_uid')
     if not player_uid:
         return jsonify({"status": "not_found"}), 404
     stats = get_player_stats(player_uid)
