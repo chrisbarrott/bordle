@@ -1,4 +1,6 @@
 # app.py
+
+from dotenv import load_dotenv
 from datetime import date, timedelta
 import os
 
@@ -16,11 +18,11 @@ from flask import (
 )
 from services.game_database_connections import (
     get_db_connection,
-    get_game_number,
     get_games_today,
     get_leaderboard_data,
     get_total_games,
 )
+from services.game_cache import daily_game_cache
 from services.game_logic import (
     get_or_create_player_uid,
     initialize_game,
@@ -30,7 +32,6 @@ from services.game_logic import (
     send_contact_email,
 )
 import json
-from dotenv import load_dotenv
 from services.game_logger import setup_logger
 import mimetypes
 from services.game_database_connections import migrate_player_stats, get_player_stats
@@ -39,28 +40,29 @@ from services.game_database_connections import migrate_player_stats, get_player_
 # Setup logger
 logger = setup_logger()
 
+# Load environment variables from .env file
+load_dotenv()
+
+
+def get_game_number_from_postgres() -> int:
+    return daily_game_cache.game_number
+
 # Setup Flask app
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 # Ensure .geojson files are served with a geo+json MIME type
-mimetypes.add_type('application/geo+json', '.geojson')
+mimetypes.add_type("application/geo+json", ".geojson")
 
 # Session configuration
 app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 1 day
 app.permanent_session_lifetime = timedelta(seconds=86400)  # Also works
 
-# Secret key for session signing (keep this constant across deploys)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")  # Set securely in production
-
-load_dotenv()
-
+# Load map data once at startup
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
     border_map = json.load(f)
-# print(border_map.keys())
-
 with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
     iso_map = json.load(f)
-
 
 # Landing page
 @app.route("/", methods=["GET"])
@@ -73,16 +75,15 @@ def landing():
         reset_game(session)  # Optional: ensure clean start if not present
 
     # Set game number for session handling and stats
-    game_number = get_game_number()
+    game_number = get_game_number_from_postgres()
     games_today, today_success_rate = get_games_today()
     total_games = get_total_games()
 
     # Add the stats props
-    bordle_stats = analytics()
+    bordle_stats = analytics(game_number=game_number)
 
     return render_template(
         "landing.html",
-        # stats=stats,
         bordle_stats=bordle_stats,
         game_number=game_number,
         games_today=games_today,
@@ -96,7 +97,7 @@ def landing():
 def set_mode_and_play():
     # hard_mode checkbox is only present if checked
     session["hard_mode"] = bool(request.form.get("hard_mode"))
-    
+
     # show borders option
     session["show_border_lines"] = bool(request.form.get("show_border_lines"))
 
@@ -112,7 +113,7 @@ def set_mode_and_play():
 
 @app.route("/check_played", methods=["POST"])
 def check_played():
-    game_number = get_game_number()
+    game_number = get_game_number_from_postgres()
 
     # You need to track session/game data on the server
     played_games = session.get("played_games", [])
@@ -195,19 +196,20 @@ def game():
             max_age=60 * 60 * 24 * 365,
             httponly=True,
             secure=True,
-            samesite="Lax"
+            samesite="Lax",
         )
 
     return resp
 
+
 @app.route("/stats")
 def stats():
     # Fetch or reuse the same data
-    bordle_stats = analytics()
+    game_number = get_game_number_from_postgres()
+    bordle_stats = analytics(game_number=game_number)
     games_today = get_games_today()
     total_games = get_total_games()
     games_today, today_success_rate = get_games_today()
-    game_number = get_game_number()
 
     return render_template(
         "stats.html",
@@ -234,7 +236,9 @@ def contact_submit():
 
         # Validate form data
         if not all([name, email, subject, message]):
-            return jsonify({"status": "error", "message": "All fields are required"}), 400
+            return jsonify(
+                {"status": "error", "message": "All fields are required"}
+            ), 400
 
         # Log the contact form submission
         contact_event = {
@@ -255,11 +259,18 @@ def contact_submit():
             logger.error(f"Failed to send contact email: {str(e)}")
             # Continue anyway - email is optional
 
-        return jsonify({"status": "success", "message": "Message received! Thank you for your feedback."}), 200
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Message received! Thank you for your feedback.",
+            }
+        ), 200
 
     except Exception as e:
         logger.error(f"Error processing contact form: {str(e)}")
-        return jsonify({"status": "error", "message": "An error occurred. Please try again."}), 500
+        return jsonify(
+            {"status": "error", "message": "An error occurred. Please try again."}
+        ), 500
 
 
 @app.route("/submit", methods=["POST"])
@@ -321,11 +332,21 @@ def download_db():
     auth = request.authorization
     download_user = os.getenv("DOWNLOAD_DB_USER")
     download_pass = os.getenv("DOWNLOAD_DB_PASSWORD")
-    
+
     # Validate credentials
-    if not download_user or not download_pass or not auth or auth.username != download_user or auth.password != download_pass:
-        return {"error": "Unauthorized"}, 401, {"WWW-Authenticate": 'Basic realm="Download DB"'}
-    
+    if (
+        not download_user
+        or not download_pass
+        or not auth
+        or auth.username != download_user
+        or auth.password != download_pass
+    ):
+        return (
+            {"error": "Unauthorized"},
+            401,
+            {"WWW-Authenticate": 'Basic realm="Download DB"'},
+        )
+
     return send_file("db/games.db", as_attachment=True)
 
 
@@ -335,7 +356,7 @@ def download_csv():
 
 
 @app.route("/analytics")
-def analytics():
+def analytics(game_number=None):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -360,11 +381,14 @@ def analytics():
 
     conn.close()
 
+    if game_number is None:
+        game_number = get_game_number_from_postgres()
+
     return {
         "games_today": games_today,
         "total_games": total_games,
         "success_rate": success_rate,
-        "game_number": get_game_number(),
+        "game_number": game_number,
     }
 
 
@@ -382,18 +406,20 @@ def api_stats():
     return jsonify(stats)
 
 
-@app.route('/api/migrate_stats', methods=['POST'])
+@app.route("/api/migrate_stats", methods=["POST"])
 def api_migrate_stats():
     try:
         data = request.get_json(force=True)
 
         # Cookie-only identity source
-        player_uid = request.cookies.get('player_uid')
+        player_uid = request.cookies.get("player_uid")
         if not player_uid:
             logger.warning("[API_MIGRATE] ❌ No player_uid cookie found")
-            return jsonify({"status": "error", "message": "player_uid cookie required"}), 400
+            return jsonify(
+                {"status": "error", "message": "player_uid cookie required"}
+            ), 400
 
-        stats = data.get('stats') or {}
+        stats = data.get("stats") or {}
         logger.info(f"[API_MIGRATE] Stats payload: {stats}")
 
         # Basic validation
@@ -409,42 +435,50 @@ def api_migrate_stats():
         return jsonify({"status": "error", "message": "internal error"}), 500
 
 
-@app.route('/api/player_stats', methods=['GET'])
+@app.route("/api/player_stats", methods=["GET"])
 def api_player_stats():
     """Return the current player's stats from the database."""
     # Allow explicit player_uid via query param (helpful when cookie may not be present)
-    player_uid = request.args.get('player_uid') or request.cookies.get('player_uid')
+    player_uid = request.args.get("player_uid") or request.cookies.get("player_uid")
     if not player_uid:
         return jsonify({"status": "not_found"}), 404
     stats = get_player_stats(player_uid)
     if stats:
-        success_rate = round((stats["games_won"] / stats["games_played"]) * 100) if stats["games_played"] > 0 else 0
-        return jsonify({
-            "status": "found",
-            "games_played": stats["games_played"],
-            "games_won": stats["games_won"],
-            "current_streak": stats["current_streak"],
-            "best_streak": stats["best_streak"],
-            "success_rate": success_rate,
-            "player_country": stats.get("player_country", "Unknown"),
-            "player_city": stats.get("player_city", "Unknown"),
-            "last_updated": stats.get("last_updated"),
-        })
+        success_rate = (
+            round((stats["games_won"] / stats["games_played"]) * 100)
+            if stats["games_played"] > 0
+            else 0
+        )
+        return jsonify(
+            {
+                "status": "found",
+                "games_played": stats["games_played"],
+                "games_won": stats["games_won"],
+                "current_streak": stats["current_streak"],
+                "best_streak": stats["best_streak"],
+                "success_rate": success_rate,
+                "player_country": stats.get("player_country", "Unknown"),
+                "player_city": stats.get("player_city", "Unknown"),
+                "last_updated": stats.get("last_updated"),
+            }
+        )
     return jsonify({"status": "not_found"}), 404
 
 
-@app.route('/api/player_stats_debug', methods=['GET'])
+@app.route("/api/player_stats_debug", methods=["GET"])
 def debug_player_stats():
     """Debug endpoint to check current player stats and migration status."""
-    player_uid = request.cookies.get('player_uid')
-    
+    player_uid = request.cookies.get("player_uid")
+
     if not player_uid:
-        return jsonify({"status": "error", "message": "no player_uid cookie found"}), 400
-    
+        return jsonify(
+            {"status": "error", "message": "no player_uid cookie found"}
+        ), 400
+
     logger.info(f"[DEBUG_STATS] Checking stats for player {player_uid}")
-    
+
     stats = get_player_stats(player_uid)
-    
+
     if stats:
         logger.info(f"[DEBUG_STATS] ✅ Found stats: {stats}")
         return jsonify({"player_uid": player_uid, "stats": stats, "status": "found"})
@@ -481,7 +515,7 @@ def log_player_recovery():
     """Log when a player_uid is recovered from localStorage/IndexedDB instead of cookie."""
     try:
         data = request.get_json(force=True)
-        
+
         recovery_event = {
             "event": "PLAYER_UID_RECOVERY",
             "player_uid": data.get("player_uid"),
@@ -490,13 +524,22 @@ def log_player_recovery():
             "ip_address": request.remote_addr,
         }
         logger.warning(f"[PLAYER_RECOVERY] {json.dumps(recovery_event)}")
-        
+
         return jsonify({"status": "ok"}), 200
     except Exception as e:
         logger.error(f"[PLAYER_RECOVERY] Error logging recovery: {e}")
         return jsonify({"status": "ok"}), 200  # Always return 200 (non-critical)
 
 
+# Warm the cache at startup so the first request doesn't pay the Postgres cost.
+try:
+    daily_game_cache.refresh()
+except Exception as _cache_err:
+    logger.warning(f"[DAILY_CACHE] Startup warm failed: {_cache_err}")
+
+
 if __name__ == "__main__":
-    if os.getenv("FLASK_ENV") == "development":
-        app.run(debug=True)
+    flask_env = os.getenv("FLASK_ENV", "production").lower()
+    debug_mode = flask_env in ["development", "local"]
+    daily_game_cache.start_background_refresh()
+    app.run(debug=debug_mode)

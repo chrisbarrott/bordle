@@ -9,6 +9,7 @@ import os
 import smtplib
 import uuid
 
+from services.game_db_logic import get_current_game_number
 from services.game_database_connections import (
     init_db,
     load_daily_game_state,
@@ -16,7 +17,7 @@ from services.game_database_connections import (
     record_world_leaderboard_result,
     save_daily_game_state,
 )
-from services.game_db_logic import get_current_game_number, get_country_of_the_day
+from services.game_cache import daily_game_cache
 from services.game_get_data import (
     get_all_drop_down_options,
     get_border_options,
@@ -52,14 +53,14 @@ def initialize_game(session, player_uid=None):
         player_uid = request.cookies.get("player_uid")
 
     # Pull today's game data
-    country_info = get_country_of_the_day()
+    country_info = daily_game_cache.country_info
     if country_info and isinstance(country_info, dict):
         session["country_name"] = country_info.get("country_name") or country_info.get("country_code")
     else:
         # Fallback to previous value or None
         session["country_name"] = country_info
 
-    session["game_number"] = get_current_game_number()
+    session["game_number"] = daily_game_cache.game_number
 
     today = str(date.today())
     session["game_date"] = today
