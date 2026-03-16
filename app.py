@@ -95,20 +95,26 @@ def landing():
 # Handle mode toggle and start game
 @app.route("/set_mode_and_play", methods=["POST"])
 def set_mode_and_play():
-    # hard_mode checkbox is only present if checked
+    player_uid, is_new_player = get_or_create_player_uid()
+    
+    session["player_uid"] = player_uid
     session["hard_mode"] = bool(request.form.get("hard_mode"))
-
-    # show borders option
     session["show_border_lines"] = bool(request.form.get("show_border_lines"))
-
-    # show borders option
     session["border_hint_declined"] = False
 
-    # Only initialize the game if it hasn't already started
-    if "country_name" not in session:
-        initialize_game(session)
+    resp = make_response(redirect(url_for("game")))
 
-    return redirect(url_for("game"))
+    if is_new_player:
+        resp.set_cookie(
+            "player_uid",
+            player_uid,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+        )
+
+    return resp
 
 
 @app.route("/check_played", methods=["POST"])
@@ -148,6 +154,7 @@ def borders_hint_declined():
 def game():
     # Get or create player UID (cookie-based)
     player_uid, is_new_player = get_or_create_player_uid()
+    session["player_uid"] = player_uid
 
     # init the game if a new day
     today = str(date.today())
@@ -159,7 +166,7 @@ def game():
     if "country_name" not in session:
         session["hard_mode"] = bool(request.form.get("hard_mode"))
         session["show_border_lines"] = bool(request.form.get("show_border_lines"))
-        initialize_game(session)
+        initialize_game(session, player_uid)
 
     # If form posted a guess
     if request.method == "POST":
@@ -282,8 +289,8 @@ def submit():
     if guess == "":
         return redirect(url_for("game"))
 
-    if "available_options" not in session:
-        return redirect(url_for("index.html"))
+    if "country_name" not in session:
+        return redirect(url_for("game"))
 
     # Use game logic to process the guess
     process_guess(guess, session)
