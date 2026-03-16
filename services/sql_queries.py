@@ -75,7 +75,7 @@ SELECT
     game_over,
     game_result_recorded
 FROM {table_name}
-WHERE player_uid = %s AND game_date = %s::date
+WHERE player_uid = %s AND game_date::date = %s::date
 LIMIT 1
 """
 
@@ -126,7 +126,7 @@ SELECT
     game_result_recorded
 FROM {table_name}
 WHERE player_uid = %s
-    AND game_date = %s::date
+    AND game_date::date = %s::date
     AND NOT EXISTS (SELECT 1 FROM inserted)
 LIMIT 1
 """
@@ -146,7 +146,7 @@ SET
     game_result_recorded = %s,
     recorded_at = CURRENT_TIMESTAMP
 WHERE player_uid = %s
-    AND game_date = %s::date
+    AND game_date::date = %s::date
     AND COALESCE(game_over, 0) = 0
 RETURNING
     game_number,

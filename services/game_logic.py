@@ -362,7 +362,6 @@ def get_game_state(session):
         )
 
     else:
-        logger.info(f"Game over: {game_over} or result recorded: {game_result_recorded}")
         if set(correct_guesses) == set(border_names):
             game_result = "Win"
         elif game_over:
