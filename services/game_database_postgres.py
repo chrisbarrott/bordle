@@ -45,6 +45,7 @@ from services.game_get_data import (
     get_user_location,
 )
 from services.game_logger import setup_logger
+from services.redis_cache import redis_get, redis_set, redis_delete, redis_available
 
 # ---------------------------------------------------------------------------
 # Config
@@ -1250,6 +1251,17 @@ def load_daily_game_state(player_uid: str) -> dict | None:
     if not player_uid:
         return None
     today = date.today().isoformat()
+    # Check Redis cache first to avoid a DB round-trip for hot players
+    try:
+        if redis_available():
+            key = f"player_state:{player_uid}:{today}"
+            cached = redis_get(key)
+            if cached is not None:
+                logger.info(f"[POSTGRES_DB] load_daily_game_state cache_hit player={player_uid}")
+                return cached
+    except Exception:
+        # swallow cache errors and fall back to DB
+        pass
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -1267,21 +1279,49 @@ def load_daily_game_state(player_uid: str) -> dict | None:
         conn.close()
 
     if row:
-        return {
+        result = {
             "guess_history": json.loads(row[0] or "[]"),
             "wrong_guesses": json.loads(row[1] or "[]"),
             "guessed_main_country": bool(row[2]),
             "game_over": bool(row[3]),
             "game_result_recorded": bool(row[4]),
         }
+        try:
+            if redis_available():
+                redis_set(f"player_state:{player_uid}:{today}", result, ex=3600)
+        except Exception:
+            pass
+        return result
     return None
 
 
-def save_daily_game_state(player_uid: str, game_over: bool = False) -> None:
+def save_daily_game_state(player_uid: str, game_over: bool = False, state: dict | None = None) -> None:
+    """Save per-player daily game state.
+
+    If `state` is provided, use values from the dict instead of Flask `session`.
+    This allows callers to manage an in-memory player_state and persist it
+    with a single DB call per guess.
+    """
     today = date.today().isoformat()
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # Prefer explicit state dict (caller-managed) else fall back to Flask session
+        if state is None:
+            guess_history = json.dumps(session.get("guess_history") or [])
+            wrong_guesses = json.dumps(session.get("wrong_guesses") or [])
+            guessed_main_country = int(bool(session.get("guessed_main_country", False)))
+            hard_mode = int(bool(session.get("hard_mode", False)))
+            game_result_recorded = int(bool(session.get("game_result_recorded", False)))
+            game_number = session.get("game_number")
+        else:
+            guess_history = json.dumps(state.get("guess_history") or [])
+            wrong_guesses = json.dumps(state.get("wrong_guesses") or [])
+            guessed_main_country = int(bool(state.get("guessed_main_country", False)))
+            hard_mode = int(bool(state.get("hard_mode", False)))
+            game_result_recorded = int(bool(state.get("game_result_recorded", False)))
+            game_number = state.get("game_number")
+
         cursor.execute(
             f"""
             INSERT INTO {table_name("player_game_state")}
@@ -1294,20 +1334,32 @@ def save_daily_game_state(player_uid: str, game_over: bool = False) -> None:
                 guessed_main_country = EXCLUDED.guessed_main_country,
                 hard_mode            = EXCLUDED.hard_mode,
                 game_over            = EXCLUDED.game_over,
-                game_result_recorded = EXCLUDED.game_result_recorded
+                game_result_recorded = EXCLUDED.game_result_recorded,
+                game_number          = COALESCE(EXCLUDED.game_number, {table_name("player_game_state")}.game_number)
             """,
             (
                 player_uid,
                 today,
-                json.dumps(session.get("guess_history") or []),
-                json.dumps(session.get("wrong_guesses") or []),
-                int(bool(session.get("guessed_main_country", False))),
-                int(bool(session.get("hard_mode", False))),
+                guess_history,
+                wrong_guesses,
+                guessed_main_country,
+                hard_mode,
                 int(bool(game_over)),
-                int(bool(session.get("game_result_recorded", False))),
-                session.get("game_number"),
+                game_result_recorded,
+                game_number,
             ),
         )
         conn.commit()
+        # Update Redis cache (write-through) so subsequent reads are fast
+        try:
+            if player_uid and redis_available():
+                key = f"player_state:{player_uid}:{today}"
+                # cache the canonical state dict (caller provided preferred)
+                if state is not None:
+                    redis_set(key, state, ex=3600)
+                else:
+                    redis_delete(key)
+        except Exception:
+            pass
     finally:
         conn.close()

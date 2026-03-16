@@ -41,91 +41,88 @@ with open("data/countries_shapes.json", "r", encoding="utf-8") as f:
 
 
 # Game init
-def initialize_game(session, player_uid=None):
+def initialize_game(player_state: dict, player_uid=None):
     # Build database if required
     # Ensure schema exists without running housekeeping cleanup on every request
     ensure_schema()
-
-    # Set today so we can run a new init each day
-    session["game_date"] = str(date.today())
 
     # Use cookie-based player UID if not passed in
     if not player_uid:
         player_uid = request.cookies.get("player_uid")
 
     # Pull today's game data
-    session["country_name"] = get_today_country()
-    session["game_number"] = get_game_number()
+    player_state["country_name"] = get_today_country()
+    player_state["game_number"] = get_game_number()
 
     today = str(date.today())
-    session["game_date"] = today
+    player_state["game_date"] = today
 
     # --- Check for in-progress game first ---
     in_progress = load_daily_game_state(player_uid)
     if in_progress:
         # Guess history
-        session["guess_history"] = in_progress["guess_history"]
-        session["wrong_guesses"] = in_progress["wrong_guesses"]
-        session["game_over"] = in_progress["game_over"]
+        player_state["guess_history"] = in_progress["guess_history"]
+        player_state["wrong_guesses"] = in_progress["wrong_guesses"]
+        player_state["game_over"] = in_progress["game_over"]
 
         # Recompute derived fields
-        correct_borders = border_map[session["country_name"]]
-        session["correct_guesses"] = [
-            guess for guess in session["guess_history"] if guess in correct_borders
+        correct_borders = border_map[player_state["country_name"]]
+        player_state["correct_guesses"] = [
+            guess for guess in player_state["guess_history"] if guess in correct_borders
         ]
-        session["borders_remaining"] = len(correct_borders) - len(
-            session["correct_guesses"]
+        player_state["borders_remaining"] = len(correct_borders) - len(
+            player_state["correct_guesses"]
         )
-        session["remaining_guesses"] = 5 - len(session["guess_history"])
-        session["game_result"] = (
+        player_state["remaining_guesses"] = 5 - len(player_state["guess_history"])
+        player_state["game_result"] = (
             "Won"
-            if session["game_over"]
-            and set(session["correct_guesses"]) == set(correct_borders)
+            if player_state["game_over"]
+            and set(player_state["correct_guesses"]) == set(correct_borders)
             else "Started"
         )
-        session["hard_mode"] = in_progress.get("hard_mode", False)
-        session["game_result_recorded"] = in_progress.get("game_result_recorded", False)
-        session["guessed_main_country"] = in_progress.get("guessed_main_country", False)
+        player_state["hard_mode"] = in_progress.get("hard_mode", False)
+        player_state["game_result_recorded"] = in_progress.get("game_result_recorded", False)
+        player_state["guessed_main_country"] = in_progress.get("guessed_main_country", False)
 
     else:
         # No in-progress game, start fresh
-        correct_borders = border_map[session["country_name"]]
-        session["borders_remaining"] = len(correct_borders)
-        session["remaining_guesses"] = 5
+        correct_borders = border_map[player_state["country_name"]]
+        player_state["borders_remaining"] = len(correct_borders)
+        player_state["remaining_guesses"] = 5
 
         # Game result tracking
-        session["game_result_recorded"] = False
-        session["game_result"] = "Started"
-        session["game_over"] = False
+        player_state["game_result_recorded"] = False
+        player_state["game_result"] = "Started"
+        player_state["game_over"] = False
 
         # Initialize guess lists
-        session["correct_guesses"] = []
-        session["wrong_guesses"] = []
-        session["guessed_main_country"] = False
+        player_state["correct_guesses"] = []
+        player_state["wrong_guesses"] = []
+        player_state["guessed_main_country"] = False
 
-    # Default session values for a new game
-    session["available_options"] = sorted(get_all_drop_down_options())
-    session["all_countries"] = session["available_options"].copy()
-    session["show_border_lines"] = session.get("show_border_lines", False)
-    session["borders_hint_declined"] = False
-    correct_borders = border_map[session["country_name"]]
-    session["border_count"] = len(correct_borders)
+    # Default values for a new game
+    player_state["available_options"] = sorted(get_all_drop_down_options())
+    player_state["all_countries"] = player_state["available_options"].copy()
+    player_state["show_border_lines"] = player_state.get("show_border_lines", False)
+    player_state["borders_hint_declined"] = False
+    correct_borders = border_map[player_state["country_name"]]
+    player_state["border_count"] = len(correct_borders)
 
     # Player IP info
-    session["user_ip"] = get_user_ip()
-    session["player_data"] = get_user_location(session["user_ip"])  #
+    player_state["user_ip"] = get_user_ip()
+    player_state["player_data"] = get_user_location(player_state["user_ip"])  #
 
-    hard_mode = session.get("hard_mode", False)
+    hard_mode = player_state.get("hard_mode", False)
     if not hard_mode:
-        if session["country_name"] in session["available_options"]:
-            session["available_options"].remove(session["country_name"])
+        if player_state["country_name"] in player_state["available_options"]:
+            player_state["available_options"].remove(player_state["country_name"])
     else:
         # Hard mode: remove main country if already guessed
         if (
-            session.get("guessed_main_country")
-            and session["country_name"] in session["available_options"]
+            player_state.get("guessed_main_country")
+            and player_state["country_name"] in player_state["available_options"]
         ):
-            session["available_options"].remove(session["country_name"])
+            player_state["available_options"].remove(player_state["country_name"])
 
     logger.info(f"Game initialized for player {player_uid}")
 
@@ -149,58 +146,58 @@ def normalize(name):
     return name.lower().strip()
 
 
-def process_guess(guess, session):
+def process_guess(guess, player_state: dict):
     # Always sort before rendering
-    dropdown_options = sorted(session["available_options"])
+    dropdown_options = sorted(player_state.get("available_options", []))
 
     # Set the guess
-    session["guess_country"] = guess
+    player_state["guess_country"] = guess
 
     # Remove guess from available options and sort
     if guess in dropdown_options:
-        session["available_options"].remove(guess)
-        session["available_options"] = sorted(session["available_options"])
+        player_state["available_options"].remove(guess)
+        player_state["available_options"] = sorted(player_state["available_options"])
 
     # Check if guess is correct or not
-    country_name = session["country_name"]
+    country_name = player_state["country_name"]
 
     # Hard mode: if guessing the correct country
-    if session.get("hard_mode", True):
-        correct_country = normalize(session.get("country_name", ""))
+    if player_state.get("hard_mode", True):
+        correct_country = normalize(player_state.get("country_name", ""))
         if guess.lower() == correct_country.lower():
-            session["guessed_main_country"] = True
+            player_state["guessed_main_country"] = True
 
             # Remove from available options
-            if session["country_name"] in session.get("available_options", []):
-                session["available_options"].remove(session["country_name"])
+            if player_state["country_name"] in player_state.get("available_options", []):
+                player_state["available_options"].remove(player_state["country_name"])
             return
 
     if guess in border_map.get(country_name, []):
-        if guess not in session["correct_guesses"]:
-            session["correct_guesses"].append(guess)
-            session["borders_remaining"] -= 1  # Decrease borders remaining
+        if guess not in player_state["correct_guesses"]:
+            player_state["correct_guesses"].append(guess)
+            player_state["borders_remaining"] -= 1  # Decrease borders remaining
     else:
-        if guess not in session["wrong_guesses"]:
-            session["wrong_guesses"].append(guess)
-            session["remaining_guesses"] -= 1
+        if guess not in player_state["wrong_guesses"]:
+            player_state["wrong_guesses"].append(guess)
+            player_state["remaining_guesses"] -= 1
 
     # Track guesses in order
-    if "guess_history" not in session:
-        session["guess_history"] = []
+    if "guess_history" not in player_state:
+        player_state["guess_history"] = []
 
     # Add guess in order for share functionality
-    if guess not in session["guess_history"]:
-        session["guess_history"].append(guess)
+    if guess not in player_state["guess_history"]:
+        player_state["guess_history"].append(guess)
 
     # Persist in-progress state, but skip this write if the guess ended the game.
     # End-of-game persistence is handled in get_game_state() where result flags are set.
     border_names = border_map.get(country_name, [])
-    game_over = session.get("remaining_guesses", 0) <= 0 or set(
-        session.get("correct_guesses", [])
+    game_over = player_state.get("remaining_guesses", 0) <= 0 or set(
+        player_state.get("correct_guesses", [])
     ) == set(border_names)
     if not game_over:
         player_uid = request.cookies.get("player_uid")
-        save_daily_game_state(player_uid, False)
+        save_daily_game_state(player_uid, False, state=player_state)
 
 
 def allowed_attempts_perc(n_borders):
@@ -290,40 +287,41 @@ def send_contact_email(name, email, subject, message):
         raise
 
 
-def get_game_state(session):
+
+def get_game_state(player_state: dict):
     # set game number
     game_number = get_game_number()
-    session["game_number"] = game_number
+    player_state["game_number"] = game_number
 
     # get the country name
-    country_name = session.get("country_name")
+    country_name = player_state.get("country_name")
 
-    all_countries = session.get("all_countries")
-    available_options = get_border_options(session)
+    all_countries = player_state.get("all_countries")
+    available_options = get_border_options(player_state)
     border_names = border_map.get(country_name, [])
-    borders_remaining = session.get("borders_remaining", 0)
-    border_count = session.get("border_count", 0)
-    correct_guesses = session.get("correct_guesses", [])
+    borders_remaining = player_state.get("borders_remaining", 0)
+    border_count = player_state.get("border_count", 0)
+    correct_guesses = player_state.get("correct_guesses", [])
     country_geojson = get_country_shape(country_name)
-    hard_mode = session.get("hard_mode", False)
-    show_border_lines = session.get("show_border_lines", False)
-    borders_hint_declined = session.get("borders_hint_declined", False)
-    remaining_guesses = session.get("remaining_guesses", 0)
-    wrong_guesses = session.get("wrong_guesses", [])
-    guessed_main_country = session.get("guessed_main_country")
-    game_result_recorded = session.get("game_result_recorded", False)
-    guess_history = session.get("guess_history", [])  # FIXED: no tuple
-    game_over = session.get("game_over", False)
-    game_result = session.get("game_result", "In progress")
-    guess_country = session.get("guess_country", "")
+    hard_mode = player_state.get("hard_mode", False)
+    show_border_lines = player_state.get("show_border_lines", False)
+    borders_hint_declined = player_state.get("borders_hint_declined", False)
+    remaining_guesses = player_state.get("remaining_guesses", 0)
+    wrong_guesses = player_state.get("wrong_guesses", [])
+    guessed_main_country = player_state.get("guessed_main_country")
+    game_result_recorded = player_state.get("game_result_recorded", False)
+    guess_history = player_state.get("guess_history", [])  # FIXED: no tuple
+    game_over = player_state.get("game_over", False)
+    game_result = player_state.get("game_result", "In progress")
+    guess_country = player_state.get("guess_country", "")
 
     # Unpack player_data tuple into session for easy access
-    country, region, city = session.get(
+    country, region, city = player_state.get(
         "player_data", ("Unknown", "Unknown", "Unknown")
     )
-    session["player_country"] = country
-    session["player_region"] = region
-    session["player_city"] = city
+    player_state["player_country"] = country
+    player_state["player_region"] = region
+    player_state["player_city"] = city
 
     # Map shapes based on current guesses
     correct_shapes = get_shapes(correct_guesses)
@@ -343,9 +341,9 @@ def get_game_state(session):
             # record game result second (to ensure accurate remaining guesses)
             record_game_result(True, remaining_guesses, player_uid)
 
-            # Update session game result
+            # Update player_state game result
             game_result = "Win"
-            session["game_result"] = game_result
+            player_state["game_result"] = game_result
 
         elif remaining_guesses <= 0:
             # Update world leaderboard first (idempotent check), then record aggregated game result
@@ -354,18 +352,18 @@ def get_game_state(session):
             # record game result second (to ensure accurate remaining guesses)
             record_game_result(False, remaining_guesses, player_uid)
 
-            # Update session game result
+            # Update player_state game result
             game_result = "Loss"
-            session["game_result"] = game_result
+            player_state["game_result"] = game_result
 
         # Mark as recorded
-        session["game_result_recorded"] = True
+        player_state["game_result_recorded"] = True
 
     else:
         logger.info(
             f"Game over: {game_over} or result recorded: {game_result_recorded}"
         )
-        game_result = session.get("game_result", "In progress")
+        game_result = player_state.get("game_result", "In progress")
 
     # If game is over, show all correct answers in the final map
     final_shapes = get_shapes(border_names) if game_over else []
@@ -380,16 +378,16 @@ def get_game_state(session):
         "correct_guesses": correct_guesses,
         "country_name": country_name,
         "game_result": game_result,
-        "game_result_recorded": session["game_result_recorded"],
+        "game_result_recorded": player_state.get("game_result_recorded", False),
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
         "guess_history": guess_history,
         "guessed_main_country": guessed_main_country,
         "hard_mode": hard_mode,
-        "player_country": session["player_country"],
-        "player_region": session["player_region"],
-        "player_city": session["player_city"],
+        "player_country": player_state.get("player_country"),
+        "player_region": player_state.get("player_region"),
+        "player_city": player_state.get("player_city"),
         "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
         "player_uid": player_uid,
@@ -418,7 +416,7 @@ def get_game_state(session):
         "country_name": country_name,
         "final_shapes": final_shapes,
         "game_result": game_result,
-        "game_result_recorded": session["game_result_recorded"],
+        "game_result_recorded": player_state.get("game_result_recorded", False),
         "game_over": game_over,
         "game_number": game_number,
         "guess_country": guess_country,
@@ -428,7 +426,7 @@ def get_game_state(session):
         "show_border_lines": show_border_lines,
         "wrong_guesses": wrong_guesses,
         "wrong_shapes": wrong_shapes,
-        "player_country": session["player_country"],
-        "player_region": session["player_region"],
-        "player_city": session["player_city"],
+        "player_country": player_state["player_country"],
+        "player_region": player_state["player_region"],
+        "player_city": player_state["player_city"],
     }

@@ -171,7 +171,9 @@ def set_mode_and_play():
 
     # Only initialize the game if it hasn't already started
     if "country_name" not in session:
-        initialize_game(session)
+        # Create transient player_state and initialize (will persist on first guess)
+        player_state = {}
+        initialize_game(player_state)
 
     return redirect(url_for("game"))
 
@@ -214,27 +216,29 @@ def game():
     # init the game if a new day
     today = str(date.today())
 
-    if "game_date" not in session or session["game_date"] != today:
-        # Avoid DB lookup for brand-new players (no cookie yet)
-        if is_new_player:
-            initialize_game(session)
-        else:
-            initialize_game(session, player_uid)
+    # Load player_state from DB (stateless servers: player state is in Postgres)
+    if player_uid:
+        player_state = load_daily_game_state(player_uid) or {}
+    else:
+        player_state = {}
 
-    # First time or GET
-    if "country_name" not in session:
-        session["hard_mode"] = bool(request.form.get("hard_mode"))
-        session["show_border_lines"] = bool(request.form.get("show_border_lines"))
-        initialize_game(session)
+    # Carry UI preferences from session into player_state if present
+    if session.get("hard_mode") is not None:
+        player_state["hard_mode"] = session.get("hard_mode")
+    if session.get("show_border_lines") is not None:
+        player_state["show_border_lines"] = session.get("show_border_lines")
+
+    # Ensure today's game values and derived fields are initialized
+    initialize_game(player_state, player_uid)
 
     # If form posted a guess
     if request.method == "POST":
         guess = request.form.get("guess", "").strip()
-        process_guess(guess, session)
+        process_guess(guess, player_state)
         return redirect(url_for("game"))
 
     # Build game state
-    game_state = get_game_state(session)
+    game_state = get_game_state(player_state)
     try:
         game_number, games_today, today_success_rate, total_games = get_landing_stats()
     except Exception as e:
@@ -260,7 +264,7 @@ def game():
             games_today=games_today,
             total_games=total_games,
             today_success_rate=today_success_rate,
-            borders_hint_declined=session.get("borders_hint_declined", False),
+            borders_hint_declined=player_state.get("borders_hint_declined", False),
         )
     )
 
@@ -355,11 +359,15 @@ def submit():
     if guess == "":
         return redirect(url_for("game"))
 
-    if "available_options" not in session:
+    # Load player_state for current user
+    player_uid = request.cookies.get("player_uid")
+    player_state = load_daily_game_state(player_uid) or {}
+
+    if "available_options" not in player_state:
         return redirect(url_for("index.html"))
 
     # Use game logic to process the guess
-    process_guess(guess, session)
+    process_guess(guess, player_state)
     return redirect(url_for("game"))
 
 
