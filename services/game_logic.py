@@ -9,7 +9,6 @@ import os
 import smtplib
 import uuid
 
-from services.game_db_logic import get_current_game_number
 from services.game_database_connections import (
     init_db,
     load_daily_game_state,
@@ -227,7 +226,7 @@ def borders_enabled_for_today(session):
 
     return (
         borders.get("enabled") is True and
-        borders.get("game_number") == get_current_game_number()
+        borders.get("game_number") == daily_game_cache.game_number
     )
 
 
@@ -284,7 +283,7 @@ def send_contact_email(name, email, subject, message):
 
 def get_game_state(session):
     # set game number
-    game_number = get_current_game_number()
+    game_number = daily_game_cache.game_number
     session["game_number"] = game_number
 
     # get the country name
