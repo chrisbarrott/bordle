@@ -17,13 +17,14 @@ from flask import (
     url_for,
     session,
 )
-from services.game_database_connections import (
-    get_db_connection,
-    get_games_today,
-    get_leaderboard_data,
-    get_total_games,
-)
 from services.game_cache import daily_game_cache
+from services.game_db_logic import (
+    get_games_today_stats,
+    get_leaderboard_data,
+    get_total_games_count,
+    get_player_stats,
+    migrate_player_stats,
+)
 from services.game_logic import (
     get_or_create_player_uid,
     initialize_game,
@@ -35,7 +36,6 @@ from services.game_logic import (
 import json
 from services.game_logger import setup_logger
 import mimetypes
-from services.game_database_connections import migrate_player_stats, get_player_stats
 
 
 # Setup logger
@@ -74,8 +74,8 @@ with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
 
 def _build_game_response(player_uid: str, is_new_player: bool = False):
     game_state = get_game_state(session)
-    games_today, today_success_rate = get_games_today()
-    total_games = get_total_games()
+    games_today, today_success_rate = get_games_today_stats()
+    total_games = get_total_games_count()
     bordle_stats = analytics()
 
     resp = make_response(
@@ -116,8 +116,8 @@ def landing():
 
     # Set game number for session handling and stats
     game_number = get_game_number_from_postgres()
-    games_today, today_success_rate = get_games_today()
-    total_games = get_total_games()
+    games_today, today_success_rate = get_games_today_stats()
+    total_games = get_total_games_count()
 
     # Add the stats props
     bordle_stats = analytics(game_number=game_number)
@@ -222,9 +222,8 @@ def stats():
     # Fetch or reuse the same data
     game_number = get_game_number_from_postgres()
     bordle_stats = analytics(game_number=game_number)
-    games_today = get_games_today()
-    total_games = get_total_games()
-    games_today, today_success_rate = get_games_today()
+    games_today, today_success_rate = get_games_today_stats()
+    total_games = get_total_games_count()
 
     return render_template(
         "stats.html",
@@ -375,29 +374,8 @@ def download_csv():
 
 @app.route("/analytics")
 def analytics(game_number=None):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Get today's stats
-    cursor.execute(
-        "SELECT successes, failures FROM game_stats WHERE game_date = DATE('now', 'localtime')"
-    )
-    row = cursor.fetchone()
-    successes_today, failures_today = row if row else (0, 0)
-
-    games_today = successes_today + failures_today
-    success_rate = (
-        round(successes_today / games_today * 100, 2) if games_today > 0 else 0.0
-    )
-
-    # Get total successes and failures across all time
-    cursor.execute("SELECT SUM(successes), SUM(failures) FROM game_stats")
-    row = cursor.fetchone()
-    total_successes, total_failures = row if row else (0, 0)
-
-    total_games = (total_successes or 0) + (total_failures or 0)
-
-    conn.close()
+    games_today, success_rate = get_games_today_stats()
+    total_games = get_total_games_count()
 
     if game_number is None:
         game_number = get_game_number_from_postgres()

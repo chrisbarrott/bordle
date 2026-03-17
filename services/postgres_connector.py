@@ -4,6 +4,7 @@ import os
 import json
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+import psycopg2
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extras import RealDictCursor
 import time
@@ -216,7 +217,11 @@ def fetch_one(query: str, params=None, log_errors: bool = True):
         with get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, params)
-                row = cur.fetchone()
+                try:
+                    row = cur.fetchone()
+                except psycopg2.ProgrammingError:
+                    # Statements like ALTER TABLE do not return rows.
+                    row = None
             if is_write_query:
                 conn.commit()
             else:
@@ -272,6 +277,38 @@ def fetch_value(query: str, params=None, log_errors: bool = True):
             _log_event(
                 "error",
                 "postgres_value_failure",
+                query=query,
+                params=params,
+                error=str(e),
+                duration=_elapsed_seconds(start_time),
+            )
+        raise
+
+
+def fetch_all(query: str, params=None, log_errors: bool = True):
+    """Execute a query and return all rows as a list of dicts, with logging and timing."""
+    params = params or ()
+    start_time = time.time()
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                rows = cur.fetchall()
+            conn.rollback()
+        _log_event(
+            "info",
+            "postgres_query_many_success",
+            query=query,
+            params=params if _debug_pool_logging else None,
+            row_count=len(rows),
+            duration=_elapsed_seconds(start_time),
+        )
+        return rows
+    except Exception as e:
+        if log_errors:
+            _log_event(
+                "error",
+                "postgres_query_many_failure",
                 query=query,
                 params=params,
                 error=str(e),

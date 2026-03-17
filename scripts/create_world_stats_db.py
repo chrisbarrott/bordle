@@ -1,9 +1,16 @@
-from services.game_database_connections import get_db_connection, init_db
+import os
+import sqlite3
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "..", "db", "games.db")
+
+
+def get_db_connection():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    return sqlite3.connect(DB_PATH)
 
 
 def create_location_stats_table():
-    init_db()
-
     conn = get_db_connection()
     cursor = conn.cursor()
 

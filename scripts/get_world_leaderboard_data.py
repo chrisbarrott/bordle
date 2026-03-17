@@ -1,10 +1,17 @@
-from services.game_database_connections import get_db_connection, init_db
+import os
+import sqlite3
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "..", "db", "games.db")
+
+
+def get_db_connection():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    return sqlite3.connect(DB_PATH)
 
 
 def get_world_stats():
     """Return all rows from the country_stats table as a list of dicts."""
-    init_db()
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -33,7 +40,6 @@ def get_world_stats():
 
 def remove_unknown_entries():
     """Remove all entries from country_stats where country == 'Unknown'."""
-    init_db()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM country_stats WHERE country = 'Unknown'")
