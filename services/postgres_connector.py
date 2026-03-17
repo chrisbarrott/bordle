@@ -64,16 +64,22 @@ def _is_local_env() -> bool:
 def _get_db_params():
     # Support a full DATABASE_URL or individual components
     local_database_url = os.getenv("DATABASE_URL_LOCAL") or os.getenv("POSTGRES_LOCAL_URL")
+    pgbouncer_database_url = os.getenv("DATABASE_URL_PGBOUNCER") or os.getenv("RENDER_PGBOUNCER_URL")
     external_database_url = os.getenv("DATABASE_URL_EXTERNAL")
     database_url = os.getenv("DATABASE_URL")
 
     if _is_local_env():
         if local_database_url:
             return {"dsn": local_database_url}
+        if pgbouncer_database_url:
+            return {"dsn": pgbouncer_database_url}
         if external_database_url:
             return {"dsn": external_database_url}
         if database_url:
             return {"dsn": database_url}
+
+    if pgbouncer_database_url:
+        return {"dsn": pgbouncer_database_url}
 
     if external_database_url:
         return {"dsn": external_database_url}
