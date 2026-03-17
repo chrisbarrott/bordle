@@ -102,6 +102,17 @@ ON CONFLICT (game_date, country, region, city) DO UPDATE SET
 """
 
 
+def get_sync_country_stats_id_sequence_query() -> str:
+    table_name = get_env_country_stats_table_name()
+    return f"""
+SELECT setval(
+    pg_get_serial_sequence('{table_name}', 'id'),
+    COALESCE((SELECT MAX(id) FROM {table_name}), 0) + 1,
+    false
+)
+"""
+
+
 def get_select_game_stats_for_date_query() -> str:
     table_name = get_env_game_stats_table_name()
     return f"""
@@ -290,6 +301,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    leaderboard_recorded,
     game_result
 FROM {table_name}
 WHERE player_uid = %s AND game_date::date = %s::date
@@ -311,8 +323,9 @@ WITH inserted AS (
         guessed_main_country,
         game_over,
         game_result_recorded,
+        leaderboard_recorded,
         game_result
-    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, 'In progress')
+    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, 0, 'In progress')
     ON CONFLICT (player_uid, game_date)
     DO NOTHING
     RETURNING
@@ -323,6 +336,7 @@ WITH inserted AS (
         guessed_main_country,
         game_over,
         game_result_recorded,
+        leaderboard_recorded,
         game_result
 )
 SELECT
@@ -333,6 +347,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    leaderboard_recorded,
     game_result
 FROM inserted
 UNION ALL
@@ -344,6 +359,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    leaderboard_recorded,
     game_result
 FROM {table_name}
 WHERE player_uid = %s
@@ -365,6 +381,7 @@ SET
     guessed_main_country = %s,
     game_over = %s,
     game_result_recorded = %s,
+    leaderboard_recorded = %s,
     game_result = %s,
     recorded_at = CURRENT_TIMESTAMP
 WHERE player_uid = %s
@@ -377,5 +394,6 @@ RETURNING
     guessed_main_country,
     game_over,
     game_result_recorded,
+    leaderboard_recorded,
     game_result
 """

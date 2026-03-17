@@ -24,6 +24,7 @@ from .sql_queries import (
     get_update_player_game_state_guess_query,
     get_upsert_game_stats_query,
     get_upsert_country_stats_query,
+    get_sync_country_stats_id_sequence_query,
     get_select_game_stats_for_date_query,
     get_select_total_games_query,
     get_select_daily_leaderboard_query,
@@ -60,6 +61,10 @@ def _ensure_player_game_state_schema() -> None:
             f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS game_result TEXT DEFAULT 'In progress'",
             log_errors=False,
         )
+        fetch_one(
+            f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS leaderboard_recorded BOOLEAN DEFAULT FALSE",
+            log_errors=False,
+        )
         _player_state_schema_ready = True
     except Exception:
         logger.exception(f"[POSTGRES] failed ensuring game_result column on {table_name}")
@@ -77,6 +82,7 @@ def _normalize_player_state(row: Optional[Dict]) -> Optional[Dict[str, object]]:
         "guessed_main_country": bool(row.get("guessed_main_country", False)),
         "game_over": bool(row.get("game_over", False)),
         "game_result_recorded": bool(row.get("game_result_recorded", False)),
+        "leaderboard_recorded": bool(row.get("leaderboard_recorded", False)),
         "game_result": row.get("game_result") or "In progress",
     }
 
@@ -212,7 +218,7 @@ def ensure_daily_game_for_date(target_date: Optional[date] = None) -> Optional[D
     return None
 
 
-def record_postgres_game_stats(success: bool, game_date: Optional[date] = None) -> None:
+def record_postgres_game_stats(success: bool, game_date: Optional[date] = None) -> bool:
     """Upsert win/loss totals into the Postgres <env>_game_stats table."""
     if game_date is None:
         game_date = _today_uk_date()
@@ -222,8 +228,14 @@ def record_postgres_game_stats(success: bool, game_date: Optional[date] = None) 
             (game_date.isoformat(), 1 if success else 0, 0 if success else 1),
         )
         logger.info(f"[POSTGRES] game_stats upserted: date={game_date}, success={success}")
+        return True
     except Exception:
         logger.exception(f"[POSTGRES] record_postgres_game_stats failed: date={game_date}")
+        return False
+
+
+def _sync_country_stats_id_sequence() -> None:
+    fetch_one(get_sync_country_stats_id_sequence_query(), log_errors=False)
 
 
 def record_postgres_country_stats(
@@ -232,31 +244,39 @@ def record_postgres_country_stats(
     region: str,
     city: str,
     game_date: Optional[date] = None,
-) -> None:
+) -> bool:
     """Upsert play/win/loss counts into the Postgres <env>_country_stats table."""
     if not country or country == "Unknown":
-        return
+        return False
     if game_date is None:
         game_date = _today_uk_date()
+    params = (
+        game_date.isoformat(),
+        country,
+        region or "",
+        city or "",
+        1 if success else 0,
+        0 if success else 1,
+    )
     try:
-        fetch_one(
-            get_upsert_country_stats_query(),
-            (
-                game_date.isoformat(),
-                country,
-                region or "",
-                city or "",
-                1 if success else 0,
-                0 if success else 1,
-            ),
-        )
+        fetch_one(get_upsert_country_stats_query(), params)
         logger.info(
             f"[POSTGRES] country_stats upserted: date={game_date}, country={country}, success={success}"
         )
+        return True
     except Exception:
-        logger.exception(
-            f"[POSTGRES] record_postgres_country_stats failed: date={game_date}, country={country}"
-        )
+        try:
+            _sync_country_stats_id_sequence()
+            fetch_one(get_upsert_country_stats_query(), params)
+            logger.info(
+                f"[POSTGRES] country_stats upserted after sequence sync: date={game_date}, country={country}, success={success}"
+            )
+            return True
+        except Exception:
+            logger.exception(
+                f"[POSTGRES] record_postgres_country_stats failed: date={game_date}, country={country}"
+            )
+            return False
 
 
 def record_postgres_player_stats(
@@ -454,6 +474,7 @@ def upsert_game_state(
     hard_mode: bool,
     game_over: bool,
     game_result_recorded: bool,
+    leaderboard_recorded: bool,
     game_result: str = "In progress",
     game_number: Optional[int] = None,
     target_date: Optional[date] = None,
@@ -476,6 +497,7 @@ def upsert_game_state(
         int(bool(guessed_main_country)),
         int(bool(game_over)),
         int(bool(game_result_recorded)),
+        int(bool(leaderboard_recorded)),
         game_result,
         player_uid,
         target_date_param,

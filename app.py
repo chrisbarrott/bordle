@@ -83,7 +83,6 @@ def _build_game_response(player_uid: str, is_new_player: bool = False):
             "index.html",
             **game_state,
             iso_map=iso_map,
-            player_uid=player_uid,
             bordle_stats=bordle_stats,
             games_today=games_today,
             total_games=total_games,
