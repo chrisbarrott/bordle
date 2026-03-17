@@ -71,6 +71,39 @@ with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
 with open("static/map_data/iso_country_codes.json", "r", encoding="utf-8") as f:
     iso_map = json.load(f)
 
+
+def _build_game_response(player_uid: str, is_new_player: bool = False):
+    game_state = get_game_state(session)
+    games_today, today_success_rate = get_games_today()
+    total_games = get_total_games()
+    bordle_stats = analytics()
+
+    resp = make_response(
+        render_template(
+            "index.html",
+            **game_state,
+            iso_map=iso_map,
+            player_uid=player_uid,
+            bordle_stats=bordle_stats,
+            games_today=games_today,
+            total_games=total_games,
+            today_success_rate=today_success_rate,
+            borders_hint_declined=session.get("borders_hint_declined", False),
+        )
+    )
+
+    if is_new_player:
+        resp.set_cookie(
+            "player_uid",
+            player_uid,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+        )
+
+    return resp
+
 # Landing page
 @app.route("/", methods=["GET"])
 def landing():
@@ -179,41 +212,9 @@ def game():
     if request.method == "POST":
         guess = request.form.get("guess", "").strip()
         process_guess(guess, session)
-        return redirect(url_for("game"))
+        return _build_game_response(player_uid, is_new_player)
 
-    # Build game state
-    game_state = get_game_state(session)
-    games_today, today_success_rate = get_games_today()
-    total_games = get_total_games()
-    bordle_stats = analytics()
-
-    # Render template
-    resp = make_response(
-        render_template(
-            "index.html",
-            **game_state,
-            iso_map=iso_map,
-            player_uid=player_uid,
-            bordle_stats=bordle_stats,
-            games_today=games_today,
-            total_games=total_games,
-            today_success_rate=today_success_rate,
-            borders_hint_declined=session.get("borders_hint_declined", False),
-        )
-    )
-
-    # Set cookie ONLY if new
-    if is_new_player:
-        resp.set_cookie(
-            "player_uid",
-            player_uid,
-            max_age=60 * 60 * 24 * 365,
-            httponly=True,
-            secure=True,
-            samesite="Lax",
-        )
-
-    return resp
+    return _build_game_response(player_uid, is_new_player)
 
 
 @app.route("/stats")
@@ -289,6 +290,9 @@ def contact_submit():
 
 @app.route("/submit", methods=["POST"])
 def submit():
+    player_uid, is_new_player = get_or_create_player_uid()
+    session["player_uid"] = player_uid
+
     # Handle the guess
     guess = request.form.get("guess", "").strip()
 
@@ -297,11 +301,11 @@ def submit():
         return redirect(url_for("game"))
 
     if "country_name" not in session:
-        return redirect(url_for("game"))
+        initialize_game(session, player_uid)
 
     # Use game logic to process the guess
     process_guess(guess, session)
-    return redirect(url_for("game"))
+    return _build_game_response(player_uid, is_new_player)
 
 
 @app.route("/reset")

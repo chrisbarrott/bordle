@@ -17,6 +17,7 @@ from services.game_database_connections import (
 from services.game_cache import daily_game_cache
 from services.game_db_logic import (
     create_game_state_row,
+    load_game_state,
     upsert_game_state,
 )
 from services.game_get_data import (
@@ -124,11 +125,13 @@ def process_guess(guess, session):
     if not player_uid or not country_name:
         return
 
-    persisted_state = create_game_state_row(
-        player_uid,
-        hard_mode=session.get("hard_mode", False),
-        game_number=session.get("game_number", daily_game_cache.game_number),
-    )
+    persisted_state = load_game_state(player_uid)
+    if not persisted_state:
+        persisted_state = create_game_state_row(
+            player_uid,
+            hard_mode=session.get("hard_mode", False),
+            game_number=session.get("game_number", daily_game_cache.game_number),
+        )
     if not persisted_state:
         return
 
@@ -282,11 +285,13 @@ def get_game_state(session):
     game_number = daily_game_cache.game_number
     session["game_number"] = game_number
 
-    persisted_state = create_game_state_row(
-        player_uid,
-        hard_mode=session.get("hard_mode", False),
-        game_number=game_number,
-    )
+    persisted_state = load_game_state(player_uid)
+    if not persisted_state:
+        persisted_state = create_game_state_row(
+            player_uid,
+            hard_mode=session.get("hard_mode", False),
+            game_number=game_number,
+        )
 
     persisted_state = persisted_state or {}
     guess_history = list(persisted_state.get("guess_history", []))
