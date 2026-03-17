@@ -143,6 +143,7 @@ def process_guess(guess, session):
     wrong_guesses = list(persisted_state.get("wrong_guesses", []))
     guessed_main_country = bool(persisted_state.get("guessed_main_country", False))
     game_result_recorded = bool(persisted_state.get("game_result_recorded", False))
+    player_stats_recorded = bool(persisted_state.get("player_stats_recorded", False))
     leaderboard_recorded = bool(persisted_state.get("leaderboard_recorded", False))
     hard_mode = bool(persisted_state.get("hard_mode", session.get("hard_mode", False)))
     correct_borders = border_map.get(country_name, [])
@@ -160,6 +161,7 @@ def process_guess(guess, session):
                 hard_mode=hard_mode,
                 game_over=False,
                 game_result_recorded=game_result_recorded,
+                player_stats_recorded=player_stats_recorded,
                 leaderboard_recorded=leaderboard_recorded,
                 game_result="In progress",
                 game_number=session.get("game_number", daily_game_cache.game_number),
@@ -186,6 +188,7 @@ def process_guess(guess, session):
         hard_mode=hard_mode,
         game_over=game_over_now,
         game_result_recorded=game_result_recorded,
+        player_stats_recorded=player_stats_recorded,
         leaderboard_recorded=leaderboard_recorded,
         game_result=_derive_game_result(game_over_now, is_win),
         game_number=session.get("game_number", daily_game_cache.game_number),
@@ -306,6 +309,7 @@ def get_game_state(session):
     hard_mode = bool(persisted_state.get("hard_mode", session.get("hard_mode", False)))
     guessed_main_country = bool(persisted_state.get("guessed_main_country", False))
     game_result_recorded = bool(persisted_state.get("game_result_recorded", False))
+    player_stats_recorded = bool(persisted_state.get("player_stats_recorded", False))
     leaderboard_recorded = bool(persisted_state.get("leaderboard_recorded", False))
     border_names = border_map.get(country_name, [])
     border_count = len(border_names)
@@ -344,9 +348,9 @@ def get_game_state(session):
         if not game_result_recorded:
             game_result_recorded = record_postgres_game_stats(did_win)
 
-            # Only record player stats if game result was successfully recorded to ensure consistency between game results and player/country stats.
-            if game_result_recorded:
-                record_postgres_player_stats(did_win, player_uid, country, city)
+        # Record player stats independently — only once per completed game.
+        if not player_stats_recorded:
+            player_stats_recorded = bool(record_postgres_player_stats(did_win, player_uid, country, city))
 
         # Only record country stats if game result was successfully recorded to ensure consistency between game results and country stats.
         if not leaderboard_recorded:
@@ -365,6 +369,7 @@ def get_game_state(session):
             hard_mode=hard_mode,
             game_over=game_over,
             game_result_recorded=game_result_recorded,
+            player_stats_recorded=player_stats_recorded,
             leaderboard_recorded=leaderboard_recorded,
             game_result=game_result,
             game_number=game_number,
@@ -385,6 +390,7 @@ def get_game_state(session):
         "country_name": country_name,
         "game_result": game_result,
         "game_result_recorded": game_result_recorded,
+        "player_stats_recorded": player_stats_recorded,
         "leaderboard_recorded": leaderboard_recorded,
         "game_over": game_over,
         "game_number": game_number,

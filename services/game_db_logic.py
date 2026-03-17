@@ -65,6 +65,10 @@ def _ensure_player_game_state_schema() -> None:
             f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS leaderboard_recorded BOOLEAN DEFAULT FALSE",
             log_errors=False,
         )
+        fetch_one(
+            f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS player_stats_recorded BOOLEAN DEFAULT FALSE",
+            log_errors=False,
+        )
         _player_state_schema_ready = True
     except Exception:
         logger.exception(f"[POSTGRES] failed ensuring game_result column on {table_name}")
@@ -82,6 +86,7 @@ def _normalize_player_state(row: Optional[Dict]) -> Optional[Dict[str, object]]:
         "guessed_main_country": bool(row.get("guessed_main_country", False)),
         "game_over": bool(row.get("game_over", False)),
         "game_result_recorded": bool(row.get("game_result_recorded", False)),
+        "player_stats_recorded": bool(row.get("player_stats_recorded", False)),
         "leaderboard_recorded": bool(row.get("leaderboard_recorded", False)),
         "game_result": row.get("game_result") or "In progress",
     }
@@ -474,6 +479,7 @@ def upsert_game_state(
     hard_mode: bool,
     game_over: bool,
     game_result_recorded: bool,
+    player_stats_recorded: bool,
     leaderboard_recorded: bool,
     game_result: str = "In progress",
     game_number: Optional[int] = None,
@@ -497,6 +503,7 @@ def upsert_game_state(
         int(bool(guessed_main_country)),
         int(bool(game_over)),
         int(bool(game_result_recorded)),
+        int(bool(player_stats_recorded)),
         int(bool(leaderboard_recorded)),
         game_result,
         player_uid,

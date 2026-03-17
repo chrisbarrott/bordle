@@ -301,6 +301,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    player_stats_recorded,
     leaderboard_recorded,
     game_result
 FROM {table_name}
@@ -323,9 +324,10 @@ WITH inserted AS (
         guessed_main_country,
         game_over,
         game_result_recorded,
+        player_stats_recorded,
         leaderboard_recorded,
         game_result
-    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, 0, 'In progress')
+    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, 0, 0, 'In progress')
     ON CONFLICT (player_uid, game_date)
     DO NOTHING
     RETURNING
@@ -336,6 +338,7 @@ WITH inserted AS (
         guessed_main_country,
         game_over,
         game_result_recorded,
+        player_stats_recorded,
         leaderboard_recorded,
         game_result
 )
@@ -347,6 +350,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    player_stats_recorded,
     leaderboard_recorded,
     game_result
 FROM inserted
@@ -359,6 +363,7 @@ SELECT
     guessed_main_country,
     game_over,
     game_result_recorded,
+    player_stats_recorded,
     leaderboard_recorded,
     game_result
 FROM {table_name}
@@ -381,6 +386,7 @@ SET
     guessed_main_country = %s,
     game_over = %s,
     game_result_recorded = %s,
+    player_stats_recorded = %s,
     leaderboard_recorded = %s,
     game_result = %s,
     recorded_at = CURRENT_TIMESTAMP
@@ -394,6 +400,7 @@ RETURNING
     guessed_main_country,
     game_over,
     game_result_recorded,
+    player_stats_recorded,
     leaderboard_recorded,
     game_result
 """
