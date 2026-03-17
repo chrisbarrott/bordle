@@ -15,6 +15,7 @@ load_dotenv()
 
 _connection_pool = None
 _pool_params_key = None
+_debug_pool_logging = os.getenv("POSTGRES_DEBUG_POOL_LOGS", "false").strip().lower() == "true"
 
 
 def _json_log(payload: dict) -> str:
@@ -168,11 +169,13 @@ def get_connection():
     conn = None
     start_time = time.time()
     safe_params = _sanitize_db_params(params)
-    _log_event("info", "postgres_pool_acquire_attempt", params=safe_params)
+    if _debug_pool_logging:
+        _log_event("info", "postgres_pool_acquire_attempt", params=safe_params)
     try:
         conn = pool.getconn()
         conn.autocommit = False
-        _log_event("info", "postgres_pool_acquire_success", duration=_elapsed_seconds(start_time))
+        if _debug_pool_logging:
+            _log_event("info", "postgres_pool_acquire_success", duration=_elapsed_seconds(start_time))
     except Exception as e:
         _log_event(
             "error",
@@ -198,7 +201,8 @@ def get_connection():
                     pool.putconn(conn, close=True)
                 else:
                     pool.putconn(conn)
-                _log_event("info", "postgres_pool_release", duration=_elapsed_seconds(start_time))
+                if _debug_pool_logging:
+                    _log_event("info", "postgres_pool_release", duration=_elapsed_seconds(start_time))
             except Exception as e:
                 _log_event("error", "postgres_pool_release_failure", error=str(e))
 
@@ -209,7 +213,6 @@ def fetch_one(query: str, params=None, log_errors: bool = True):
     start_time = time.time()
     is_write_query = _is_write_query(query)
     try:
-        _log_event("info", "postgres_query_start", query=query, params=params)
         with get_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, params)
@@ -222,7 +225,7 @@ def fetch_one(query: str, params=None, log_errors: bool = True):
             "info",
             "postgres_query_success",
             query=query,
-            params=params,
+            params=params if _debug_pool_logging else None,
             duration=_elapsed_seconds(start_time),
             write_query=is_write_query,
         )
