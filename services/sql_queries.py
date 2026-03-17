@@ -15,6 +15,22 @@ GET_DAILY_GAME_BY_DATE = (
     "SELECT country AS country_name FROM daily_game WHERE game_date = %s LIMIT 1"
 )
 
+GET_MAX_DAILY_GAME_ROTATION = (
+    "SELECT MAX(rotation) AS max_rotation FROM daily_game"
+)
+
+GET_USED_COUNTRIES_FOR_ROTATION = (
+    "SELECT COALESCE(json_agg(country), '[]'::json) AS used_countries FROM daily_game WHERE rotation = %s"
+)
+
+INSERT_DAILY_GAME_ROW = """
+INSERT INTO daily_game (game_date, country, rotation)
+VALUES (%s, %s, %s)
+ON CONFLICT (game_date)
+DO NOTHING
+RETURNING country AS country_name
+"""
+
 _SAFE_IDENTIFIER = re.compile(r"[^a-z0-9_]")
 
 

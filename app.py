@@ -1,8 +1,9 @@
 # app.py
 
 from dotenv import load_dotenv
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import os
+from zoneinfo import ZoneInfo
 
 from flask import (
     Flask,
@@ -42,6 +43,12 @@ logger = setup_logger()
 
 # Load environment variables from .env file
 load_dotenv()
+
+UK_TZ = ZoneInfo("Europe/London")
+
+
+def _uk_today_str() -> str:
+    return datetime.now(UK_TZ).date().isoformat()
 
 
 def get_game_number_from_postgres() -> int:
@@ -157,7 +164,7 @@ def game():
     session["player_uid"] = player_uid
 
     # init the game if a new day
-    today = str(date.today())
+    today = _uk_today_str()
 
     if "game_date" not in session or session["game_date"] != today:
         initialize_game(session, player_uid)
@@ -541,6 +548,7 @@ def log_player_recovery():
 # Warm the cache at startup so the first request doesn't pay the Postgres cost.
 try:
     daily_game_cache.refresh()
+    daily_game_cache.start_background_refresh()
 except Exception as _cache_err:
     logger.warning(f"[DAILY_CACHE] Startup warm failed: {_cache_err}")
 
@@ -548,5 +556,4 @@ except Exception as _cache_err:
 if __name__ == "__main__":
     flask_env = os.getenv("FLASK_ENV", "production").lower()
     debug_mode = flask_env in ["development", "local"]
-    daily_game_cache.start_background_refresh()
     app.run(debug=debug_mode)

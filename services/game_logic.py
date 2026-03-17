@@ -1,4 +1,3 @@
-from datetime import date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from flask import request, session
@@ -8,6 +7,7 @@ import math
 import os
 import smtplib
 import uuid
+from zoneinfo import ZoneInfo
 
 from services.game_database_connections import (
     init_db,
@@ -29,6 +29,13 @@ from services.game_logger import setup_logger
 
 # Setup logger
 logger = setup_logger()
+UK_TZ = ZoneInfo("Europe/London")
+
+
+def _uk_today_str() -> str:
+    from datetime import datetime
+
+    return datetime.now(UK_TZ).date().isoformat()
 
 # Load border map once
 with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
@@ -66,7 +73,7 @@ def initialize_game(session, player_uid=None):
     init_db()
 
     # Set today so we can run a new init each day
-    session["game_date"] = str(date.today())
+    session["game_date"] = _uk_today_str()
 
     # Resolve from explicit arg first, then cookie/session fallbacks.
     player_uid = _resolve_player_uid(session, player_uid)
@@ -76,7 +83,7 @@ def initialize_game(session, player_uid=None):
     country_name = _get_today_country_name()
     session["country_name"] = country_name
     session["game_number"] = daily_game_cache.game_number
-    session["game_date"] = str(date.today())
+    session["game_date"] = _uk_today_str()
 
     # Keep only lightweight UI/session values.
     session["show_border_lines"] = session.get("show_border_lines", False)

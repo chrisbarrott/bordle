@@ -5,6 +5,8 @@ current game number and the country for the game of the day.
 """
 from datetime import date
 import json
+import random
+from zoneinfo import ZoneInfo
 from typing import Optional, Dict
 
 from .game_logger import setup_logger
@@ -12,12 +14,25 @@ from .postgres_connector import fetch_one, fetch_value
 from .sql_queries import (
     GET_COUNT_DAILY_GAMES,
     GET_DAILY_GAME_BY_DATE,
+    GET_MAX_DAILY_GAME_ROTATION,
+    GET_USED_COUNTRIES_FOR_ROTATION,
+    INSERT_DAILY_GAME_ROW,
     get_insert_player_game_state_row_query,
     get_select_player_game_state_query,
     get_update_player_game_state_guess_query,
 )
 
 logger = setup_logger()
+
+UK_TZ = ZoneInfo("Europe/London")
+
+with open("static/map_data/country_drop_down.json", "r", encoding="utf-8") as f:
+    _all_countries = set(json.load(f))
+
+with open("static/map_data/border_map.json", "r", encoding="utf-8") as f:
+    _border_map = json.load(f)
+
+_borderable_countries = [country for country in _all_countries if country in _border_map]
 
 
 def _normalize_player_state(row: Optional[Dict]) -> Optional[Dict[str, object]]:
@@ -62,7 +77,9 @@ def get_country_of_the_day(target_date: Optional[date] = None) -> Optional[Dict[
     The shape returned is {"country_code": ..., "country_name": ...}.
     """
     if target_date is None:
-        target_date = date.today()
+        target_date = _today_uk_date()
+
+    ensure_daily_game_for_date(target_date)
     target_date_param = target_date.isoformat()
     try:
         row = fetch_one(GET_DAILY_GAME_BY_DATE, (target_date_param,))
@@ -80,12 +97,80 @@ def get_country_of_the_day(target_date: Optional[date] = None) -> Optional[Dict[
     }
 
 
+def _today_uk_date() -> date:
+    from datetime import datetime
+
+    return datetime.now(UK_TZ).date()
+
+
+def _get_current_rotation() -> int:
+    row = fetch_one(GET_MAX_DAILY_GAME_ROTATION)
+    value = row.get("max_rotation") if row else None
+    return int(value) if value is not None else 0
+
+
+def _get_used_countries(rotation: int) -> set[str]:
+    row = fetch_one(GET_USED_COUNTRIES_FOR_ROTATION, (rotation,))
+    if not row:
+        return set()
+
+    used = row.get("used_countries") or []
+    return {country for country in used if country}
+
+
+def ensure_daily_game_for_date(target_date: Optional[date] = None) -> Optional[Dict[str, str]]:
+    if target_date is None:
+        target_date = _today_uk_date()
+
+    target_date_param = target_date.isoformat()
+
+    existing = fetch_one(GET_DAILY_GAME_BY_DATE, (target_date_param,))
+    if existing:
+        return {"country_code": None, "country_name": existing.get("country_name")}
+
+    if not _borderable_countries:
+        logger.error("[POSTGRES] No borderable countries available to assign daily game")
+        return None
+
+    # Retry a few times in case two processes race to create today's row.
+    for _ in range(3):
+        current_rotation = _get_current_rotation()
+        used = _get_used_countries(current_rotation)
+
+        remaining = [country for country in _borderable_countries if country not in used]
+        if not remaining:
+            current_rotation += 1
+            remaining = list(_borderable_countries)
+
+        chosen_country = random.choice(remaining)
+        inserted = fetch_one(
+            INSERT_DAILY_GAME_ROW,
+            (target_date_param, chosen_country, current_rotation),
+        )
+        if inserted:
+            country_name = inserted.get("country_name")
+            logger.info(
+                f"[POSTGRES] Assigned daily country: {country_name} for date={target_date_param}, rotation={current_rotation}"
+            )
+            return {"country_code": None, "country_name": country_name}
+
+        existing_after_conflict = fetch_one(GET_DAILY_GAME_BY_DATE, (target_date_param,))
+        if existing_after_conflict:
+            return {
+                "country_code": None,
+                "country_name": existing_after_conflict.get("country_name"),
+            }
+
+    logger.error(f"[POSTGRES] Failed to ensure daily game row for date={target_date_param}")
+    return None
+
+
 def load_game_state(player_uid: Optional[str], target_date: Optional[date] = None) -> Optional[Dict[str, object]]:
     if not player_uid:
         return None
 
     if target_date is None:
-        target_date = date.today()
+        target_date = _today_uk_date()
 
     target_date_param = target_date.isoformat()
     try:
@@ -109,7 +194,7 @@ def create_game_state_row(
         return None
 
     if target_date is None:
-        target_date = date.today()
+        target_date = _today_uk_date()
 
     resolved_game_number = game_number if game_number is not None else get_current_game_number()
     target_date_param = target_date.isoformat()
@@ -149,7 +234,7 @@ def upsert_game_state(
         return None
 
     if target_date is None:
-        target_date = date.today()
+        target_date = _today_uk_date()
 
     resolved_game_number = game_number if game_number is not None else get_current_game_number()
     target_date_param = target_date.isoformat()
