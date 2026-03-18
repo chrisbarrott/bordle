@@ -327,7 +327,7 @@ WITH inserted AS (
         player_stats_recorded,
         leaderboard_recorded,
         game_result
-    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, 0, 0, 'In progress')
+    ) VALUES (%s, %s, %s, '[]', '[]', %s, 0, 0, 0, FALSE, 0, 'In progress')
     ON CONFLICT (player_uid, game_date)
     DO NOTHING
     RETURNING

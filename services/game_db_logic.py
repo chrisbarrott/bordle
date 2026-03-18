@@ -503,7 +503,7 @@ def upsert_game_state(
         int(bool(guessed_main_country)),
         int(bool(game_over)),
         int(bool(game_result_recorded)),
-        int(bool(player_stats_recorded)),
+        bool(player_stats_recorded),
         int(bool(leaderboard_recorded)),
         game_result,
         player_uid,
