@@ -1,4 +1,5 @@
 import json
+import os
 
 from flask import request
 import requests
@@ -69,6 +70,9 @@ def get_all_drop_down_options():
 
 
 def get_user_location(user_ip: str):
+    if os.getenv("FLASK_ENV", "").lower() == "local":
+        return "United Kingdom", "England", "Sheffield"
+
     # Default values
     country = "Unknown"
     region = "Unknown"
