@@ -30,8 +30,12 @@ def _normalize_identifier_part(value: str) -> str:
 
 
 def _resolve_env_prefix(explicit_prefix: str | None) -> str:
-	if explicit_prefix:
+	"""Return the table prefix string, or "" for production (unprefixed tables)."""
+	if explicit_prefix is not None:
 		normalized = _normalize_identifier_part(explicit_prefix)
+		if normalized in {"prod", "production"}:
+			print("Using unprefixed production table names (country_stats, game_stats, etc.).")
+			return ""
 		if normalized:
 			return normalized
 
@@ -43,12 +47,16 @@ def _resolve_env_prefix(explicit_prefix: str | None) -> str:
 	if flask_env == "local":
 		flask_env = "development"
 
-	if flask_env and flask_env not in {"prod", "production"}:
+	if flask_env in {"prod", "production"}:
+		print("FLASK_ENV is production — using unprefixed production table names.")
+		return ""
+
+	if flask_env:
 		return flask_env
 
 	raise ValueError(
-		"Unable to resolve an env table prefix. Pass --env-prefix or set "
-		"POSTGRES_TABLE_PREFIX/FLASK_ENV to a non-production value."
+		"Unable to resolve an env table prefix. Pass --env-prefix (use 'production' for "
+		"unprefixed prod tables) or set POSTGRES_TABLE_PREFIX/FLASK_ENV."
 	)
 
 
@@ -167,6 +175,157 @@ def _read_sqlite_daily_games(sqlite_path: Path) -> tuple[list[tuple[str, str, in
 	return rows, source_table
 
 
+def _read_sqlite_table_rows(sqlite_path: Path, query: str) -> list[tuple]:
+	connection = sqlite3.connect(sqlite_path)
+	try:
+		cursor = connection.cursor()
+		cursor.execute(query)
+		return cursor.fetchall()
+	finally:
+		connection.close()
+
+
+def _read_sqlite_country_stats(
+	sqlite_path: Path,
+) -> list[tuple[int, str, str | None, str | None, str | None, int, int, int]]:
+	rows = _read_sqlite_table_rows(
+		sqlite_path,
+		"""
+		SELECT id, game_date, country, region, city, plays, successes, failures
+		FROM country_stats
+		ORDER BY id ASC
+		""",
+	)
+	return [
+		(
+			int(row_id),
+			str(game_date),
+			country,
+			region,
+			city,
+			int(plays or 0),
+			int(successes or 0),
+			int(failures or 0),
+		)
+		for row_id, game_date, country, region, city, plays, successes, failures in rows
+	]
+
+
+def _read_sqlite_game_stats(sqlite_path: Path) -> list[tuple[str, int, int]]:
+	rows = _read_sqlite_table_rows(
+		sqlite_path,
+		"""
+		SELECT game_date, successes, failures
+		FROM game_stats
+		ORDER BY game_date ASC
+		""",
+	)
+	return [
+		(str(game_date), int(successes or 0), int(failures or 0))
+		for game_date, successes, failures in rows
+	]
+
+
+def _read_sqlite_player_stats(
+	sqlite_path: Path,
+) -> list[tuple[str, int, int, int, int, int, str | None, str | None, str | None]]:
+	rows = _read_sqlite_table_rows(
+		sqlite_path,
+		"""
+		SELECT
+			player_uid,
+			games_played,
+			games_won,
+			current_streak,
+			best_streak,
+			migrated,
+			last_updated,
+			player_city,
+			player_country
+		FROM player_stats
+		ORDER BY player_uid ASC
+		""",
+	)
+	return [
+		(
+			str(player_uid),
+			int(games_played or 0),
+			int(games_won or 0),
+			int(current_streak or 0),
+			int(best_streak or 0),
+			int(migrated or 0),
+			last_updated,
+			player_city,
+			player_country,
+		)
+		for (
+			player_uid,
+			games_played,
+			games_won,
+			current_streak,
+			best_streak,
+			migrated,
+			last_updated,
+			player_city,
+			player_country,
+		) in rows
+	]
+
+
+def _derive_game_result(guessed_main_country: int, game_over: int) -> str:
+	if not int(game_over or 0):
+		return "In progress"
+	if int(guessed_main_country or 0):
+		return "Won"
+	return "Lost"
+
+
+def _read_sqlite_player_game_state(sqlite_path: Path) -> list[tuple]:
+	rows = _read_sqlite_table_rows(
+		sqlite_path,
+		"""
+		SELECT
+			player_uid,
+			game_date,
+			guess_history,
+			wrong_guesses,
+			guessed_main_country,
+			game_over,
+			hard_mode,
+			game_result_recorded
+		FROM player_daily_state
+		ORDER BY game_date ASC, player_uid ASC
+		""",
+	)
+	return [
+		(
+			str(player_uid),
+			str(game_date),
+			None,
+			guess_history or "[]",
+			wrong_guesses or "[]",
+			int(hard_mode or 0),
+			int(guessed_main_country or 0),
+			int(game_over or 0),
+			_derive_game_result(guessed_main_country, game_over),
+			int(game_result_recorded or 0),
+			0,
+			None,
+			False,
+		)
+		for (
+			player_uid,
+			game_date,
+			guess_history,
+			wrong_guesses,
+			guessed_main_country,
+			game_over,
+			hard_mode,
+			game_result_recorded,
+		) in rows
+	]
+
+
 def _recreate_daily_game_table(cursor: psycopg2.extensions.cursor) -> None:
 	cursor.execute("DROP TABLE IF EXISTS daily_game")
 	cursor.execute(
@@ -199,6 +358,118 @@ def _load_daily_games(
 		page_size=500,
 	)
 	return len(daily_games)
+
+
+def _load_country_stats(cursor: psycopg2.extensions.cursor, table_name: str, rows: list[tuple]) -> int:
+	if not rows:
+		return 0
+
+	execute_values(
+		cursor,
+		sql.SQL(
+			"""
+			INSERT INTO {} (id, game_date, country, region, city, plays, successes, failures)
+			VALUES %s
+			"""
+		).format(sql.Identifier(table_name)).as_string(cursor),
+		rows,
+		template="(%s, %s, %s, %s, %s, %s, %s, %s)",
+		page_size=500,
+	)
+	cursor.execute(
+		sql.SQL(
+			"""
+			SELECT setval(
+				pg_get_serial_sequence(%s, 'id'),
+				COALESCE((SELECT MAX(id) FROM {}), 1),
+				true
+			)
+			"""
+		).format(sql.Identifier(table_name)),
+		(table_name,),
+	)
+	return len(rows)
+
+
+def _load_game_stats(cursor: psycopg2.extensions.cursor, table_name: str, rows: list[tuple]) -> int:
+	if not rows:
+		return 0
+
+	execute_values(
+		cursor,
+		sql.SQL(
+			"""
+			INSERT INTO {} (game_date, successes, failures)
+			VALUES %s
+			"""
+		).format(sql.Identifier(table_name)).as_string(cursor),
+		rows,
+		template="(%s::date, %s, %s)",
+		page_size=500,
+	)
+	return len(rows)
+
+
+def _load_player_stats(cursor: psycopg2.extensions.cursor, table_name: str, rows: list[tuple]) -> int:
+	if not rows:
+		return 0
+
+	execute_values(
+		cursor,
+		sql.SQL(
+			"""
+			INSERT INTO {} (
+				player_uid,
+				games_played,
+				games_won,
+				current_streak,
+				best_streak,
+				migrated,
+				last_updated,
+				player_city,
+				player_country
+			)
+			VALUES %s
+			"""
+		).format(sql.Identifier(table_name)).as_string(cursor),
+		rows,
+		template="(%s, %s, %s, %s, %s, %s, %s::date, %s, %s)",
+		page_size=500,
+	)
+	return len(rows)
+
+
+def _load_player_game_state(cursor: psycopg2.extensions.cursor, table_name: str, rows: list[tuple]) -> int:
+	if not rows:
+		return 0
+
+	execute_values(
+		cursor,
+		sql.SQL(
+			"""
+			INSERT INTO {} (
+				player_uid,
+				game_date,
+				game_number,
+				guess_history,
+				wrong_guesses,
+				hard_mode,
+				guessed_main_country,
+				game_over,
+				game_result,
+				game_result_recorded,
+				leaderboard_recorded,
+				recorded_at,
+				player_stats_recorded
+			)
+			VALUES %s
+			"""
+		).format(sql.Identifier(table_name)).as_string(cursor),
+		rows,
+		template="(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+		page_size=500,
+	)
+	return len(rows)
 
 
 def _create_country_stats_table(
@@ -301,12 +572,20 @@ def _create_player_stats_table(
 
 
 def _create_env_tables(cursor: psycopg2.extensions.cursor, env_prefix: str) -> list[str]:
-	table_names = [
-		f"{env_prefix}_country_stats",
-		f"{env_prefix}_game_stats",
-		f"{env_prefix}_player_game_state",
-		f"{env_prefix}_player_stats",
-	]
+	if env_prefix:
+		table_names = [
+			f"{env_prefix}_country_stats",
+			f"{env_prefix}_game_stats",
+			f"{env_prefix}_player_game_state",
+			f"{env_prefix}_player_stats",
+		]
+	else:
+		table_names = [
+			"country_stats",
+			"game_stats",
+			"player_game_state",
+			"player_stats",
+		]
 
 	_create_country_stats_table(cursor, table_names[0])
 	_create_game_stats_table(cursor, table_names[1])
@@ -316,13 +595,17 @@ def _create_env_tables(cursor: psycopg2.extensions.cursor, env_prefix: str) -> l
 
 
 def migrate(sqlite_path: Path, env_prefix: str, allow_development_prefix: bool) -> None:
-	if env_prefix == "development" and not allow_development_prefix:
+	if env_prefix and env_prefix == "development" and not allow_development_prefix:
 		raise ValueError(
 			"Refusing to recreate development_* tables by default. "
 			"Pass --allow-development-prefix if you intend to replace them."
 		)
 
 	daily_games, source_table = _read_sqlite_daily_games(sqlite_path)
+	country_stats_rows = _read_sqlite_country_stats(sqlite_path)
+	game_stats_rows = _read_sqlite_game_stats(sqlite_path)
+	player_stats_rows = _read_sqlite_player_stats(sqlite_path)
+	player_game_state_rows = _read_sqlite_player_game_state(sqlite_path)
 	postgres_connection = _get_postgres_connection()
 	try:
 		with postgres_connection:
@@ -330,6 +613,10 @@ def migrate(sqlite_path: Path, env_prefix: str, allow_development_prefix: bool) 
 				_recreate_daily_game_table(cursor)
 				loaded_daily_games = _load_daily_games(cursor, daily_games)
 				created_tables = _create_env_tables(cursor, env_prefix)
+				loaded_country_stats = _load_country_stats(cursor, created_tables[0], country_stats_rows)
+				loaded_game_stats = _load_game_stats(cursor, created_tables[1], game_stats_rows)
+				loaded_player_game_state = _load_player_game_state(cursor, created_tables[2], player_game_state_rows)
+				loaded_player_stats = _load_player_stats(cursor, created_tables[3], player_stats_rows)
 	finally:
 		postgres_connection.close()
 
@@ -337,6 +624,10 @@ def migrate(sqlite_path: Path, env_prefix: str, allow_development_prefix: bool) 
 		f"Recreated daily_game and loaded {loaded_daily_games} rows from {sqlite_path} "
 		f"using SQLite table {source_table}."
 	)
+	print(f"Loaded {loaded_country_stats} rows into {created_tables[0]}.")
+	print(f"Loaded {loaded_game_stats} rows into {created_tables[1]}.")
+	print(f"Loaded {loaded_player_game_state} rows into {created_tables[2]}.")
+	print(f"Loaded {loaded_player_stats} rows into {created_tables[3]}.")
 	print("Created tables:")
 	for table_name in created_tables:
 		print(f"- {table_name}")

@@ -5,7 +5,7 @@ import json
 import atexit
 from queue import SimpleQueue
 from logging.handlers import QueueHandler, QueueListener
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger import json as jsonlogger
 from dotenv import load_dotenv
 
 load_dotenv()
