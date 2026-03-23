@@ -405,7 +405,7 @@ def get_game_state(session):
         "wrong_guesses": wrong_guesses,
         "player_uid": player_uid,
     }
-    logger.info(json.dumps(game_state))
+    logger.info(json.dumps({"event": "game_state", **game_state}))
 
     # Build response state for frontend rendering
     response_state = dict(game_state)
