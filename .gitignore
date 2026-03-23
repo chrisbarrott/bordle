@@ -12,3 +12,5 @@ scripts/logging_test.py
 services/__pycache__/*
 db/games_backup.db
 db/games_pre_stats.db
+__pycache__/app.cpython-311.pyc
+tests/__pycache__/*
