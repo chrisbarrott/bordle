@@ -68,6 +68,14 @@ def setup_logger():
 
         logger._bordle_logger_pid = current_pid
 
+        loki_active = _listener is not None
+        logger.info(json.dumps({
+            "event": "logger_init",
+            "pid": current_pid,
+            "env": ENV,
+            "loki_active": loki_active,
+        }))
+
     return logger
 
 
