@@ -11,33 +11,46 @@ from dotenv import load_dotenv
 load_dotenv()
 
 _listener = None
+_listener_pid = None
+
+
+def _stop_listener():
+    global _listener, _listener_pid
+
+    if _listener is not None:
+        try:
+            _listener.stop()
+        finally:
+            _listener = None
+            _listener_pid = None
 
 
 def setup_logger():
-    global _listener
+    global _listener, _listener_pid
 
     ENV = os.getenv("FLASK_ENV")
     GRAFANA_USER = os.getenv("GRAFANA_USERNAME")
     GRAFANA_API_TOKEN = os.getenv("GRAFANA_API_TOKEN")
     GRAFANA_URL = os.getenv("GRAFANA_URL")
+    current_pid = os.getpid()
 
     logger = logging.getLogger("bordle")
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-    if not logger.handlers:
-        # Build sink handlers first.
-        sink_handlers = []
+    # Rebuild handlers after a fork so worker processes do not inherit a dead QueueListener.
+    if getattr(logger, "_bordle_logger_pid", None) != current_pid:
+        _stop_listener()
+        logger.handlers.clear()
 
-        # ---------- 1. Console handler ----------
         console_handler = logging.StreamHandler()
         console_formatter = jsonlogger.JsonFormatter(
             "%(asctime)s %(levelname)s %(name)s %(message)s"
         )
         console_handler.setFormatter(console_formatter)
-        sink_handlers.append(console_handler)
+        logger.addHandler(console_handler)
 
-        # ---------- 2. Loki handler ----------
+        # Keep Loki async, but do not put console logging behind the queue.
         if GRAFANA_URL and GRAFANA_USER and GRAFANA_API_TOKEN:
             loki_handler = logging_loki.LokiHandler(
                 url=GRAFANA_URL,
@@ -45,26 +58,47 @@ def setup_logger():
                 tags={"app": "bordle", "env": ENV},
                 version="1",
             )
-            # Loki should receive raw JSON payload in message.
             loki_handler.setFormatter(logging.Formatter("%(message)s"))
-            sink_handlers.append(loki_handler)
 
-        # Route logs through a queue so network handlers never block request threads.
-        log_queue = SimpleQueue()
-        logger.addHandler(QueueHandler(log_queue))
-        _listener = QueueListener(log_queue, *sink_handlers, respect_handler_level=True)
-        _listener.start()
+            log_queue = SimpleQueue()
+            logger.addHandler(QueueHandler(log_queue))
+            _listener = QueueListener(log_queue, loki_handler, respect_handler_level=True)
+            _listener.start()
+            _listener_pid = current_pid
 
-        def _stop_listener():
-            if _listener is not None:
-                _listener.stop()
+        logger._bordle_logger_pid = current_pid
 
-        atexit.register(_stop_listener)
+        loki_active = _listener is not None
+        logger.info(json.dumps({
+            "event": "logger_init",
+            "pid": current_pid,
+            "env": ENV,
+            "loki_active": loki_active,
+        }))
 
     return logger
 
 
+def _reinit_after_fork():
+    """Reinitialize logger in Gunicorn worker processes after os.fork()."""
+    global _listener, _listener_pid
+    _listener = None
+    _listener_pid = None
+    _logger = logging.getLogger("bordle")
+    if hasattr(_logger, "_bordle_logger_pid"):
+        del _logger._bordle_logger_pid
+    _logger.handlers.clear()
+    setup_logger()
+
+
+try:
+    os.register_at_fork(after_in_child=_reinit_after_fork)
+except AttributeError:
+    pass  # os.register_at_fork not available on Windows
+
+
 logger = setup_logger()
+atexit.register(_stop_listener)
 
 
 # -------- Helper for structured logs --------
