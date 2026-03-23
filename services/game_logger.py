@@ -79,6 +79,24 @@ def setup_logger():
     return logger
 
 
+def _reinit_after_fork():
+    """Reinitialize logger in Gunicorn worker processes after os.fork()."""
+    global _listener, _listener_pid
+    _listener = None
+    _listener_pid = None
+    _logger = logging.getLogger("bordle")
+    if hasattr(_logger, "_bordle_logger_pid"):
+        del _logger._bordle_logger_pid
+    _logger.handlers.clear()
+    setup_logger()
+
+
+try:
+    os.register_at_fork(after_in_child=_reinit_after_fork)
+except AttributeError:
+    pass  # os.register_at_fork not available on Windows
+
+
 logger = setup_logger()
 atexit.register(_stop_listener)
 
