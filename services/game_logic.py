@@ -29,6 +29,7 @@ from services.game_logger import setup_logger
 # Setup logger
 logger = setup_logger()
 UK_TZ = ZoneInfo("Europe/London")
+MAX_INCORRECT_GUESSES = 5
 
 
 def _uk_today_str() -> str:
@@ -174,7 +175,7 @@ def process_guess(guess, session):
             wrong_guesses.append(guess)
 
     correct_guesses = [g for g in guess_history if g in correct_borders]
-    remaining_guesses = max(0, 5 - len(guess_history))
+    remaining_guesses = max(0, MAX_INCORRECT_GUESSES - len(wrong_guesses))
     is_win = _is_game_won(correct_guesses, correct_borders)
 
     game_over_now = remaining_guesses <= 0 or is_win
@@ -315,7 +316,7 @@ def get_game_state(session):
     border_count = len(border_names)
     correct_guesses = [guess for guess in guess_history if guess in border_names]
     borders_remaining = border_count - len(correct_guesses)
-    remaining_guesses = max(0, 5 - len(guess_history))
+    remaining_guesses = max(0, MAX_INCORRECT_GUESSES - len(wrong_guesses))
     is_win = _is_game_won(correct_guesses, border_names)
     all_countries = all_country_options
     available_options = [opt for opt in all_countries if opt not in guess_history]

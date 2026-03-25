@@ -50,6 +50,27 @@ UK_TZ = ZoneInfo("Europe/London")
 def _uk_today_str() -> str:
     return datetime.now(UK_TZ).date().isoformat()
 
+def _resolve_player_location_from_session():
+    """Return (country, region, city) from session in a backward-compatible way."""
+    player_data = session.get("player_data")
+
+    if isinstance(player_data, (list, tuple)) and len(player_data) >= 3:
+        return player_data[0], player_data[1], player_data[2]
+
+    if isinstance(player_data, dict):
+        return (
+            player_data.get("country", "Unknown"),
+            player_data.get("region", "Unknown"),
+            player_data.get("city", "Unknown"),
+        )
+
+    # Fallback for older session shape.
+    return (
+        session.get("player_country", "Unknown"),
+        session.get("player_region", "Unknown"),
+        session.get("player_city", "Unknown"),
+    )
+
 
 def get_game_number_from_postgres() -> int:
     return daily_game_cache.game_number
@@ -486,6 +507,7 @@ def debug_player_stats():
 @app.route("/api/observability/share", methods=["POST"])
 def log_share_event():
     data = request.get_json(force=True)
+    player_country, player_region, player_city = _resolve_player_location_from_session()
 
     whatsapp_share_event = {
         "env": os.getenv("FLASK_ENV", "production"),
@@ -495,9 +517,9 @@ def log_share_event():
         "game_result": data.get("gameResult"),
         "country_name": session.get("country_name", "unknown"),
         "player_uid": request.cookies.get("player_uid"),
-        "player_country": session.get("player_country", "unknown"),
-        "player_region": session.get("player_region", "unknown"),
-        "player_city": session.get("player_city", "unknown"),
+        "player_country": player_country,
+        "player_region": player_region,
+        "player_city": player_city,
         "hard_mode": session.get("hard_mode", False),
     }
     logger.info(json.dumps(whatsapp_share_event))

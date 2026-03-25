@@ -85,6 +85,31 @@ class TestEasyMode:
         assert kwargs["game_over"] is True
         assert kwargs["game_result"] == "Loss"
 
+    def test_not_loss_after_five_total_guesses_when_only_three_are_wrong(self, app):
+        """Game should continue after 5 total guesses if incorrect guesses are still < 5."""
+        initial = make_state(
+            guess_history=[TEST_BORDERS[0], TEST_BORDERS[1], "Canada", "Mexico"],
+            wrong_guesses=["Canada", "Mexico"],
+        )
+        mock_upsert = _run_guess(app, "Brazil", initial)
+        kwargs = mock_upsert.call_args.kwargs
+        assert len(kwargs["guess_history"]) == 5
+        assert len(kwargs["wrong_guesses"]) == 3
+        assert kwargs["game_over"] is False
+        assert kwargs["game_result"] == "In progress"
+
+    def test_loss_triggers_when_fifth_incorrect_guess_arrives_even_with_correct_guesses(self, app):
+        """Correct guesses should not offset the 5-incorrect-guesses loss rule."""
+        initial = make_state(
+            guess_history=[TEST_BORDERS[0], "Canada", "Mexico", "Brazil", "Argentina"],
+            wrong_guesses=["Canada", "Mexico", "Brazil", "Argentina"],
+        )
+        mock_upsert = _run_guess(app, "Chile", initial)
+        kwargs = mock_upsert.call_args.kwargs
+        assert len(kwargs["wrong_guesses"]) == 5
+        assert kwargs["game_over"] is True
+        assert kwargs["game_result"] == "Loss"
+
     def test_completed_game_ignores_further_guesses(self, app):
         """Once game_over=True, any subsequent guess must be silently ignored."""
         completed = make_state(game_over=True)
