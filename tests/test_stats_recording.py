@@ -204,6 +204,21 @@ class TestIdempotency:
         _, mock_upsert, _, _, _ = _call_get_game_state(app, in_progress)
         mock_upsert.assert_not_called()
 
+    def test_five_total_guesses_with_three_wrong_is_still_in_progress(self, app):
+        mixed_progress = make_state(
+            guess_history=[TEST_BORDERS[0], TEST_BORDERS[1], "Canada", "Mexico", "Brazil"],
+            wrong_guesses=["Canada", "Mexico", "Brazil"],
+            game_over=False,
+        )
+        result, mock_upsert, mock_game, mock_player, mock_country = _call_get_game_state(app, mixed_progress)
+
+        assert result["game_over"] is False
+        assert result["attempts_left"] == 2
+        mock_upsert.assert_not_called()
+        mock_game.assert_not_called()
+        mock_player.assert_not_called()
+        mock_country.assert_not_called()
+
 
 # ── streak logic (via SQL upsert query, verified through mock call args) ───────
 
