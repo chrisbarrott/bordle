@@ -44,8 +44,8 @@ class DailyGameCache:
         """Fetch both values from Postgres and store them."""
         today = self._today_uk_date()
         try:
-            game_number = get_current_game_number()
             country_info = get_country_of_the_day(today)
+            game_number = get_current_game_number()
             with self._lock:
                 self._date = today
                 self._game_number = game_number if game_number is not None else 0
