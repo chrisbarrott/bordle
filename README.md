@@ -118,4 +118,10 @@ Leaflet.js for interactive mapping.
 
 Inspired by Wordle.
 
+## Database Backups
+
+Daily Postgres backups are configured via GitHub Actions.
+
+See `docs/POSTGRES_BACKUPS.md` for setup, secrets, retention, and restore instructions.
+
 
