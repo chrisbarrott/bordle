@@ -27,7 +27,15 @@ jobs:
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -o /tmp/pgdg.asc --proto '=https' --tlsv1.2 -sSf https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo cp /tmp/pgdg.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          . /etc/os-release
+          sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null \
+            <<<"deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main"
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
 
       - name: Create backup dump
         id: backup
