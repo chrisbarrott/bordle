@@ -24,8 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install PostgreSQL client
+      - name: Install PostgreSQL client 18
         run: |
+          # Remove any pre-installed pg client that ships with the runner
+          sudo apt-get remove -y --purge 'postgresql-client*' || true
+          # Add the official PGDG apt repo
           sudo apt-get update
           sudo apt-get install -y curl ca-certificates
           sudo install -d /usr/share/postgresql-common/pgdg
@@ -36,6 +39,8 @@ jobs:
             <<<"deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main"
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
+          # Put pg18 bin first in PATH for subsequent steps
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
 
       - name: Create backup dump
         id: backup
