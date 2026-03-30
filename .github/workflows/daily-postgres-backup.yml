@@ -44,6 +44,8 @@ jobs:
 
       - name: Create backup dump
         id: backup
+        env:
+          PG_DUMP: /usr/lib/postgresql/18/bin/pg_dump
         run: bash scripts/create_postgres_backup.sh
 
       - name: Upload backup artifact

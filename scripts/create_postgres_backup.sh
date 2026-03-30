@@ -2,10 +2,15 @@
 
 set -euo pipefail
 
-if ! command -v pg_dump >/dev/null 2>&1; then
-  echo "Error: pg_dump is not installed or not on PATH" >&2
+# Allow caller to specify explicit pg_dump binary (e.g. to avoid version mismatch)
+PG_DUMP="${PG_DUMP:-pg_dump}"
+
+if ! command -v "$PG_DUMP" >/dev/null 2>&1; then
+  echo "Error: pg_dump not found at '${PG_DUMP}'" >&2
   exit 1
 fi
+
+echo "Using pg_dump: $PG_DUMP ($("$PG_DUMP" --version))"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   echo "Error: DATABASE_URL environment variable is required" >&2
@@ -23,7 +28,7 @@ BACKUP_FILENAME="${BACKUP_PREFIX}-${TIMESTAMP}.dump"
 BACKUP_PATH="${BACKUP_DIR}/${BACKUP_FILENAME}"
 
 echo "Creating Postgres backup: ${BACKUP_PATH}"
-pg_dump \
+"$PG_DUMP" \
   --dbname "$DATABASE_URL" \
   --format=custom \
   --no-owner \
