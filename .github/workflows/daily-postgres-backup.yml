@@ -24,29 +24,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install PostgreSQL client 18
-        run: |
-          # Remove any pre-installed pg client that ships with the runner
-          sudo apt-get remove -y --purge 'postgresql-client*' || true
-          # Add the official PGDG apt repo
-          sudo apt-get update
-          sudo apt-get install -y curl ca-certificates
-          sudo install -d /usr/share/postgresql-common/pgdg
-          curl -o /tmp/pgdg.asc --proto '=https' --tlsv1.2 -sSf https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          sudo cp /tmp/pgdg.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          . /etc/os-release
-          sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null \
-            <<<"deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main"
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-18
-          # Put pg18 bin first in PATH for subsequent steps
-          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
-
-      - name: Create backup dump
+      - name: Create backup dump (via Docker postgres:18)
         id: backup
-        env:
-          PG_DUMP: /usr/lib/postgresql/18/bin/pg_dump
-        run: bash scripts/create_postgres_backup.sh
+        run: |
+          set -euo pipefail
+          TIMESTAMP="$(date -u +"%Y%m%dT%H%M%SZ")"
+          BACKUP_FILENAME="${BACKUP_PREFIX}-${TIMESTAMP}.dump"
+          BACKUP_PATH="${BACKUP_DIR}/${BACKUP_FILENAME}"
+          mkdir -p "$BACKUP_DIR"
+
+          echo "Using postgres:18 Docker image to run pg_dump"
+          docker run --rm \
+            -v "$(pwd)/${BACKUP_DIR}:/backups" \
+            postgres:18 \
+            pg_dump \
+              --dbname "${DATABASE_URL}" \
+              --format=custom \
+              --no-owner \
+              --no-privileges \
+              --compress=9 \
+              --file "/backups/${BACKUP_FILENAME}"
+
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${BACKUP_PATH}" > "${BACKUP_PATH}.sha256"
+          fi
+
+          echo "Backup created: ${BACKUP_PATH}"
+          echo "backup_file=${BACKUP_PATH}" >> "$GITHUB_OUTPUT"
+          echo "backup_filename=${BACKUP_FILENAME}" >> "$GITHUB_OUTPUT"
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
